@@ -17,6 +17,19 @@ body {
   color: var(--text1);
 }
 
+/* Decorative background canvas — no particle script currently draws on
+   it, but it must stay out of the document flow instead of taking up
+   its default 300x150px inline box at the top of every screen. */
+#particle-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* Visibility classes */
 .screen {
   display: none;
@@ -151,11 +164,18 @@ header, .sim-topbar {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  min-height: 320px;
 }
 
 #sim-canvas {
   width: 100%;
   height: 100%;
+}
+
+#sim-dom-overlay {
+  position: absolute;
+  inset: 0;
 }
 
 button {
@@ -288,4 +308,164 @@ button {
 .empty-hint {
   color: var(--text3);
   font-style: italic;
+  font-size: 13px;
+}
+
+/* Simulation screen topbar labels */
+.sim-topbar-mid {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.sim-module-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.sim-title-nav {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sim-xp-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.back-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.back-btn:hover {
+  background: var(--border2);
+}
+
+/* Controls panel (sliders) */
+.controls-panel {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.control-row + .control-row {
+  margin-top: 14px;
+}
+
+.control-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.control-label-row label {
+  color: var(--text2);
+  font-weight: 500;
+}
+
+.control-value {
+  font-weight: 700;
+  color: var(--primary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.control-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+/* Info sidebar cards */
+.info-card {
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.info-card-header {
+  padding: 10px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border2);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.info-card-body {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.info-card-body p {
+  margin: 0;
+}
+
+.formula-body {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.formula-line {
+  padding: 4px 0;
+}
+
+.formula-line + .formula-line {
+  border-top: 1px dashed var(--border2);
+}
+
+.readings-body {
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
+.reading-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.reading-row + .reading-row {
+  border-top: 1px solid var(--border2);
+}
+
+.reading-row span {
+  color: var(--text2);
+}
+
+.reading-row b {
+  color: var(--text1);
+}
+
+.quiz-launch-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.quiz-launch-btn:hover {
+  filter: brightness(1.05);
 }
