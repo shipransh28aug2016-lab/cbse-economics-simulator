@@ -157,13 +157,45 @@ header, .sim-topbar {
   margin: 0 auto;
 }
 
-.module-block { margin-bottom: 40px; }
+.module-block { margin-bottom: 32px; }
 
+/* Each module header is a distinct floating glass panel, not just a
+   plain row of text — it lifts further on hover and idles with a very
+   gentle float so the page reads as alive, not static. Each module
+   gets its own animation-delay so the four panels don't bob in sync. */
 .module-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  animation: module-float 5.5s ease-in-out infinite;
+}
+
+.module-header:hover {
+  /* Pause the idle float so it doesn't fight with the hover lift below
+     (both animate `transform`, and the running animation would win). */
+  animation-play-state: paused;
+  transform: translateY(-6px);
+  background: var(--glass-bg-strong);
+  box-shadow: 0 16px 36px rgba(76, 29, 149, 0.2), 0 4px 12px rgba(76, 29, 149, 0.1);
+}
+
+.module-block:nth-of-type(1) .module-header { animation-delay: 0s; }
+.module-block:nth-of-type(2) .module-header { animation-delay: -1.4s; }
+.module-block:nth-of-type(3) .module-header { animation-delay: -2.8s; }
+.module-block:nth-of-type(4) .module-header { animation-delay: -4.2s; }
+
+@keyframes module-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
 }
 
 .module-icon-badge {
@@ -650,29 +682,61 @@ header, .sim-topbar {
 }
 
 /* ── Hero ─────────────────────────────────────────────────────── */
+/* Compact commercial-grade hero: a single streamlined band instead of
+   a tall banner, with a subtle decorative economics-chart backdrop. */
 .hero {
-  padding: 64px 24px;
-  text-align: center;
+  position: relative;
+  padding: 26px 28px;
   border-radius: 0;
   border-width: 0 0 1px 0;
+  overflow: hidden;
+}
+
+.hero-bg-decor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.hero-left {
+  flex: 1;
+  min-width: 280px;
+  text-align: left;
 }
 
 .hero-badge {
   display: inline-block;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--primary-2);
   background: rgba(139, 92, 246, 0.12);
   border: 1px solid rgba(139, 92, 246, 0.28);
-  padding: 6px 14px;
+  padding: 4px 12px;
   border-radius: 20px;
+  margin-bottom: 8px;
 }
 
 .hero-title {
-  font-size: 48px;
-  margin: 18px 0;
+  font-size: 27px;
+  margin: 0 0 6px 0;
   font-weight: 900;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
 .grad-text {
@@ -691,30 +755,35 @@ header, .sim-topbar {
 
 .hero-sub {
   color: var(--text2);
-  font-size: 15px;
-  line-height: 1.6;
-  max-width: 640px;
-  margin: 0 auto;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 520px;
+  margin: 0;
 }
 
 .hero-stats-row {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 24px;
-  margin-top: 36px;
+  align-items: stretch;
+  gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .hstat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 80px;
+  justify-content: center;
+  min-width: 68px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 14px rgba(76, 29, 149, 0.1);
 }
 
 .hstat-n {
-  font-size: 26px;
+  font-size: 19px;
   font-weight: 900;
   background: var(--micro-grad);
   -webkit-background-clip: text;
@@ -722,21 +791,7 @@ header, .sim-topbar {
   color: transparent;
 }
 
-.hstat-l { font-size: 13px; color: var(--text2); font-weight: 600; }
-
-.hstat-div { width: 1px; height: 32px; background: var(--border1); }
-
-.scroll-hint {
-  margin-top: 48px;
-  color: var(--text3);
-  font-size: 14px;
-  animation: bob 2.2s ease-in-out infinite;
-}
-
-@keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(6px); }
-}
+.hstat-l { font-size: 10px; color: var(--text2); font-weight: 700; letter-spacing: 0.2px; }
 
 /* ── Progress rings ──────────────────────────────────────────── */
 .module-progress-wrap {
