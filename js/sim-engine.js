@@ -196,23 +196,34 @@ function buildControls(sim) {
     if (!panel) return;
     panel.innerHTML = '';
 
+    const isHi = (typeof window.getLang === 'function') && window.getLang() === 'hi';
+    const simHi = window.I18N_HI && window.I18N_HI.sims && window.I18N_HI.sims[sim.id];
+    const tr = (key, fallback) => (typeof window.t === 'function' ? window.t(key, null, fallback) : fallback);
+    const ctlLabel = (c) => (isHi && simHi && simHi.controls && simHi.controls[c.id]) ? simHi.controls[c.id] : c.label;
+    const ctlOptionLabel = (c, opt) => (isHi && simHi && simHi.controlOptions && simHi.controlOptions[c.id] && simHi.controlOptions[c.id][opt.value]) ? simHi.controlOptions[c.id][opt.value] : opt.label;
+
     if (!sim.controls || !sim.controls.length) {
-        panel.innerHTML = '<p class="empty-hint">No adjustable inputs for this lab — explore the chart on the left.</p>';
+        panel.innerHTML = `<p class="empty-hint">${tr('ctl.emptyHint', 'No adjustable inputs for this lab — explore the chart on the left.')}</p>`;
         return;
     }
 
     const header = document.createElement('div');
     header.className = 'controls-panel-header';
-    header.innerHTML = `<span>🎛️ Adjust the Variables</span>`;
+    const headerLabel = document.createElement('span');
+    headerLabel.textContent = tr('ctl.header', '🎛️ Adjust the Variables');
+    header.appendChild(headerLabel);
+
+    const headerActions = document.createElement('div');
+    headerActions.className = 'controls-panel-header-inner';
 
     const hint = document.createElement('p');
     hint.className = 'controls-panel-hint';
-    hint.textContent = 'Try your own numbers — drag a slider or type an exact value and watch the chart and readings update instantly. Great for self-paced or classroom what-if exploration.';
+    hint.textContent = tr('ctl.hint', 'Try your own numbers — drag a slider or type an exact value and watch the chart and readings update instantly. Great for self-paced or classroom what-if exploration.');
 
     const resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'reset-btn';
-    resetBtn.innerHTML = '↺ Reset';
+    resetBtn.innerHTML = tr('ctl.reset', '↺ Reset');
     resetBtn.addEventListener('click', () => {
         sim.controls.forEach(c => {
             simEngineState[c.id] = c.value;
@@ -235,7 +246,16 @@ function buildControls(sim) {
         applyControlVisibility(sim);
         renderSimChart(sim);
     });
-    header.appendChild(resetBtn);
+
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'panel-collapse-btn';
+    collapseBtn.setAttribute('aria-label', tr('sim.hdr.controls.collapse', 'Collapse Adjust the Variables panel'));
+    collapseBtn.textContent = '▾';
+
+    headerActions.appendChild(resetBtn);
+    headerActions.appendChild(collapseBtn);
+    header.appendChild(headerActions);
     panel.appendChild(header);
     panel.appendChild(hint);
 
@@ -256,9 +276,9 @@ function buildControls(sim) {
             // choice of mode, not a number.
             row.innerHTML = `
                 <div class="control-label-row">
-                    <label>${c.label}</label>
+                    <label>${ctlLabel(c)}</label>
                 </div>
-                <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${c.label}"></div>
+                <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${ctlLabel(c)}"></div>
             `;
             panel.appendChild(row);
             const group = row.querySelector('.control-segmented');
@@ -266,7 +286,7 @@ function buildControls(sim) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'segmented-btn';
-                btn.textContent = opt.label;
+                btn.textContent = ctlOptionLabel(c, opt);
                 btn.setAttribute('aria-pressed', String(opt.value === c.value));
                 if (opt.value === c.value) btn.classList.add('active');
                 btn.addEventListener('click', () => {
@@ -287,7 +307,7 @@ function buildControls(sim) {
 
         row.innerHTML = `
             <div class="control-label-row">
-                <label for="ctl-${c.id}">${c.label}</label>
+                <label for="ctl-${c.id}">${ctlLabel(c)}</label>
                 ${c.unit ? `<span class="control-unit">${c.unit}</span>` : ''}
             </div>
             <div class="control-input-group">
@@ -330,6 +350,7 @@ function buildControls(sim) {
     });
 
     applyControlVisibility(sim);
+    if (typeof window.applyStoredPanelState === 'function') window.applyStoredPanelState(panel);
 }
 
 // Some controls only make sense for a particular mode of a "select"
@@ -386,7 +407,10 @@ function renderSimChart(sim) {
     overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
-        readingsBody.innerHTML = result.readings || '';
+        const readingsHtml = typeof window.translatePhrases === 'function'
+            ? window.translatePhrases(result.readings || '')
+            : (result.readings || '');
+        readingsBody.innerHTML = readingsHtml;
         // Restart the highlight animation on every recompute so students
         // notice the readings actually changed.
         readingsBody.classList.remove('pulse');
@@ -399,15 +423,22 @@ function renderSimChart(sim) {
     // the *current* mode, so the formula card stays relevant instead of
     // always showing every mode's formulas at once. Sims that don't
     // return this just keep the static list set once in renderSim().
+    // These mode-specific formulas bypass the per-sim Hindi override in
+    // renderSim()/translateSimStaticText() (which only covers a sim's
+    // *default* formulas), so they're run through the same phrase
+    // dictionary as the readings above.
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
         if (formulaBody) {
-            formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${f}</div>`).join('');
+            formulaBody.innerHTML = result.formulas
+                .map(f => `<div class="formula-line">${typeof window.translatePhrases === 'function' ? window.translatePhrases(f) : f}</div>`)
+                .join('');
         }
     }
 }
 
 function renderSim(sim) {
+    window.currentSim = sim; // read by the quiz engine's "Take the Quiz" button and by i18nApply() on language toggle
     const conceptBody = document.getElementById('concept-body');
     const formulaBody = document.getElementById('formula-body');
     const canvas = document.getElementById('sim-canvas');
@@ -427,14 +458,23 @@ function renderSim(sim) {
         }
     }
 
+    const isHi = (typeof window.getLang === 'function') && window.getLang() === 'hi';
+    const simHi = window.I18N_HI && window.I18N_HI.sims && window.I18N_HI.sims[sim.id];
+
+    const titleNav = document.getElementById('sim-title-nav');
+    if (titleNav) titleNav.textContent = (isHi && simHi && simHi.title) ? simHi.title : sim.title;
+
     if (conceptBody) {
-        const chapterTag = sim.chapter
-            ? `<div class="chapter-tag">📘 ${sim.chapter}</div>`
+        const chapterText = (isHi && simHi && simHi.chapter) ? simHi.chapter : sim.chapter;
+        const chapterTag = chapterText
+            ? `<div class="chapter-tag">📘 ${chapterText}</div>`
             : '';
-        conceptBody.innerHTML = chapterTag + (sim.concept || '');
+        const conceptHtml = (isHi && simHi && simHi.concept) ? simHi.concept : sim.concept;
+        conceptBody.innerHTML = chapterTag + (conceptHtml || '');
     }
     if (formulaBody) {
-        formulaBody.innerHTML = (sim.formulas || [])
+        const formulasArr = (isHi && simHi && simHi.formulas) ? simHi.formulas : (sim.formulas || []);
+        formulaBody.innerHTML = formulasArr
             .map(f => `<div class="formula-line">${f}</div>`)
             .join('');
     }
@@ -446,3 +486,77 @@ function renderSim(sim) {
     buildControls(sim);
     renderSimChart(sim);
 }
+
+// Re-applies translated concept/formulas/control-labels/chart text for
+// the currently-open simulation when the language toggle is flipped —
+// WITHOUT calling buildControls()/renderSim() again, which would wipe
+// out whatever slider values the student had already set. Called by
+// js/i18n_engine.js's i18nApply().
+function translateSimStaticText(sim) {
+    if (!sim) return;
+    const isHi = (typeof window.getLang === 'function') && window.getLang() === 'hi';
+    const simHi = window.I18N_HI && window.I18N_HI.sims && window.I18N_HI.sims[sim.id];
+
+    const titleNav = document.getElementById('sim-title-nav');
+    if (titleNav) titleNav.textContent = (isHi && simHi && simHi.title) ? simHi.title : sim.title;
+
+    const conceptBody = document.getElementById('concept-body');
+    if (conceptBody) {
+        const chapterText = (isHi && simHi && simHi.chapter) ? simHi.chapter : sim.chapter;
+        const chapterTag = chapterText ? `<div class="chapter-tag">📘 ${chapterText}</div>` : '';
+        const conceptHtml = (isHi && simHi && simHi.concept) ? simHi.concept : sim.concept;
+        conceptBody.innerHTML = chapterTag + (conceptHtml || '');
+    }
+
+    // Re-apply the sim's default formula list first. Most sims never
+    // override this, so without this step their formula card would
+    // stay in whatever language it was last rendered in. Sims whose
+    // compute() *does* return a mode-specific formula set (e.g. the
+    // Elasticity Type switch) get it immediately overwritten below by
+    // renderSimChart(), which re-runs compute() and phrase-translates
+    // whichever set is actually active — so this is always safe.
+    const formulaBody = document.getElementById('formula-body');
+    if (formulaBody) {
+        const formulasArr = (isHi && simHi && simHi.formulas) ? simHi.formulas : (sim.formulas || []);
+        formulaBody.innerHTML = formulasArr.map(f => `<div class="formula-line">${f}</div>`).join('');
+    }
+
+    if (sim.controls && sim.controls.length) {
+        const panel = document.getElementById('controls-panel');
+        sim.controls.forEach(c => {
+            const label = (isHi && simHi && simHi.controls && simHi.controls[c.id]) ? simHi.controls[c.id] : c.label;
+            if (c.type === 'select') {
+                const group = panel ? panel.querySelector(`#ctl-${c.id}`) : null;
+                const row = group ? group.closest('.control-row') : null;
+                const labelEl = row ? row.querySelector('.control-label-row label') : null;
+                if (labelEl) labelEl.textContent = label;
+                if (group) group.setAttribute('aria-label', label);
+                if (group && c.options) {
+                    const btns = group.querySelectorAll('.segmented-btn');
+                    c.options.forEach((opt, i) => {
+                        const optLabel = (isHi && simHi && simHi.controlOptions && simHi.controlOptions[c.id] && simHi.controlOptions[c.id][opt.value])
+                            ? simHi.controlOptions[c.id][opt.value] : opt.label;
+                        if (btns[i]) btns[i].textContent = optLabel;
+                    });
+                }
+            } else {
+                const rangeEl = panel ? panel.querySelector(`#ctl-${c.id}`) : null;
+                const row = rangeEl ? rangeEl.closest('.control-row') : null;
+                const labelEl = row ? row.querySelector('label[for]') : null;
+                if (labelEl) labelEl.textContent = label;
+            }
+        });
+
+        const headerLabel = document.querySelector('#controls-panel .controls-panel-header > span');
+        if (headerLabel) headerLabel.textContent = (typeof window.t === 'function') ? window.t('ctl.header', null, '🎛️ Adjust the Variables') : headerLabel.textContent;
+        const hintEl = document.querySelector('#controls-panel .controls-panel-hint');
+        if (hintEl) hintEl.textContent = (typeof window.t === 'function') ? window.t('ctl.hint', null, hintEl.textContent) : hintEl.textContent;
+        const resetBtn = document.querySelector('#controls-panel .reset-btn');
+        if (resetBtn) resetBtn.innerHTML = (typeof window.t === 'function') ? window.t('ctl.reset', null, '↺ Reset') : resetBtn.innerHTML;
+    }
+
+    // Re-render the chart/readings in place — this reads the existing
+    // simEngineState (untouched above), so slider positions are kept.
+    renderSimChart(sim);
+}
+window.translateSimStaticText = translateSimStaticText;

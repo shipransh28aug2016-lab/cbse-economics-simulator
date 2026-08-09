@@ -1048,3 +1048,240 @@ header, .sim-topbar {
   .control-input-group { flex-wrap: wrap; }
   .control-number { width: 100%; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Collapsible sidebar panels — Concept, Key Formulas, Live
+   Readings, and Adjust the Variables can each be shrunk down to
+   just their header so students can maximize chart/viewing area.
+   ══════════════════════════════════════════════════════════════ */
+.info-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.controls-panel-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-collapse-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font-size: 11px;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  transition: transform 0.25s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.panel-collapse-btn:hover { background: rgba(99, 102, 241, 0.16); border-color: rgba(99, 102, 241, 0.25); }
+
+.info-card.panel-collapsed .panel-collapse-btn,
+.controls-panel.panel-collapsed .panel-collapse-btn {
+  transform: rotate(-90deg);
+}
+
+/* Collapsed state: hide everything below the header row so the card
+   shrinks to a single compact bar. */
+.info-card.panel-collapsed > .info-card-body,
+.info-card.panel-collapsed > .readings-body {
+  display: none;
+}
+
+.controls-panel.panel-collapsed > *:not(.controls-panel-header) {
+  display: none;
+}
+
+.info-card.panel-collapsed,
+.controls-panel.panel-collapsed { margin-bottom: 12px; }
+
+/* Quick "shrink everything" action in the sim topbar. */
+.sim-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Hindi (Devanagari) typography — switched on via lang="hi" on
+   <html>, applied by the i18n engine. Devanagari needs a taller
+   line-height and its own font family to render crisply next to
+   the Latin/JetBrains Mono numerals that stay untranslated.
+   ══════════════════════════════════════════════════════════════ */
+html[lang="hi"] body {
+  font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+}
+
+html[lang="hi"] .hero-title,
+html[lang="hi"] .module-title,
+html[lang="hi"] .sim-title-nav,
+html[lang="hi"] .quiz-heading,
+html[lang="hi"] .quiz-question,
+html[lang="hi"] .p-name {
+  line-height: 1.5;
+}
+
+html[lang="hi"] .info-card-body,
+html[lang="hi"] .controls-panel-hint,
+html[lang="hi"] .reading-row.insight-row,
+html[lang="hi"] .quiz-question,
+html[lang="hi"] .quiz-option {
+  line-height: 1.75;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Quiz Center — a dedicated screen listing every quiz (per module
+   + a shuffled full-syllabus review) alongside the per-sim "Take
+   the Quiz" launcher already in the sim screen.
+   ══════════════════════════════════════════════════════════════ */
+.quiz-center-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.quiz-hero-card {
+  border-radius: 18px;
+  padding: 22px 26px;
+  margin-bottom: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.quiz-hero-card h2 { margin: 0 0 6px 0; font-size: 20px; font-weight: 900; }
+.quiz-hero-card p { margin: 0; color: var(--text2); font-size: 13px; max-width: 520px; }
+
+.quiz-full-review-btn {
+  flex-shrink: 0;
+  padding: 13px 22px;
+  border-radius: 14px;
+  border: none;
+  background: var(--india-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: 0 8px 20px rgba(244, 63, 94, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.quiz-full-review-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(244, 63, 94, 0.4); }
+
+.quiz-module-block { margin-bottom: 22px; }
+
+.quiz-module-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.quiz-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.quiz-pick-card {
+  flex: 1 1 220px;
+  min-width: 210px;
+  border-radius: 14px;
+  padding: 15px 17px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.quiz-pick-card:hover, .quiz-pick-card:focus-visible {
+  transform: translateY(-3px);
+  background: var(--glass-bg-strong);
+  box-shadow: 0 12px 28px rgba(76, 29, 149, 0.18);
+}
+
+.quiz-pick-card h4 { margin: 0 0 6px 0; font-size: 14px; font-weight: 800; }
+.quiz-pick-card p { margin: 0; color: var(--text3); font-size: 12px; }
+.quiz-pick-card .quiz-pick-count {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-2);
+  background: rgba(139, 92, 246, 0.12);
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+
+/* ── Quiz option states (answered feedback) ──────────────────── */
+.quiz-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border1);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text1);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.quiz-option:hover:not(:disabled) { transform: translateX(3px); background: var(--glass-bg-strong); border-color: var(--primary); }
+.quiz-option:disabled { cursor: default; }
+
+.quiz-option.correct {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.quiz-option.incorrect {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: #ef4444;
+  color: #7f1d1d;
+}
+
+.quiz-explanation {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.1);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text2);
+}
+
+.quiz-next-btn {
+  margin-top: 14px;
+  width: 100%;
+  padding: 11px;
+  border-radius: 12px;
+  border: none;
+  background: var(--micro-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+.quiz-meta-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+@media (max-width: 900px) {
+  .quiz-hero-card { flex-direction: column; align-items: flex-start; }
+}

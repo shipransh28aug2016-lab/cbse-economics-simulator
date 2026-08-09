@@ -14,11 +14,9 @@ function showScreen(screenId) {
     }
 }
 
-// Language toggle for the 🌐 nav button. Full sentence-level translation
-// depends on the i18n engine/data files (js/i18n_engine.js, js/i18n_hi.js),
-// which currently ship as stubs. This keeps the toggle functional (no
-// crash) and updates the parts of the UI that don't need a translation
-// dictionary: the button label itself and the document's language tag.
+// Language toggle for the 🌐 nav button. js/i18n_engine.js does the
+// actual translation work (window.i18nApply); this just persists the
+// choice, flips the button label/doc lang, and hands off to it.
 let currentLang = localStorage.getItem('econsim-lang') || 'en';
 
 function applyLanguage(lang) {
@@ -32,8 +30,9 @@ function applyLanguage(lang) {
     }
 
     if (typeof window.i18nApply === 'function') {
-        // Hook for a fuller i18n engine, if/when one is implemented.
         window.i18nApply(lang);
+    } else {
+        window.currentLang = lang;
     }
 }
 
@@ -62,6 +61,70 @@ function openSim(simId) {
     }
 }
 
+// ── Home sim-card text (title/desc), kept in sync with the active
+//    language. Cards are built once in initApp(); refreshHomeCardsLang()
+//    re-labels the same DOM nodes on every toggle (i18nApply calls it)
+//    instead of rebuilding the grids, so click handlers survive.
+function simCardHTML(sim) {
+    const isHi = (typeof window.getLang === 'function') && window.getLang() === 'hi';
+    const simHi = window.I18N_HI && window.I18N_HI.sims && window.I18N_HI.sims[sim.id];
+    const title = (isHi && simHi && simHi.title) ? simHi.title : sim.title;
+    const desc = (isHi && simHi && simHi.desc) ? simHi.desc : sim.desc;
+    return `<h3>${title}</h3><p>${desc}</p>`;
+}
+
+function refreshHomeCardsLang() {
+    document.querySelectorAll('.sim-card[data-sim-id]').forEach(card => {
+        const sim = (typeof SIMS !== 'undefined') ? SIMS.find(s => s.id === card.dataset.simId) : null;
+        if (sim) card.innerHTML = simCardHTML(sim);
+    });
+}
+window.refreshHomeCardsLang = refreshHomeCardsLang;
+
+// ── Collapsible sidebar panels (Concept / Key Formulas / Live
+//    Readings / Adjust the Variables) — click a panel's chevron to
+//    shrink it to just its header, freeing up viewing area. State is
+//    remembered per panel (localStorage) so it survives switching
+//    simulations and reloading the page.
+function applyStoredPanelState(panel) {
+    if (!panel || !panel.dataset.panelKey) return;
+    let collapsed = false;
+    try { collapsed = localStorage.getItem('econsim-panel-' + panel.dataset.panelKey) === '1'; } catch (e) { /* ignore */ }
+    panel.classList.toggle('panel-collapsed', collapsed);
+    const btn = panel.querySelector('.panel-collapse-btn');
+    if (btn) btn.setAttribute('aria-expanded', String(!collapsed));
+}
+window.applyStoredPanelState = applyStoredPanelState;
+
+function initCollapsiblePanels() {
+    document.querySelectorAll('.info-card[data-panel-key]').forEach(applyStoredPanelState);
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.panel-collapse-btn');
+        if (!btn) return;
+        const panel = btn.closest('.info-card, .controls-panel');
+        if (!panel) return;
+        const collapsed = panel.classList.toggle('panel-collapsed');
+        btn.setAttribute('aria-expanded', String(!collapsed));
+        if (panel.dataset.panelKey) {
+            try { localStorage.setItem('econsim-panel-' + panel.dataset.panelKey, collapsed ? '1' : '0'); } catch (err) { /* ignore */ }
+        }
+    });
+
+    document.getElementById('collapse-all-btn')?.addEventListener('click', () => {
+        const panels = document.querySelectorAll('#screen-sim .info-card[data-panel-key], #screen-sim .controls-panel[data-panel-key]');
+        const anyExpanded = Array.from(panels).some(p => !p.classList.contains('panel-collapsed'));
+        panels.forEach(p => {
+            p.classList.toggle('panel-collapsed', anyExpanded);
+            const btn = p.querySelector('.panel-collapse-btn');
+            if (btn) btn.setAttribute('aria-expanded', String(!anyExpanded));
+            if (p.dataset.panelKey) {
+                try { localStorage.setItem('econsim-panel-' + p.dataset.panelKey, anyExpanded ? '1' : '0'); } catch (err) { /* ignore */ }
+            }
+        });
+    });
+}
+
 function initApp() {
     applyLanguage(currentLang);
 
@@ -83,14 +146,16 @@ function initApp() {
             if (grids[sim.module]) {
                 const card = document.createElement('div');
                 card.className = `sim-card sim-card--${sim.module}`;
-                card.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
+                card.dataset.simId = sim.id;
+                card.innerHTML = simCardHTML(sim);
                 card.onclick = () => openSim(sim.id);
                 grids[sim.module].appendChild(card);
             }
             if (grids['all']) {
                 const sysCard = document.createElement('div');
                 sysCard.className = `sim-card sim-card--${sim.module}`;
-                sysCard.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
+                sysCard.dataset.simId = sim.id;
+                sysCard.innerHTML = simCardHTML(sim);
                 sysCard.onclick = () => openSim(sim.id);
                 grids['all'].appendChild(sysCard);
             }
@@ -111,6 +176,9 @@ function initApp() {
             showScreen('home');
         });
     }
+
+    initCollapsiblePanels();
+    if (typeof window.initQuizEngine === 'function') window.initQuizEngine();
 }
 
 // Global hook
