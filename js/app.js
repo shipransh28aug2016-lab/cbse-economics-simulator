@@ -14,6 +14,33 @@ function showScreen(screenId) {
     }
 }
 
+// Language toggle for the 🌐 nav button. Full sentence-level translation
+// depends on the i18n engine/data files (js/i18n_engine.js, js/i18n_hi.js),
+// which currently ship as stubs. This keeps the toggle functional (no
+// crash) and updates the parts of the UI that don't need a translation
+// dictionary: the button label itself and the document's language tag.
+let currentLang = localStorage.getItem('econsim-lang') || 'en';
+
+function applyLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('econsim-lang', lang);
+    document.documentElement.lang = lang === 'hi' ? 'hi' : 'en';
+
+    const btn = document.getElementById('lang-toggle');
+    if (btn) {
+        btn.textContent = lang === 'hi' ? '🌐 English' : '🌐 हिन्दी';
+    }
+
+    if (typeof window.i18nApply === 'function') {
+        // Hook for a fuller i18n engine, if/when one is implemented.
+        window.i18nApply(lang);
+    }
+}
+
+function toggleLanguage() {
+    applyLanguage(currentLang === 'hi' ? 'en' : 'hi');
+}
+
 function openSim(simId) {
     const sim = typeof SIMS !== 'undefined' ? SIMS.find(s => s.id === simId) : null;
     if (sim) {
@@ -32,6 +59,8 @@ function openSim(simId) {
 }
 
 function initApp() {
+    applyLanguage(currentLang);
+
     // Populate grids in index.html
     const grids = {
         'micro': document.getElementById('grid-micro'),
@@ -43,13 +72,16 @@ function initApp() {
 
     if (typeof SIMS !== 'undefined') {
         SIMS.forEach(sim => {
-            const card = document.createElement('div');
-            card.className = 'sim-card';
-            card.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
-            card.onclick = () => openSim(sim.id);
-
+            // Note: each grid needs its own card element with its own click
+            // handler attached directly. cloneNode(true) does NOT copy
+            // JS-assigned event handlers (like .onclick), so cards created
+            // by cloning were previously unresponsive to clicks.
             if (grids[sim.module]) {
-                grids[sim.module].appendChild(card.cloneNode(true));
+                const card = document.createElement('div');
+                card.className = 'sim-card';
+                card.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
+                card.onclick = () => openSim(sim.id);
+                grids[sim.module].appendChild(card);
             }
             if (grids['all']) {
                 const sysCard = document.createElement('div');
