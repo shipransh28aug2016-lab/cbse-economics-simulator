@@ -83,67 +83,101 @@ const SIMS = [
     {
         id: 'macro-gdp',
         module: 'macro',
-        title: 'GDP & Circular Flow',
-        desc: 'Track the flow of money through households, firms, government and the foreign sector.',
-        chapter: 'Class XII Macroeconomics · Ch. 2: National Income and Related Aggregates (Circular Flow)',
-        concept: '<p>The circular flow of income shows how money moves between households, firms, the government and the foreign sector. Government spending injects income into the flow while taxes withdraw it — the size of each flow affects aggregate demand and national income.</p>',
-        formulas: ['GDP (expenditure method) = C + I + G + (X − M)', 'Injections = I + G + X', 'Leakages = S + T + M'],
+        title: 'GDP & Circular Flow (Real Flow vs Money Flow)',
+        desc: 'Watch the real flow of factors & goods move opposite to the money flow that pays for them.',
+        chapter: 'Class XII Macroeconomics · Ch. 2: National Income and Related Aggregates (Circular Flow of Income)',
+        concept: '<p>The circular flow has two mirror-image halves that always move in <b>opposite directions</b> for the same transaction. The <b>real flow</b> (solid-outline, square markers) is what physically changes hands: households supply <b>factor services</b> — labour, land, capital, enterprise — to firms, and firms supply <b>goods &amp; services</b> back to households. The <b>money flow</b> (dashed, round markers) is the payment for it, moving the other way: firms pay <b>factor payments</b> (wages, rent, interest, profit) to households, and households pay <b>consumption expenditure</b> to firms. Government spending and exports are injections into this flow; taxes and imports are leakages out of it.</p>',
+        formulas: [
+            'Factor Services HH→Firms (real) moves opposite to Factor Payments Firms→HH (money)',
+            'Goods &amp; Services Firms→HH (real) moves opposite to Consumption Exp. HH→Firms (money)',
+            'GDP (expenditure method) = C + I + G + (X − M)',
+            'Injections (G + X) vs Leakages (T + M)'
+        ],
         controls: [
+            { id: 'consumption', label: 'Consumption Expenditure (C)', min: 20, max: 150, step: 5, value: 90, unit: '₹B' },
+            { id: 'wages', label: 'Factor Payments — Wages etc. (₹B)', min: 20, max: 150, step: 5, value: 100, unit: '₹B' },
             { id: 'g', label: 'Government Spending (G)', min: 0, max: 100, step: 5, value: 40, unit: '₹B' },
             { id: 'nx', label: 'Net Exports (X − M)', min: -40, max: 40, step: 5, value: 10, unit: '₹B' }
         ],
         // Custom-rendered as an animated SVG instead of a Plotly chart: a
-        // static sankey diagram doesn't read as "money in motion" the way
-        // students need for this topic, so each income stream is drawn as
-        // a wire with small particles flowing along it — faster and more
-        // numerous particles for a bigger flow — and it all updates live
-        // as the sliders move.
+        // static sankey diagram can't show a real flow moving opposite to
+        // a money flow, which is the actual concept being taught here. The
+        // real flow (factor services / goods & services — dashed wire,
+        // square markers) and the money flow (factor payments / consumption
+        // — solid wire, round markers) are drawn as two visually distinct
+        // rings between Households and Firms so the opposite-direction
+        // relationship is genuinely visible, not just described in text.
         customRender(container, v) {
-            const wages = 100, consumption = 90, taxes = 35, g = v.g, nx = v.nx;
+            const consumption = v.consumption, wages = v.wages, taxes = 35, g = v.g, nx = v.nx;
             const exportsVal = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
 
             const nodes = {
-                hh: { x: 70, y: 150, label: 'Households', icon: '🏠', color: '#6366f1' },
-                firm: { x: 330, y: 150, label: 'Firms', icon: '🏭', color: '#10b981' },
-                gov: { x: 200, y: 45, label: 'Government', icon: '🏛️', color: '#f59e0b' },
-                foreign: { x: 200, y: 255, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' }
+                hh: { x: 70, y: 165, label: 'Households', icon: '🏠', color: '#6366f1' },
+                firm: { x: 330, y: 165, label: 'Firms', icon: '🏭', color: '#10b981' },
+                gov: { x: 200, y: 38, label: 'Government', icon: '🏛️', color: '#f59e0b' },
+                foreign: { x: 200, y: 292, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' }
             };
 
             const flows = [
-                { id: 'flow-cons', from: nodes.hh, to: nodes.firm, bend: 22, value: consumption, color: nodes.hh.color },
-                { id: 'flow-wage', from: nodes.firm, to: nodes.hh, bend: -22, value: wages, color: nodes.firm.color },
-                { id: 'flow-tax', from: nodes.hh, to: nodes.gov, bend: 14, value: taxes, color: nodes.gov.color },
-                { id: 'flow-gspend', from: nodes.gov, to: nodes.hh, bend: -14, value: g, color: nodes.gov.color },
-                { id: 'flow-exp', from: nodes.firm, to: nodes.foreign, bend: 14, value: exportsVal, color: nodes.foreign.color },
-                { id: 'flow-imp', from: nodes.foreign, to: nodes.firm, bend: -14, value: imports, color: nodes.foreign.color }
+                // Money flow (inner ring, solid, round particles): payment
+                // moving opposite to whatever real thing it's paying for.
+                { id: 'flow-cons', from: nodes.hh, to: nodes.firm, bend: 16, value: consumption, color: '#8b5cf6', kind: 'money' },
+                { id: 'flow-wage', from: nodes.firm, to: nodes.hh, bend: -16, value: wages, color: '#f59e0b', kind: 'money' },
+                // Real flow (outer ring, dashed, square particles): what
+                // actually changes hands, sized to match the payment it
+                // corresponds to (factor services ≈ what wages pay for;
+                // goods & services ≈ what consumption spending buys).
+                { id: 'flow-factors', from: nodes.hh, to: nodes.firm, bend: 46, value: wages, color: '#6366f1', kind: 'real' },
+                { id: 'flow-goods', from: nodes.firm, to: nodes.hh, bend: -46, value: consumption, color: '#10b981', kind: 'real' },
+                // Government & foreign sector: shown as money flows only
+                // (matches the standard 4-sector textbook diagram).
+                { id: 'flow-tax', from: nodes.hh, to: nodes.gov, bend: 12, value: taxes, color: nodes.gov.color, kind: 'money' },
+                { id: 'flow-gspend', from: nodes.gov, to: nodes.hh, bend: -12, value: g, color: nodes.gov.color, kind: 'money' },
+                { id: 'flow-exp', from: nodes.firm, to: nodes.foreign, bend: 12, value: exportsVal, color: nodes.foreign.color, kind: 'money' },
+                { id: 'flow-imp', from: nodes.foreign, to: nodes.firm, bend: -12, value: imports, color: nodes.foreign.color, kind: 'money' }
             ];
 
             const maxValue = Math.max(...flows.map(f => f.value), 1);
             const flowsSVG = flows
-                .map(f => flowStreamSVG(f.id, curvedPathD(f.from.x, f.from.y, f.to.x, f.to.y, f.bend), f.color, f.value, maxValue))
+                .map(f => flowStreamSVG(
+                    f.id,
+                    curvedPathD(f.from.x, f.from.y, f.to.x, f.to.y, f.bend),
+                    f.color, f.value, maxValue,
+                    f.kind === 'real' ? { dashed: true, shape: 'square' } : {}
+                ))
                 .join('');
 
             const nodesSVG = Object.values(nodes)
                 .map(n => `
                     <g>
-                        <circle cx="${n.x}" cy="${n.y}" r="32" fill="${n.color}26" stroke="${n.color}" stroke-width="2"></circle>
-                        <text x="${n.x}" y="${n.y - 1}" text-anchor="middle" font-size="19">${n.icon}</text>
-                        <text x="${n.x}" y="${n.y + 20}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1e1b3a">${n.label}</text>
+                        <circle cx="${n.x}" cy="${n.y}" r="30" fill="${n.color}26" stroke="${n.color}" stroke-width="2"></circle>
+                        <text x="${n.x}" y="${n.y - 1}" text-anchor="middle" font-size="18">${n.icon}</text>
+                        <text x="${n.x}" y="${n.y + 19}" text-anchor="middle" font-size="9" font-weight="700" fill="#1e1b3a">${n.label}</text>
                     </g>`)
                 .join('');
 
+            const legendSVG = `
+                <g font-family="Inter, sans-serif">
+                    <line x1="8" y1="9" x2="26" y2="9" stroke="#8b5cf6" stroke-width="2.5"></line>
+                    <text x="30" y="12" font-size="8" fill="#4b4470">Money Flow (payments)</text>
+                    <line x1="8" y1="20" x2="26" y2="20" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="5 4"></line>
+                    <text x="30" y="23" font-size="8" fill="#4b4470">Real Flow (factors / goods)</text>
+                </g>`;
+
             container.innerHTML = `
-                <svg viewBox="0 0 400 300" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                     aria-label="Animated circular flow of income between households, firms, government and the foreign sector">
+                <svg viewBox="0 0 400 330" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+                     aria-label="Animated circular flow of income: real flow of factor services and goods moving opposite to the money flow of payments and expenditure, between households, firms, government and the foreign sector">
                     ${flowsSVG}
                     ${nodesSVG}
+                    ${legendSVG}
                 </svg>`;
 
             return {
-                readings: `<div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
+                readings: `<div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
+                           <div class="reading-row"><span>Factor Payments (Wages etc.)</span><b>₹${wages}B</b></div>
+                           <div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
                            <div class="reading-row"><span>Net Exports (X−M)</span><b>₹${nx}B</b></div>
-                           <div class="reading-row"><span>Injections (G + Exports, est.)</span><b>₹${fmt(g + exportsVal, 0)}B</b></div>
-                           <div class="reading-row insight-row">💡 Government spending and exports are <b>injections</b> into the circular flow — raising them increases the flow of income between households and firms and pushes national income up. Watch the particles: faster, thicker streams mean bigger flows.</div>`
+                           <div class="reading-row insight-row">💡 Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — factor services flow to firms while factor payments flow back to households, and goods flow to households while consumption spending flows back to firms. Raising G or exports adds new injections and speeds up the whole flow.</div>`
             };
         }
     },
@@ -188,17 +222,23 @@ const SIMS = [
         id: 'stats-correlation',
         module: 'stats',
         title: 'Correlation & Scatter',
-        desc: 'Visualize data relationships in a scatter plot.',
+        desc: 'Study Hours vs Test Score — visualize how two economic/statistical variables relate.',
         chapter: 'Class XI Statistics for Economics · Ch. 7: Correlation',
-        concept: '<p>Correlation measures the strength and direction of the linear relationship between two variables. A coefficient near +1 or −1 indicates a strong relationship; near 0 indicates little to no linear relationship.</p>',
+        concept: '<p>Correlation measures the strength and direction of the linear relationship between two variables — here, a class\'s weekly study hours and their test scores. A coefficient near +1 or −1 indicates a strong relationship; near 0 indicates little to no linear relationship. This is the same method used to study real economic variable pairs, e.g. advertisement expenditure and sales, or price and quantity demanded.</p>',
         formulas: ['Karl Pearson\'s r = Σ(x−x̄)(y−ȳ) / √[Σ(x−x̄)² · Σ(y−ȳ)²]', '−1 ≤ r ≤ +1'],
         controls: [
             { id: 'r', label: 'Target Correlation (r)', min: -1, max: 1, step: 0.1, value: 0.7, unit: '' }
         ],
         compute(v) {
             const r = v.r;
-            const xs = _corrX;
-            const ys = xs.map((x, i) => r * x + Math.sqrt(Math.max(0, 1 - r * r)) * _corrNoise[i]);
+            const xsStd = _corrX;
+            const ysStd = xsStd.map((x, i) => r * x + Math.sqrt(Math.max(0, 1 - r * r)) * _corrNoise[i]);
+            // Rescale the standardized synthetic data into a believable
+            // real-world example (Karl Pearson's r is scale-invariant, so
+            // this doesn't change the correlation, just the units shown).
+            const xs = xsStd.map(x => Math.max(0.5, +(5 + 1.6 * x).toFixed(1)));
+            const ys = ysStd.map(y => Math.max(30, Math.min(100, +(70 + 9 * y).toFixed(1))));
+
             const n = xs.length;
             const xbar = xs.reduce((s, x) => s + x, 0) / n;
             const ybar = ys.reduce((s, y) => s + y, 0) / n;
@@ -211,12 +251,12 @@ const SIMS = [
             const actualR = num / Math.sqrt(dx2 * dy2);
             return {
                 traces: [
-                    { x: xs, y: ys, mode: 'markers', name: 'Data Points', marker: { color: '#2563eb', size: 8 } }
+                    { x: xs, y: ys, mode: 'markers', name: 'Students', marker: { color: '#2563eb', size: 8 } }
                 ],
-                layout: { xaxis: { title: 'X', range: [-4, 4] }, yaxis: { title: 'Y', range: [-4, 4] }, showlegend: false },
+                layout: { xaxis: { title: 'Study Hours per Week' }, yaxis: { title: 'Test Score (%)' }, showlegend: false },
                 readings: `<div class="reading-row"><span>Sample Correlation (r)</span><b>${fmt(actualR)}</b></div>
                            <div class="reading-row"><span>Interpretation</span><b>${Math.abs(actualR) > 0.7 ? 'Strong' : Math.abs(actualR) > 0.3 ? 'Moderate' : 'Weak'} ${actualR >= 0 ? 'Positive' : 'Negative'}</b></div>
-                           <div class="reading-row insight-row">💡 ${actualR >= 0 ? 'As X rises, Y tends to rise too' : 'As X rises, Y tends to fall'} — but remember, correlation only measures the linear relationship and never proves that one variable causes the other.</div>`
+                           <div class="reading-row insight-row">💡 ${actualR >= 0 ? 'As study hours rise, test scores tend to rise too' : 'As study hours rise, test scores tend to fall'} — but remember, correlation only measures the linear relationship and never proves that one variable causes the other.</div>`
             };
         }
     },
@@ -225,8 +265,8 @@ const SIMS = [
         module: 'india',
         title: 'Poverty & Inequality',
         desc: 'Analyze income distribution and poverty lines using the Lorenz curve.',
-        chapter: 'Class XI Indian Economic Development · Ch. 4: Poverty',
-        concept: '<p>The Lorenz curve plots the cumulative share of income received against the cumulative share of the population. The further it bows away from the diagonal "line of equality", the greater the income inequality — summarized by the Gini coefficient.</p>',
+        chapter: 'Class XI Indian Economic Development · Ch. 4: Poverty (Income Inequality — supplementary tool)',
+        concept: '<p>Beyond the poverty line, economists also study <b>income inequality</b> — how unevenly national income is distributed — using the Lorenz curve and Gini coefficient (standard statistical tools, used here to extend the NCERT poverty-line discussion). The Lorenz curve plots the cumulative share of income received against the cumulative share of the population. The further it bows away from the diagonal "line of equality", the greater the income inequality.</p>',
         formulas: ['Lorenz Curve: L(p) = p^k', 'Gini Coefficient ≈ (k−1) / (k+1)', 'Gini = 0 → perfect equality; Gini = 1 → perfect inequality'],
         controls: [
             { id: 'e', label: 'Inequality Parameter', min: 0, max: 5, step: 0.25, value: 1.5, unit: '' }

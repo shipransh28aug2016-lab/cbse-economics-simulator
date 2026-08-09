@@ -64,25 +64,37 @@ function curvedPathD(x1, y1, x2, y2, bend) {
 // data-packet look. `value` (relative to `maxValue`) scales both the
 // particle speed and how many particles are on the wire at once, so a
 // bigger flow visibly reads as faster and busier.
-function flowStreamSVG(id, d, color, value, maxValue) {
+//
+// `opts.shape: 'square'` + `opts.dashed: true` gives a visually distinct
+// style — used to tell a "real flow" (factors, goods & services) apart
+// from a "money flow" (payments, expenditure) on the same diagram, since
+// economically they are two different, opposite-direction things.
+function flowStreamSVG(id, d, color, value, maxValue, opts) {
+    opts = opts || {};
     maxValue = maxValue || 150;
     const ratio = Math.max(0, Math.min(1, value / maxValue));
     const strokeWidth = (1.4 + 2.4 * ratio).toFixed(1);
     const count = Math.max(2, Math.min(8, Math.round(2 + 6 * ratio)));
     const duration = Math.max(1.1, 3.4 - 2.1 * ratio); // bigger flow = faster particles
+    const dashAttr = opts.dashed ? ' stroke-dasharray="6 5"' : '';
+    const size = 3.4;
+    const particleTag = opts.shape === 'square'
+        ? `<rect x="${-size}" y="${-size}" width="${size * 2}" height="${size * 2}" rx="1" fill="${color}">`
+        : `<circle r="${size}" fill="${color}">`;
+    const particleClose = opts.shape === 'square' ? '</rect>' : '</circle>';
 
     let particles = '';
     for (let i = 0; i < count; i++) {
         const begin = (-(duration / count) * i).toFixed(2);
         particles += `
-            <circle r="3.4" fill="${color}">
+            ${particleTag}
                 <animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto">
                     <mpath href="#${id}" xlink:href="#${id}"></mpath>
                 </animateMotion>
-            </circle>`;
+            ${particleClose}`;
     }
 
-    return `<path id="${id}" d="${d}" fill="none" stroke="${color}" stroke-opacity="0.28" stroke-width="${strokeWidth}" stroke-linecap="round"></path>${particles}`;
+    return `<path id="${id}" d="${d}" fill="none" stroke="${color}" stroke-opacity="0.28" stroke-width="${strokeWidth}"${dashAttr} stroke-linecap="round"></path>${particles}`;
 }
 
 function plotlyDefaultLayout() {
@@ -123,6 +135,11 @@ function buildControls(sim) {
     const header = document.createElement('div');
     header.className = 'controls-panel-header';
     header.innerHTML = `<span>🎛️ Adjust the Variables</span>`;
+
+    const hint = document.createElement('p');
+    hint.className = 'controls-panel-hint';
+    hint.textContent = 'Try your own numbers — drag a slider or type an exact value and watch the chart and readings update instantly. Great for self-paced or classroom what-if exploration.';
+
     const resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'reset-btn';
@@ -139,6 +156,7 @@ function buildControls(sim) {
     });
     header.appendChild(resetBtn);
     panel.appendChild(header);
+    panel.appendChild(hint);
 
     sim.controls.forEach(c => {
         simEngineState[c.id] = c.value;
