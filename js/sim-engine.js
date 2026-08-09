@@ -47,16 +47,43 @@ function makeRandN(seed) {
     };
 }
 
-// Quadratic-bezier path between two points, offset sideways by `bend` so
-// two opposite-direction flows between the same pair of nodes don't sit
-// exactly on top of each other.
-function curvedPathD(x1, y1, x2, y2, bend) {
+// The quadratic-bezier control point for a curve from (x1,y1) to
+// (x2,y2), offset sideways by `bend`. Shared by curvedPathD (the wire
+// itself) and flow label placement, so a label can sit further out
+// along the exact same side as its own arc.
+//
+// Note: the sideways offset is measured relative to *this edge's own*
+// direction, and that direction's perpendicular flips sign when you
+// reverse (x1,y1)<->(x2,y2). So to make two opposite-direction edges
+// between the same pair of nodes land on opposite visual sides, both
+// calls must use the SAME bend sign (not one positive, one negated) —
+// the direction reversal itself does the mirroring.
+function curveOffsetPoint(x1, y1, x2, y2, bend) {
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
     const dx = x2 - x1, dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
     const nx = -dy / len, ny = dx / len;
-    const cx = mx + nx * bend, cy = my + ny * bend;
-    return `M ${x1} ${y1} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${x2} ${y2}`;
+    return { x: mx + nx * bend, y: my + ny * bend };
+}
+
+function curvedPathD(x1, y1, x2, y2, bend) {
+    const c = curveOffsetPoint(x1, y1, x2, y2, bend);
+    return `M ${x1} ${y1} Q ${c.x.toFixed(1)} ${c.y.toFixed(1)} ${x2} ${y2}`;
+}
+
+// A small pill-shaped, color-coded label that gently "breathes" (pulses
+// opacity) in place — used to explicitly name every flow directly on
+// the diagram, while still reading as dynamic/alive rather than a
+// static caption nobody notices.
+function flowLabelSVG(x, y, text, color, duration) {
+    duration = duration || 2.4;
+    const w = Math.max(30, text.length * 4.3 + 10);
+    return `
+        <g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
+            <rect x="${(-w / 2).toFixed(1)}" y="-7.5" width="${w.toFixed(1)}" height="15" rx="7.5" fill="#fff" fill-opacity="0.88" stroke="${color}" stroke-width="1"></rect>
+            <text x="0" y="3.2" text-anchor="middle" font-size="7" font-weight="700" fill="${color}" font-family="Inter, sans-serif">${text}</text>
+            <animate attributeName="opacity" values="0.75;1;0.75" dur="${duration}s" repeatCount="indefinite"></animate>
+        </g>`;
 }
 
 // Renders one "wire" (a faint path) plus a stream of small particles

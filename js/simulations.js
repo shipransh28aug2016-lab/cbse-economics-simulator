@@ -105,36 +105,46 @@ const SIMS = [
         // real flow (factor services / goods & services — dashed wire,
         // square markers) and the money flow (factor payments / consumption
         // — solid wire, round markers) are drawn as two visually distinct
-        // rings between Households and Firms so the opposite-direction
+        // rings between Households and Firms, each with its own breathing
+        // label naming the transaction, so the opposite-direction
         // relationship is genuinely visible, not just described in text.
         customRender(container, v) {
             const consumption = v.consumption, wages = v.wages, taxes = 35, g = v.g, nx = v.nx;
             const exportsVal = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
 
             const nodes = {
-                hh: { x: 70, y: 165, label: 'Households', icon: '🏠', color: '#6366f1' },
-                firm: { x: 330, y: 165, label: 'Firms', icon: '🏭', color: '#10b981' },
-                gov: { x: 200, y: 38, label: 'Government', icon: '🏛️', color: '#f59e0b' },
-                foreign: { x: 200, y: 292, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' }
+                hh: { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' },
+                firm: { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' },
+                gov: { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' },
+                foreign: { x: 250, y: 364, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' }
             };
 
+            // IMPORTANT geometry note: `bend` offsets a curve sideways from
+            // the straight line between its two points, but the "sideways"
+            // direction is relative to *that edge's own* direction — which
+            // flips when you reverse (from,to). So to make two
+            // opposite-direction edges between the same pair of nodes land
+            // on opposite visual sides (instead of re-overlapping on the
+            // same side), both edges of a pair must use the SAME bend sign,
+            // not one positive and one negated — the direction reversal
+            // itself supplies the mirroring.
             const flows = [
                 // Money flow (inner ring, solid, round particles): payment
                 // moving opposite to whatever real thing it's paying for.
-                { id: 'flow-cons', from: nodes.hh, to: nodes.firm, bend: 16, value: consumption, color: '#8b5cf6', kind: 'money' },
-                { id: 'flow-wage', from: nodes.firm, to: nodes.hh, bend: -16, value: wages, color: '#f59e0b', kind: 'money' },
+                { id: 'flow-cons', from: nodes.hh, to: nodes.firm, bend: 20, labelOffset: 11, value: consumption, color: '#8b5cf6', kind: 'money', label: 'Consumption Exp. (C)' },
+                { id: 'flow-wage', from: nodes.firm, to: nodes.hh, bend: 20, labelOffset: 11, value: wages, color: '#f59e0b', kind: 'money', label: 'Factor Payments (Wages)' },
                 // Real flow (outer ring, dashed, square particles): what
                 // actually changes hands, sized to match the payment it
                 // corresponds to (factor services ≈ what wages pay for;
                 // goods & services ≈ what consumption spending buys).
-                { id: 'flow-factors', from: nodes.hh, to: nodes.firm, bend: 46, value: wages, color: '#6366f1', kind: 'real' },
-                { id: 'flow-goods', from: nodes.firm, to: nodes.hh, bend: -46, value: consumption, color: '#10b981', kind: 'real' },
+                { id: 'flow-factors', from: nodes.hh, to: nodes.firm, bend: 58, labelOffset: 11, value: wages, color: '#6366f1', kind: 'real', label: 'Factor Services' },
+                { id: 'flow-goods', from: nodes.firm, to: nodes.hh, bend: 58, labelOffset: 11, value: consumption, color: '#10b981', kind: 'real', label: 'Goods &amp; Services' },
                 // Government & foreign sector: shown as money flows only
                 // (matches the standard 4-sector textbook diagram).
-                { id: 'flow-tax', from: nodes.hh, to: nodes.gov, bend: 12, value: taxes, color: nodes.gov.color, kind: 'money' },
-                { id: 'flow-gspend', from: nodes.gov, to: nodes.hh, bend: -12, value: g, color: nodes.gov.color, kind: 'money' },
-                { id: 'flow-exp', from: nodes.firm, to: nodes.foreign, bend: 12, value: exportsVal, color: nodes.foreign.color, kind: 'money' },
-                { id: 'flow-imp', from: nodes.foreign, to: nodes.firm, bend: -12, value: imports, color: nodes.foreign.color, kind: 'money' }
+                { id: 'flow-tax', from: nodes.hh, to: nodes.gov, bend: 16, labelOffset: 11, value: taxes, color: nodes.gov.color, kind: 'money', label: 'Taxes (T)' },
+                { id: 'flow-gspend', from: nodes.gov, to: nodes.hh, bend: 16, labelOffset: 11, value: g, color: nodes.gov.color, kind: 'money', label: 'Govt Spending (G)' },
+                { id: 'flow-exp', from: nodes.firm, to: nodes.foreign, bend: 16, labelOffset: 11, value: exportsVal, color: nodes.foreign.color, kind: 'money', label: 'Exports (X)' },
+                { id: 'flow-imp', from: nodes.foreign, to: nodes.firm, bend: 16, labelOffset: 11, value: imports, color: nodes.foreign.color, kind: 'money', label: 'Imports (M)' }
             ];
 
             const maxValue = Math.max(...flows.map(f => f.value), 1);
@@ -147,12 +157,26 @@ const SIMS = [
                 ))
                 .join('');
 
+            // Each label sits further out along the exact same side as its
+            // own arc (same bend sign, larger magnitude) so it reads next
+            // to its own wire rather than crossing toward the other one —
+            // and breathes at the same speed as that wire's particles, so
+            // the label itself feels tied to the flow it names.
+            const labelsSVG = flows
+                .map(f => {
+                    const ratio = Math.max(0, Math.min(1, f.value / maxValue));
+                    const duration = Math.max(1.1, 3.4 - 2.1 * ratio);
+                    const pos = curveOffsetPoint(f.from.x, f.from.y, f.to.x, f.to.y, f.bend + f.labelOffset);
+                    return flowLabelSVG(pos.x, pos.y, f.label, f.color, duration);
+                })
+                .join('');
+
             const nodesSVG = Object.values(nodes)
                 .map(n => `
                     <g>
-                        <circle cx="${n.x}" cy="${n.y}" r="30" fill="${n.color}26" stroke="${n.color}" stroke-width="2"></circle>
-                        <text x="${n.x}" y="${n.y - 1}" text-anchor="middle" font-size="18">${n.icon}</text>
-                        <text x="${n.x}" y="${n.y + 19}" text-anchor="middle" font-size="9" font-weight="700" fill="#1e1b3a">${n.label}</text>
+                        <circle cx="${n.x}" cy="${n.y}" r="26" fill="${n.color}26" stroke="${n.color}" stroke-width="2"></circle>
+                        <text x="${n.x}" y="${n.y - 1}" text-anchor="middle" font-size="16">${n.icon}</text>
+                        <text x="${n.x}" y="${n.y + 17}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e1b3a">${n.label}</text>
                     </g>`)
                 .join('');
 
@@ -165,10 +189,11 @@ const SIMS = [
                 </g>`;
 
             container.innerHTML = `
-                <svg viewBox="0 0 400 330" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                     aria-label="Animated circular flow of income: real flow of factor services and goods moving opposite to the money flow of payments and expenditure, between households, firms, government and the foreign sector">
+                <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+                     aria-label="Animated circular flow of income, with every transaction labeled: real flow of factor services and goods moving opposite to the money flow of payments and expenditure, between households, firms, government and the foreign sector">
                     ${flowsSVG}
                     ${nodesSVG}
+                    ${labelsSVG}
                     ${legendSVG}
                 </svg>`;
 
@@ -177,7 +202,7 @@ const SIMS = [
                            <div class="reading-row"><span>Factor Payments (Wages etc.)</span><b>₹${wages}B</b></div>
                            <div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
                            <div class="reading-row"><span>Net Exports (X−M)</span><b>₹${nx}B</b></div>
-                           <div class="reading-row insight-row">💡 Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — factor services flow to firms while factor payments flow back to households, and goods flow to households while consumption spending flows back to firms. Raising G or exports adds new injections and speeds up the whole flow.</div>`
+                           <div class="reading-row insight-row">💡 Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms. Raising G or exports adds new injections and speeds up the whole flow.</div>`
             };
         }
     },
