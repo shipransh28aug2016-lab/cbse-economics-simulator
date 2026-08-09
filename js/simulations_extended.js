@@ -9,19 +9,21 @@ if (typeof SIMS !== 'undefined') {
             id: 'micro-consumer-equilibrium',
             module: 'micro',
             title: 'Consumer Equilibrium (Marginal Utility)',
-            desc: 'See how diminishing marginal utility shapes the consumer\'s choice.',
+            desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium.',
             chapter: 'Class XII Microeconomics · Ch. 2: Consumer Equilibrium and Demand (Utility Analysis)',
-            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. A rational consumer keeps consuming as long as marginal utility is positive.</p>',
-            formulas: ['MU = ΔTU / ΔQ', 'TU = Σ MU', 'Consumer stops at MU = 0 (satiation point)'],
+            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. With only one good and free disposal, a rational consumer keeps consuming until <b>MU = 0</b>. But real consumers spend limited money income across many goods, so the actual equilibrium condition compares <b>Marginal Utility per Rupee</b> (MU/P) — a consumer maximizes satisfaction by buying the good with the highest MU per rupee first, which is why price is included as its own factor here.</p>',
+            formulas: ['MU = ΔTU / ΔQ', 'TU = Σ MU', 'MU per Rupee = MU / P', 'Single-good limit: Consumer stops at MU = 0 (satiation point)'],
             controls: [
-                { id: 'q', label: 'Units Consumed (Q)', min: 0, max: 20, step: 1, value: 5, unit: '' }
+                { id: 'q', label: 'Units Consumed (Q)', min: 0, max: 20, step: 1, value: 5, unit: '' },
+                { id: 'price', label: 'Price per Unit (₹)', min: 2, max: 20, step: 1, value: 5, unit: '' }
             ],
             compute(v) {
-                const a = 20, b = 1, Q = v.q;
+                const a = 20, b = 1, Q = v.q, P = v.price;
                 const qs = range(21);
                 const mus = qs.map(q => a - b * q);
                 const MU = a - b * Q;
                 const TU = a * Q - (b * Q * Q) / 2;
+                const muPerRupee = MU / P;
                 return {
                     traces: [
                         { x: qs, y: mus, mode: 'lines', name: 'Marginal Utility', line: { color: '#2563eb', width: 3 } },
@@ -30,8 +32,9 @@ if (typeof SIMS !== 'undefined') {
                     ],
                     layout: { xaxis: { title: 'Units Consumed (Q)' }, yaxis: { title: 'Utility (Utils)', range: [-5, 22] } },
                     readings: `<div class="reading-row"><span>Marginal Utility at Q</span><b>${fmt(MU)}</b></div>
+                               <div class="reading-row"><span>MU per Rupee (MU/P)</span><b>${fmt(muPerRupee)}</b></div>
                                <div class="reading-row"><span>Total Utility</span><b>${fmt(TU)}</b></div>
-                               <div class="reading-row insight-row">💡 ${MU > 0 ? 'MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.' : MU < 0 ? 'MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.' : 'MU = 0 — this is the point of consumer equilibrium (maximum Total Utility).'}</div>`
+                               <div class="reading-row insight-row">💡 ${MU > 0 ? 'MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.' : MU < 0 ? 'MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.' : 'MU = 0 — this is the single-good equilibrium (maximum Total Utility).'} With multiple goods, the consumer instead compares MU/P across goods and buys more of whichever gives more satisfaction per rupee — at ₹${P}/unit, this good currently gives ${fmt(muPerRupee)} utils per rupee.</div>`
                 };
             }
         },
@@ -52,6 +55,7 @@ if (typeof SIMS !== 'undefined') {
                     ]
                 },
                 { id: 'q', label: 'Output Level (Q)', min: 1, max: 30, step: 1, value: 10, unit: '', showWhen: { id: 'view', equals: 'costs' } },
+                { id: 'fc', label: 'Fixed Cost (₹)', min: 20, max: 200, step: 10, value: 100, unit: '', showWhen: { id: 'view', equals: 'costs' } },
                 { id: 'labor', label: 'Labour Units (L)', min: 1, max: 24, step: 1, value: 10, unit: '', showWhen: { id: 'view', equals: 'product' } }
             ],
             compute(v) {
@@ -85,7 +89,7 @@ if (typeof SIMS !== 'undefined') {
                                    <div class="reading-row insight-row">💡 ${stageNote}</div>`
                     };
                 }
-                const a = 100, b = 5, c = 0.3, Q = v.q;
+                const a = v.fc, b = 5, c = 0.3, Q = v.q;
                 const qs = range(30).map(i => i + 1);
                 const acs = qs.map(q => a / q + b + c * q);
                 const mcs = qs.map(q => b + 2 * c * q);
@@ -97,8 +101,8 @@ if (typeof SIMS !== 'undefined') {
                         { x: [Q], y: [AC], mode: 'markers', name: 'AC at Q', marker: { color: '#2563eb', size: 9 } },
                         { x: [Q], y: [MC], mode: 'markers', name: 'MC at Q', marker: { color: '#f59e0b', size: 9 } }
                     ],
-                    layout: { xaxis: { title: 'Output (Q)' }, yaxis: { title: 'Cost (₹)', range: [0, 60] } },
-                    formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ'],
+                    layout: { xaxis: { title: 'Output (Q)' }, yaxis: { title: 'Cost (₹)' } },
+                    formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ', `Fixed Cost = ₹${a} (raises AC at every Q, but never changes MC)`],
                     readings: `<div class="reading-row"><span>Average Cost at Q</span><b>₹${fmt(AC)}</b></div>
                                <div class="reading-row"><span>Marginal Cost at Q</span><b>₹${fmt(MC)}</b></div>
                                <div class="reading-row"><span>AC is currently</span><b>${MC < AC ? 'Falling' : 'Rising'}</b></div>
@@ -113,12 +117,13 @@ if (typeof SIMS !== 'undefined') {
             desc: 'See how government price controls create shortages or surpluses.',
             chapter: 'Class XII Microeconomics · Ch. 4: Forms of Market and Price Determination (Government Intervention)',
             concept: '<p>A <b>price ceiling</b> set below the free-market equilibrium price causes a shortage (quantity demanded exceeds quantity supplied). A <b>price floor</b> set above equilibrium causes a surplus (quantity supplied exceeds quantity demanded).</p>',
-            formulas: ['Demand: P = 100 − Q', 'Supply: P = 20 + Q', 'Shortage/Surplus = |Qd − Qs| at the controlled price'],
+            formulas: ['Demand: P = 100 − Q (+ market demand shift)', 'Supply: P = 20 + Q', 'Shortage/Surplus = |Qd − Qs| at the controlled price'],
             controls: [
-                { id: 'ctrl', label: 'Government Price Control (₹)', min: 20, max: 100, step: 5, value: 60, unit: '' }
+                { id: 'ctrl', label: 'Government Price Control (₹)', min: 20, max: 100, step: 5, value: 60, unit: '' },
+                { id: 'demandShift', label: 'Market Demand Conditions', min: -20, max: 20, step: 5, value: 0, unit: '' }
             ],
             compute(v) {
-                const a = 100, b = 1, c = 20, d = 1;
+                const a = 100 + v.demandShift, b = 1, c = 20, d = 1;
                 const { Q: Qe, P: Pe } = lineIntersect(a, b, c, d);
                 const ctrl = v.ctrl;
                 const qd = Math.max(a - b * ctrl, 0);
@@ -144,22 +149,25 @@ if (typeof SIMS !== 'undefined') {
         {
             id: 'micro-market-structures',
             module: 'micro',
-            title: 'Market Structures: Competition vs Monopoly',
-            desc: 'Compare price and output under perfect competition and monopoly.',
+            title: 'Forms of Market: Monopoly → Oligopoly → Perfect Competition',
+            desc: 'Slide the Number of Firms to move continuously across every named market structure.',
             chapter: 'Class XII Microeconomics · Ch. 4: Forms of Market and Price Determination',
-            concept: '<p>Under perfect competition, firms are price-takers and produce where price equals marginal cost. A monopolist restricts output to where marginal revenue equals marginal cost, resulting in a higher price and lower quantity than under competition.</p>',
-            formulas: ['Perfect Competition: P = MC', 'Monopoly: MR = MC, where MR = 100 − 2Q (demand P = 100 − Q)'],
+            concept: '<p>NCERT names four forms of market by how many firms compete: <b>Monopoly</b> (1 firm), <b>Oligopoly</b> (a few firms), <b>Monopolistic Competition</b> (many firms, some product differentiation), and <b>Perfect Competition</b> (very many firms, price-takers). This lab uses the standard Cournot model — symmetric firms each choosing output, taking rivals\' output as given — so moving the Number of Firms slider sweeps continuously across all four: at 1 firm price is at the monopoly level; as firms increase, price converges toward marginal cost (P = MC), the perfect-competition outcome.</p>',
+            formulas: ['Cournot price with N firms: P = (100 + N×MC) / (N + 1)', 'N = 1 → Monopoly', 'N = 2–4 → Oligopoly', 'N = 5–15 → Monopolistic Competition (approx.)', 'N large → Perfect Competition (P → MC)'],
             controls: [
-                { id: 'mc', label: 'Marginal Cost (₹)', min: 10, max: 60, step: 5, value: 20, unit: '' }
+                { id: 'mc', label: 'Marginal Cost (₹)', min: 10, max: 60, step: 5, value: 20, unit: '' },
+                { id: 'n', label: 'Number of Firms (N)', min: 1, max: 30, step: 1, value: 1, unit: '' }
             ],
             compute(v) {
-                const mc = v.mc;
-                const Qc = 100 - mc, Pc = mc;
-                const Qm = (100 - mc) / 2, Pm = 100 - Qm;
+                const mc = v.mc, N = v.n;
+                const P = (100 + N * mc) / (N + 1);
+                const Q = 100 - P;
+                const Pc = mc, Qc = 100 - mc; // perfect-competition benchmark (P = MC)
+                const structure = N === 1 ? 'Monopoly' : N <= 4 ? 'Oligopoly' : N <= 15 ? 'Monopolistic Competition' : 'Near-Perfect Competition';
                 return {
                     traces: [
-                        { x: ['Perfect Competition', 'Monopoly'], y: [Pc, Pm], name: 'Price (₹)', type: 'bar', marker: { color: '#2563eb' } },
-                        { x: ['Perfect Competition', 'Monopoly'], y: [Qc, Qm], name: 'Quantity', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' }
+                        { x: ['Current (N=' + N + ')', 'Perfect Competition'], y: [P, Pc], name: 'Price (₹)', type: 'bar', marker: { color: '#2563eb' } },
+                        { x: ['Current (N=' + N + ')', 'Perfect Competition'], y: [Q, Qc], name: 'Quantity', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' }
                     ],
                     layout: {
                         xaxis: { title: 'Market Structure' },
@@ -167,10 +175,10 @@ if (typeof SIMS !== 'undefined') {
                         yaxis2: { title: 'Quantity', overlaying: 'y', side: 'right', range: [0, 100] },
                         barmode: 'group'
                     },
-                    readings: `<div class="reading-row"><span>Competitive Price / Qty</span><b>₹${fmt(Pc)} / ${fmt(Qc)}</b></div>
-                               <div class="reading-row"><span>Monopoly Price / Qty</span><b>₹${fmt(Pm)} / ${fmt(Qm)}</b></div>
-                               <div class="reading-row"><span>Effect of Monopoly</span><b>Higher price, lower output</b></div>
-                               <div class="reading-row insight-row">💡 A monopolist restricts output below the competitive level to push price up — consumers pay more and get less than they would under perfect competition.</div>`
+                    readings: `<div class="reading-row"><span>Market Structure (at N=${N})</span><b>${structure}</b></div>
+                               <div class="reading-row"><span>Current Price / Qty</span><b>₹${fmt(P)} / ${fmt(Q)}</b></div>
+                               <div class="reading-row"><span>Perfect-Competition Benchmark</span><b>₹${fmt(Pc)} / ${fmt(Qc)}</b></div>
+                               <div class="reading-row insight-row">💡 As N rises, each firm has less market power and undercutting rivals matters more — price is pushed down toward marginal cost. At N=1 (monopoly) price is highest and output lowest; the gap closes steadily as more firms enter.</div>`
                 };
             }
         },
@@ -246,17 +254,24 @@ if (typeof SIMS !== 'undefined') {
             id: 'macro-forex',
             module: 'macro',
             title: 'Balance of Payments & Exchange Rate',
-            desc: 'See how demand and supply of foreign exchange set the exchange rate.',
-            chapter: 'Class XII Macroeconomics · Ch. 6: Balance of Payments (Foreign Exchange Market)',
-            concept: '<p>This lab models a <b>flexible (floating) exchange rate</b> system, where the rate (₹ per US$) is set purely by market forces — the demand for foreign exchange (driven by imports and capital outflows) equals the supply of foreign exchange (driven by exports and capital inflows). A rise in demand for dollars depreciates the rupee. The NCERT chapter also names two alternatives: a <b>fixed exchange rate</b>, where the central bank officially pegs the rate rather than letting it float (so there\'s no market diagram to explore — it\'s an administrative decision, not a market outcome); and a <b>managed floating</b> system — India\'s actual regime — where the rate mostly floats but the RBI intervenes occasionally to smooth out volatility.</p>',
-            formulas: ['Demand for $ ↑ ⇒ Rupee depreciates (₹/$ rises)', 'Equilibrium: Demand for $ = Supply of $', 'Exchange rate systems: Fixed · Flexible (floating) · Managed Floating'],
+            desc: 'Current Account (Exports/Imports) and Capital Account (flows) each drive the exchange rate separately.',
+            chapter: 'Class XII Macroeconomics · Ch. 6: Balance of Payments (Current Account, Capital Account, Foreign Exchange Market)',
+            concept: '<p>This lab models a <b>flexible (floating) exchange rate</b> system, where the rate (₹ per US$) is set purely by market forces. The Balance of Payments splits into two named accounts, each modeled here as its own factor: the <b>Current Account</b> (Imports raise demand for $; Exports raise supply of $) and the <b>Capital Account</b> (Capital Outflow — Indians investing abroad — raises demand for $; Capital Inflow — FDI/FII into India — raises supply of $). The NCERT chapter also names two alternatives to this floating system: a <b>fixed exchange rate</b>, officially pegged by the central bank rather than market-determined; and <b>managed floating</b> — India\'s actual regime — where the rate mostly floats but the RBI intervenes occasionally to smooth volatility.</p>',
+            formulas: ['Demand for $ ↑ ⇒ Rupee depreciates (₹/$ rises)', 'Current Account: Imports (demand) vs Exports (supply)', 'Capital Account: Capital Outflow (demand) vs Capital Inflow (supply)', 'Equilibrium: Demand for $ = Supply of $'],
             controls: [
-                { id: 'shift', label: 'Demand for $ Shift (Imports)', min: -30, max: 30, step: 5, value: 0, unit: '' }
+                { id: 'imports', label: 'Imports (Current A/c)', min: -20, max: 20, step: 2, value: 0, unit: '' },
+                { id: 'exports', label: 'Exports (Current A/c)', min: -20, max: 20, step: 2, value: 0, unit: '' },
+                { id: 'capOut', label: 'Capital Outflow (Capital A/c)', min: -20, max: 20, step: 2, value: 0, unit: '' },
+                { id: 'capIn', label: 'Capital Inflow (Capital A/c)', min: -20, max: 20, step: 2, value: 0, unit: '' }
             ],
             compute(v) {
-                const a = 90 + v.shift, b = 0.5, c = 40, d = 0.5;
+                const demandShift = v.imports + v.capOut;
+                const supplyShift = -(v.exports + v.capIn);
+                const a = 90 + demandShift, b = 0.5, c = Math.max(10, 40 + supplyShift), d = 0.5;
                 const { Q, P } = lineIntersect(a, b, c, d);
                 const qs = range(101);
+                const netShift = demandShift + (-supplyShift); // positive = net pressure toward depreciation
+                const trend = netShift > 0 ? 'Depreciating' : netShift < 0 ? 'Appreciating' : 'Stable';
                 return {
                     traces: [
                         { x: qs, y: qs.map(q => a - b * q), mode: 'lines', name: 'Demand for $', line: { color: '#2563eb', width: 3 } },
@@ -264,10 +279,12 @@ if (typeof SIMS !== 'undefined') {
                         { x: [Q], y: [P], mode: 'markers', name: 'Equilibrium Rate', marker: { color: '#ef4444', size: 10 } }
                     ],
                     layout: { xaxis: { title: 'Quantity of US$ (millions)', range: [0, 100] }, yaxis: { title: 'Exchange Rate (₹/$)', range: [0, 100] } },
-                    readings: `<div class="reading-row"><span>Equilibrium Exchange Rate</span><b>₹${fmt(P)} / $</b></div>
+                    readings: `<div class="reading-row"><span>Current Account (X−M)</span><b>${v.exports - v.imports >= 0 ? '+' : ''}${v.exports - v.imports}</b></div>
+                               <div class="reading-row"><span>Capital Account (In−Out)</span><b>${v.capIn - v.capOut >= 0 ? '+' : ''}${v.capIn - v.capOut}</b></div>
+                               <div class="reading-row"><span>Equilibrium Exchange Rate</span><b>₹${fmt(P)} / $</b></div>
                                <div class="reading-row"><span>Quantity Traded</span><b>${fmt(Q)}M</b></div>
-                               <div class="reading-row"><span>Rupee Trend</span><b>${v.shift > 0 ? 'Depreciating' : v.shift < 0 ? 'Appreciating' : 'Stable'}</b></div>
-                               <div class="reading-row insight-row">💡 ${v.shift > 0 ? 'Higher demand for dollars (e.g. rising imports) means more rupees are needed to buy each dollar — the rupee depreciates.' : v.shift < 0 ? 'Lower demand for dollars means fewer rupees are needed per dollar — the rupee appreciates.' : 'Demand and supply of foreign exchange are balanced at the current rate.'}</div>`
+                               <div class="reading-row"><span>Rupee Trend</span><b>${trend}</b></div>
+                               <div class="reading-row insight-row">💡 ${trend === 'Depreciating' ? 'Demand for dollars (imports + capital outflow) outweighs supply (exports + capital inflow) — more rupees are needed per dollar.' : trend === 'Appreciating' ? 'Supply of dollars (exports + capital inflow) outweighs demand (imports + capital outflow) — fewer rupees are needed per dollar.' : 'Current Account and Capital Account pressures are balanced at the current rate.'}</div>`
                 };
             }
         },
@@ -275,21 +292,30 @@ if (typeof SIMS !== 'undefined') {
             id: 'macro-inflation-gap',
             module: 'macro',
             title: 'Inflationary & Deflationary Gap',
-            desc: 'See how aggregate demand shifts create output gaps relative to full employment.',
+            desc: 'Each component of Aggregate Demand (C, I, G, X−M) as its own control, driving the output gap.',
             chapter: 'Class XII Macroeconomics · Ch. 4: Determination of Income and Employment (Excess & Deficient Demand)',
-            concept: '<p>When equilibrium national income exceeds the full-employment level (Yfe), the economy faces an <b>inflationary gap</b> — excess demand pushes prices up. When equilibrium income falls short of Yfe, a <b>deflationary gap</b> exists, with resources left idle.</p>',
-            formulas: ['Inflationary Gap: Equilibrium Y > Yfe', 'Deflationary Gap: Equilibrium Y < Yfe'],
+            concept: '<p>When equilibrium national income exceeds the full-employment level (Yfe), the economy faces an <b>inflationary gap</b> — excess demand pushes prices up. When equilibrium income falls short of Yfe, a <b>deflationary gap</b> exists, with resources left idle. Aggregate Demand is the sum of four named components — Autonomous Consumption, Investment, Government Spending, and Net Exports — each modeled here as its own control so you can see which one is driving the gap.</p>',
+            formulas: ['AD = C + I + G + (X − M)', 'Inflationary Gap: Equilibrium Y > Yfe', 'Deflationary Gap: Equilibrium Y < Yfe'],
             controls: [
-                { id: 'ad', label: 'Aggregate Demand Shift', min: -40, max: 40, step: 5, value: 0, unit: '' }
+                { id: 'dc', label: 'Autonomous Consumption (ΔC)', min: -10, max: 10, step: 1, value: 0, unit: '' },
+                { id: 'di', label: 'Investment (ΔI)', min: -10, max: 10, step: 1, value: 0, unit: '' },
+                { id: 'dg', label: 'Government Spending (ΔG)', min: -10, max: 10, step: 1, value: 0, unit: '' },
+                { id: 'dnx', label: 'Net Exports (ΔX−M)', min: -10, max: 10, step: 1, value: 0, unit: '' }
             ],
             compute(v) {
                 const Yfe = 200;
                 const asA = 10, asB = 0.3;
-                const adA = 190 + v.ad, adB = 0.4;
+                const adShift = v.dc + v.di + v.dg + v.dnx;
+                const adA = 190 + adShift, adB = 0.4;
                 const Ystar = (adA - asA) / (adB + asB);
                 const Pstar = adA - adB * Ystar;
                 const ys = range(81).map(i => i * 5);
                 const gapType = Ystar > Yfe + 1 ? 'Inflationary Gap' : Ystar < Yfe - 1 ? 'Deflationary Gap' : 'No Gap';
+                const parts = [
+                    { label: 'Consumption (C)', d: v.dc }, { label: 'Investment (I)', d: v.di },
+                    { label: 'Govt. Spending (G)', d: v.dg }, { label: 'Net Exports (X−M)', d: v.dnx }
+                ].filter(p => p.d !== 0);
+                const biggest = parts.length ? parts.reduce((m, p) => Math.abs(p.d) > Math.abs(m.d) ? p : m) : null;
                 return {
                     traces: [
                         { x: ys, y: ys.map(y => adA - adB * y), mode: 'lines', name: 'Aggregate Demand', line: { color: '#2563eb', width: 3 } },
@@ -298,11 +324,12 @@ if (typeof SIMS !== 'undefined') {
                         { x: [Ystar], y: [Pstar], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 9 } }
                     ],
                     layout: { xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Price Level', range: [0, 150] } },
-                    readings: `<div class="reading-row"><span>Equilibrium Income</span><b>${fmt(Ystar)}</b></div>
+                    readings: `<div class="reading-row"><span>Net AD Shift (ΔC+ΔI+ΔG+ΔNX)</span><b>${adShift >= 0 ? '+' : ''}${adShift}</b></div>
+                               <div class="reading-row"><span>Equilibrium Income</span><b>${fmt(Ystar)}</b></div>
                                <div class="reading-row"><span>Full Employment Income (Yfe)</span><b>${Yfe}</b></div>
                                <div class="reading-row"><span>Gap Type</span><b>${gapType}</b></div>
                                <div class="reading-row"><span>Gap Size</span><b>${fmt(Math.abs(Ystar - Yfe))}</b></div>
-                               <div class="reading-row insight-row">💡 ${gapType === 'Inflationary Gap' ? 'Excess demand at full employment pushes prices up — the RBI/government can respond with contractionary policy (raise taxes, cut spending, or raise interest rates).' : gapType === 'Deflationary Gap' ? 'Demand falls short of what\'s needed for full employment, leaving resources idle — expansionary policy (raise spending, cut taxes) can help close the gap.' : 'The economy is at (or very near) full-employment equilibrium.'}</div>`
+                               <div class="reading-row insight-row">💡 ${biggest ? `<b>${biggest.label}</b> is driving this the most (Δ${biggest.d >= 0 ? '+' : ''}${biggest.d}). ` : ''}${gapType === 'Inflationary Gap' ? 'Excess demand at full employment pushes prices up — contractionary policy (raise taxes, cut G, or raise interest rates) can help close the gap.' : gapType === 'Deflationary Gap' ? 'Demand falls short of what\'s needed for full employment, leaving resources idle — expansionary policy (raise G, cut taxes) can help close the gap.' : 'The economy is at (or very near) full-employment equilibrium.'}</div>`
                 };
             }
         },
@@ -315,7 +342,7 @@ if (typeof SIMS !== 'undefined') {
             desc: 'See how spread-out data affects Range, Quartile Deviation, SD and CV.',
             chapter: 'Class XI Statistics for Economics · Ch. 6: Measures of Dispersion',
             concept: '<p>While the mean summarizes the "centre" of a dataset, dispersion measures describe how spread out the values are around that centre. The NCERT chapter covers several: the simple <b>Range</b> and <b>Quartile Deviation</b> (based on position), and the more powerful <b>Standard Deviation</b> and <b>Coefficient of Variation</b> (based on every value). Two datasets can share the same mean yet look very different once you compare their spread.</p>',
-            formulas: ['Range = Maximum − Minimum', 'Quartile Deviation (QD) = (Q3 − Q1) / 2', 'Mean (x̄) = Σx / n', 'SD (σ) = √[Σ(x−x̄)² / n]', 'Coefficient of Variation = (σ / x̄) × 100'],
+            formulas: ['Range = Maximum − Minimum', 'Coefficient of Range = [(Max−Min)/(Max+Min)] × 100', 'Quartile Deviation (QD) = (Q3 − Q1) / 2', 'Mean (x̄) = Σx / n', 'SD (σ) = √[Σ(x−x̄)² / n]', 'Coefficient of Variation = (σ / x̄) × 100'],
             controls: [
                 { id: 'spread', label: 'Spread Factor', min: 1, max: 10, step: 1, value: 4, unit: '' }
             ],
@@ -336,10 +363,12 @@ if (typeof SIMS !== 'undefined') {
                 };
                 const q1 = quartile(0.25), q3 = quartile(0.75);
                 const qd = (q3 - q1) / 2;
+                const coeffRange = ((sorted[sorted.length - 1] - sorted[0]) / (sorted[sorted.length - 1] + sorted[0])) * 100;
                 return {
                     traces: [{ x: data.map((_, i) => `X${i + 1}`), y: data, type: 'bar', marker: { color: '#2563eb' } }],
                     layout: { xaxis: { title: 'Data Point' }, yaxis: { title: 'Value', range: [0, 100] }, showlegend: false },
                     readings: `<div class="reading-row"><span>Range</span><b>${fmt(range_)}</b></div>
+                               <div class="reading-row"><span>Coefficient of Range</span><b>${fmt(coeffRange)}%</b></div>
                                <div class="reading-row"><span>Quartile Deviation (QD)</span><b>${fmt(qd)}</b></div>
                                <div class="reading-row"><span>Mean</span><b>${fmt(mean)}</b></div>
                                <div class="reading-row"><span>Standard Deviation</span><b>${fmt(sd)}</b></div>
@@ -377,24 +406,36 @@ if (typeof SIMS !== 'undefined') {
         {
             id: 'india-human-capital',
             module: 'india',
-            title: 'Human Capital Formation',
-            desc: 'See how education investment accelerates literacy growth over time.',
+            title: 'Human Capital Formation: Education & Health',
+            desc: 'Both named sources of human capital — Education and Health spending — modeled and charted together.',
             chapter: 'Class XI Indian Economic Development · Ch. 5: Human Capital Formation in India',
-            concept: '<p>Human capital formation refers to investment in education, health and training that raises the productive capacity of people. Higher, sustained investment in education tends to raise literacy and skill levels faster over time.</p>',
-            formulas: ['Human Capital = Investment in Education + Health + Training', 'Higher literacy & skill levels raise an economy\'s productive capacity'],
+            concept: '<p>NCERT names several sources of human capital formation; the two most emphasized are investment in <b>education</b> (raises literacy and skills) and investment in <b>health</b> (raises life expectancy and productive years). Both are modeled here as independent, adjustable spending levels, each driving its own outcome over time.</p>',
+            formulas: ['Human Capital = Investment in Education + Health + Training', 'Higher literacy & life expectancy raise an economy\'s productive capacity'],
             controls: [
-                { id: 'edu', label: 'Education Spending (% of GDP)', min: 1, max: 8, step: 0.5, value: 4, unit: '%' }
+                { id: 'edu', label: 'Education Spending (% of GDP)', min: 1, max: 8, step: 0.5, value: 4, unit: '%' },
+                { id: 'health', label: 'Health Spending (% of GDP)', min: 1, max: 6, step: 0.5, value: 2, unit: '%' }
             ],
             compute(v) {
                 const years = ['2000', '2005', '2010', '2015', '2020', '2025'];
-                const rate = v.edu / 8;
-                const lit = [60];
-                for (let i = 1; i < years.length; i++) lit.push(lit[i - 1] + (100 - lit[i - 1]) * 0.25 * rate);
+                const eduRate = v.edu / 8, healthRate = v.health / 6;
+                const lit = [60], life = [55];
+                for (let i = 1; i < years.length; i++) {
+                    lit.push(lit[i - 1] + (100 - lit[i - 1]) * 0.25 * eduRate);
+                    life.push(life[i - 1] + (82 - life[i - 1]) * 0.22 * healthRate);
+                }
                 return {
-                    traces: [{ x: years, y: lit, mode: 'lines+markers', name: 'Literacy Rate (%)', line: { color: '#10b981', width: 3 } }],
-                    layout: { xaxis: { title: 'Year' }, yaxis: { title: 'Literacy Rate (%)', range: [50, 100] }, showlegend: false },
+                    traces: [
+                        { x: years, y: lit, mode: 'lines+markers', name: 'Literacy Rate (%)', line: { color: '#10b981', width: 3 } },
+                        { x: years, y: life, mode: 'lines+markers', name: 'Life Expectancy (yrs)', line: { color: '#8b5cf6', width: 3 }, yaxis: 'y2' }
+                    ],
+                    layout: {
+                        xaxis: { title: 'Year' },
+                        yaxis: { title: 'Literacy Rate (%)', range: [50, 100] },
+                        yaxis2: { title: 'Life Expectancy (yrs)', overlaying: 'y', side: 'right', range: [50, 85] }
+                    },
                     readings: `<div class="reading-row"><span>Projected Literacy (latest)</span><b>${fmt(lit[lit.length - 1])}%</b></div>
-                               <div class="reading-row insight-row">💡 Higher, sustained education spending compounds over time — the literacy gains grow faster the longer higher investment is maintained.</div>`
+                               <div class="reading-row"><span>Projected Life Expectancy (latest)</span><b>${fmt(life[life.length - 1])} yrs</b></div>
+                               <div class="reading-row insight-row">💡 Education and health spending compound independently over time — a country can be strong in one and weak in the other, which is exactly why NCERT treats them as two separate (not interchangeable) sources of human capital.</div>`
                 };
             }
         },
