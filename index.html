@@ -56,36 +56,28 @@
 ══════════════════════════════════════════════ -->
 <div id="screen-home" class="screen active">
 
-  <!-- HERO (compact) -->
+  <!-- HERO (sleek single-line strip) -->
   <section class="hero">
-    <svg class="hero-bg-decor" viewBox="0 0 1200 220" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-      <!-- faint demand/supply crossing lines (Microeconomics) -->
-      <line x1="40" y1="30" x2="300" y2="190" stroke="#6366f1" stroke-width="3" opacity="0.16"/>
-      <line x1="40" y1="190" x2="300" y2="30" stroke="#f59e0b" stroke-width="3" opacity="0.16"/>
-      <circle cx="170" cy="110" r="5" fill="#ef4444" opacity="0.2"/>
-      <!-- faint ascending bars (Statistics / Budget) -->
-      <rect x="900" y="150" width="22" height="45" rx="4" fill="#10b981" opacity="0.14"/>
-      <rect x="932" y="120" width="22" height="75" rx="4" fill="#10b981" opacity="0.16"/>
-      <rect x="964" y="90" width="22" height="105" rx="4" fill="#10b981" opacity="0.18"/>
-      <rect x="996" y="55" width="22" height="140" rx="4" fill="#10b981" opacity="0.2"/>
-      <!-- faint scatter cluster (Correlation) -->
-      <circle cx="1080" cy="45" r="4" fill="#d946ef" opacity="0.18"/>
-      <circle cx="1108" cy="72" r="4" fill="#d946ef" opacity="0.18"/>
-      <circle cx="1062" cy="80" r="4" fill="#d946ef" opacity="0.18"/>
-      <circle cx="1120" cy="38" r="4" fill="#d946ef" opacity="0.18"/>
-      <circle cx="1090" cy="100" r="4" fill="#d946ef" opacity="0.18"/>
+    <svg class="hero-bg-decor" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <!-- a single faint sparkline motif — suits a thin strip better than
+           the taller banner's bars/scatter/crossing-lines composition did -->
+      <polyline points="740,45 800,20 850,38 905,12 960,32 1015,8 1070,26 1125,15 1170,24"
+                fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.18"/>
+      <circle cx="1015" cy="8" r="3" fill="#ef4444" opacity="0.22"/>
     </svg>
     <div class="hero-inner">
       <div class="hero-left">
-        <div class="hero-badge">🎓 CBSE Class XI &amp; XII · Economics</div>
+        <span class="hero-badge">🎓 CBSE XI–XII</span>
         <h1 class="hero-title">Economics <span class="grad-text">comes alive</span> in your hands</h1>
-        <p class="hero-sub">Interactive simulations across Micro, Macro, Statistics &amp; the Indian Economy — move curves, enter your own numbers, and see the outcome instantly.</p>
       </div>
-      <div class="hero-stats-row">
-        <div class="hstat"><span class="hstat-n">18</span><span class="hstat-l">Simulations</span></div>
-        <div class="hstat"><span class="hstat-n">4</span><span class="hstat-l">Modules</span></div>
-        <div class="hstat"><span class="hstat-n">72+</span><span class="hstat-l">Quiz Qs</span></div>
-        <div class="hstat"><span class="hstat-n">25</span><span class="hstat-l">Badges</span></div>
+      <div class="hero-stats-strip" title="18 Simulations · 4 Modules · 72+ Quiz Questions · 25 Badges">
+        <span><b>18</b> Simulations</span>
+        <span class="hstat-dot">·</span>
+        <span><b>4</b> Modules</span>
+        <span class="hstat-dot">·</span>
+        <span><b>72+</b> Quiz Qs</span>
+        <span class="hstat-dot">·</span>
+        <span><b>25</b> Badges</span>
       </div>
     </div>
   </section>
