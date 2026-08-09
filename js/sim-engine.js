@@ -133,14 +133,56 @@ function plotlyDefaultLayout() {
     // code once the old DOM nodes were gone. A plain, synchronous redraw
     // is fully robust; the "chart just updated" feel comes from the CSS
     // fade applied in renderSimChart() instead.
+    // Shared axis look so every chart's X/Y axis is unmistakably visible:
+    // a solid axis line, a visible zero line, light gridlines, and a bold
+    // title so students can always tell what each axis actually measures.
+    // renderSimChart() merges this per-axis (not just spread at the top
+    // level) so a simulation's own `xaxis: { title, range }` doesn't wipe
+    // this styling out — it only adds to it.
+    // Note: no default `title` here on purpose — every sim passes its
+    // axis title as a plain string (e.g. `title: 'Quantity'`), and a
+    // shallow per-axis merge would overwrite an object default with
+    // that string, silently discarding any font styling placed here.
+    // renderSimChart() normalizes the title into a styled object *after*
+    // merging instead — see styledAxisTitle().
+    const axisDefaults = {
+        tickfont: { size: 10, color: '#4b4470' },
+        showline: true,
+        linewidth: 1.5,
+        linecolor: 'rgba(30,27,58,0.35)',
+        showgrid: true,
+        gridcolor: 'rgba(30,27,58,0.08)',
+        zeroline: true,
+        zerolinewidth: 1.5,
+        zerolinecolor: 'rgba(30,27,58,0.22)'
+    };
+
     return {
-        margin: { t: 20, r: 30, b: 55, l: 55 },
+        margin: { t: 20, r: 30, b: 55, l: 60 },
         font: { family: 'Inter, sans-serif', size: 11, color: '#1e1b3a' },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(255,255,255,0.35)',
         showlegend: true,
-        legend: { orientation: 'h', y: -0.32 }
+        legend: { orientation: 'h', y: -0.32 },
+        xaxis: axisDefaults,
+        yaxis: axisDefaults
     };
+}
+
+// Every simulation passes its axis title as a plain string. Plotly also
+// accepts an object form (`{text, font, standoff}`) that lets us force a
+// bold, clearly legible title font — this converts the string form into
+// that styled object after the default/per-sim axis configs are merged,
+// so the styling always applies regardless of which axis title is used.
+function styledAxisTitle(axis) {
+    if (axis && typeof axis.title === 'string' && axis.title.length) {
+        axis.title = {
+            text: axis.title,
+            font: { size: 12.5, color: '#1e1b3a', family: 'Inter, sans-serif' },
+            standoff: 10
+        };
+    }
+    return axis;
 }
 
 let simEngineState = {};
@@ -248,7 +290,19 @@ function renderSimChart(sim) {
         result = sim.customRender(overlay, simEngineState) || {};
     } else if (typeof sim.compute === 'function') {
         result = sim.compute(simEngineState);
-        const layout = Object.assign(plotlyDefaultLayout(), result.layout || {});
+        const base = plotlyDefaultLayout();
+        const layout = Object.assign({}, base, result.layout || {});
+        // A shallow merge would let a simulation's own `xaxis: { title,
+        // range }` silently replace (not extend) the shared axis styling
+        // above — so every X/Y axis line, gridline and title font would
+        // quietly disappear the moment a sim sets its own axis title.
+        // Merge one level deeper for xaxis/yaxis specifically.
+        layout.xaxis = styledAxisTitle(Object.assign({}, base.xaxis, (result.layout && result.layout.xaxis) || {}));
+        layout.yaxis = styledAxisTitle(Object.assign({}, base.yaxis, (result.layout && result.layout.yaxis) || {}));
+        // A secondary y-axis (only used by the dual-axis Market Structures
+        // bar chart) isn't covered by the shared defaults above, but its
+        // title still needs the same bold-legible treatment.
+        if (layout.yaxis2) layout.yaxis2 = styledAxisTitle(layout.yaxis2);
         if (typeof Plotly !== 'undefined') {
             Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
