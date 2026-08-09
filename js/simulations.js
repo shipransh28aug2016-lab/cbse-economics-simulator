@@ -92,27 +92,58 @@ const SIMS = [
             { id: 'g', label: 'Government Spending (G)', min: 0, max: 100, step: 5, value: 40, unit: '₹B' },
             { id: 'nx', label: 'Net Exports (X − M)', min: -40, max: 40, step: 5, value: 10, unit: '₹B' }
         ],
-        compute(v) {
+        // Custom-rendered as an animated SVG instead of a Plotly chart: a
+        // static sankey diagram doesn't read as "money in motion" the way
+        // students need for this topic, so each income stream is drawn as
+        // a wire with small particles flowing along it — faster and more
+        // numerous particles for a bigger flow — and it all updates live
+        // as the sliders move.
+        customRender(container, v) {
             const wages = 100, consumption = 90, taxes = 35, g = v.g, nx = v.nx;
-            const exports = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
-            const labels = ['Households', 'Firms', 'Government', 'Foreign Sector'];
+            const exportsVal = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
+
+            const nodes = {
+                hh: { x: 70, y: 150, label: 'Households', icon: '🏠', color: '#6366f1' },
+                firm: { x: 330, y: 150, label: 'Firms', icon: '🏭', color: '#10b981' },
+                gov: { x: 200, y: 45, label: 'Government', icon: '🏛️', color: '#f59e0b' },
+                foreign: { x: 200, y: 255, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' }
+            };
+
+            const flows = [
+                { id: 'flow-cons', from: nodes.hh, to: nodes.firm, bend: 22, value: consumption, color: nodes.hh.color },
+                { id: 'flow-wage', from: nodes.firm, to: nodes.hh, bend: -22, value: wages, color: nodes.firm.color },
+                { id: 'flow-tax', from: nodes.hh, to: nodes.gov, bend: 14, value: taxes, color: nodes.gov.color },
+                { id: 'flow-gspend', from: nodes.gov, to: nodes.hh, bend: -14, value: g, color: nodes.gov.color },
+                { id: 'flow-exp', from: nodes.firm, to: nodes.foreign, bend: 14, value: exportsVal, color: nodes.foreign.color },
+                { id: 'flow-imp', from: nodes.foreign, to: nodes.firm, bend: -14, value: imports, color: nodes.foreign.color }
+            ];
+
+            const maxValue = Math.max(...flows.map(f => f.value), 1);
+            const flowsSVG = flows
+                .map(f => flowStreamSVG(f.id, curvedPathD(f.from.x, f.from.y, f.to.x, f.to.y, f.bend), f.color, f.value, maxValue))
+                .join('');
+
+            const nodesSVG = Object.values(nodes)
+                .map(n => `
+                    <g>
+                        <circle cx="${n.x}" cy="${n.y}" r="32" fill="${n.color}26" stroke="${n.color}" stroke-width="2"></circle>
+                        <text x="${n.x}" y="${n.y - 1}" text-anchor="middle" font-size="19">${n.icon}</text>
+                        <text x="${n.x}" y="${n.y + 20}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1e1b3a">${n.label}</text>
+                    </g>`)
+                .join('');
+
+            container.innerHTML = `
+                <svg viewBox="0 0 400 300" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+                     aria-label="Animated circular flow of income between households, firms, government and the foreign sector">
+                    ${flowsSVG}
+                    ${nodesSVG}
+                </svg>`;
+
             return {
-                traces: [{
-                    type: 'sankey',
-                    orientation: 'h',
-                    node: { label: labels, color: ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6'], pad: 20, thickness: 18 },
-                    link: {
-                        source: [0, 1, 0, 2, 1, 3],
-                        target: [1, 0, 2, 0, 3, 1],
-                        value: [consumption, wages, taxes, g, exports, imports],
-                        color: 'rgba(37,99,235,0.25)'
-                    }
-                }],
-                layout: { showlegend: false },
                 readings: `<div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
                            <div class="reading-row"><span>Net Exports (X−M)</span><b>₹${nx}B</b></div>
-                           <div class="reading-row"><span>Injections (G + Exports, est.)</span><b>₹${fmt(g + exports, 0)}B</b></div>
-                           <div class="reading-row insight-row">💡 Government spending and exports are <b>injections</b> into the circular flow — raising them increases the flow of income between households and firms and pushes national income up.</div>`
+                           <div class="reading-row"><span>Injections (G + Exports, est.)</span><b>₹${fmt(g + exportsVal, 0)}B</b></div>
+                           <div class="reading-row insight-row">💡 Government spending and exports are <b>injections</b> into the circular flow — raising them increases the flow of income between households and firms and pushes national income up. Watch the particles: faster, thicker streams mean bigger flows.</div>`
             };
         }
     },

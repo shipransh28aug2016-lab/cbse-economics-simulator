@@ -1,9 +1,14 @@
 // ══════════════════════════════════════════════════════════════
 // Shared simulation engine.
 // Each entry in SIMS carries its own `controls` (input definitions)
-// and `compute(values)` function returning Plotly traces/layout plus
-// a readings HTML string. This file only supplies small math helpers
-// and the generic rendering plumbing shared by every simulation.
+// and either:
+//   - a `compute(values)` function returning Plotly traces/layout plus
+//     a readings HTML string (the common case), or
+//   - a `customRender(container, values)` function that draws directly
+//     into the chart container (e.g. an animated SVG flow diagram) and
+//     returns just `{ readings }`.
+// This file only supplies small math/SVG helpers and the generic
+// rendering plumbing shared by every simulation.
 // ══════════════════════════════════════════════════════════════
 
 function fmt(n, d = 2) {
@@ -40,6 +45,44 @@ function makeRandN(seed) {
         for (let i = 0; i < 3; i++) u += rnd();
         return (u - 1.5) * 1.6329931619; // roughly unit variance
     };
+}
+
+// Quadratic-bezier path between two points, offset sideways by `bend` so
+// two opposite-direction flows between the same pair of nodes don't sit
+// exactly on top of each other.
+function curvedPathD(x1, y1, x2, y2, bend) {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const cx = mx + nx * bend, cy = my + ny * bend;
+    return `M ${x1} ${y1} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${x2} ${y2}`;
+}
+
+// Renders one "wire" (a faint path) plus a stream of small particles
+// animated along it with SMIL <animateMotion> — an electric-current /
+// data-packet look. `value` (relative to `maxValue`) scales both the
+// particle speed and how many particles are on the wire at once, so a
+// bigger flow visibly reads as faster and busier.
+function flowStreamSVG(id, d, color, value, maxValue) {
+    maxValue = maxValue || 150;
+    const ratio = Math.max(0, Math.min(1, value / maxValue));
+    const strokeWidth = (1.4 + 2.4 * ratio).toFixed(1);
+    const count = Math.max(2, Math.min(8, Math.round(2 + 6 * ratio)));
+    const duration = Math.max(1.1, 3.4 - 2.1 * ratio); // bigger flow = faster particles
+
+    let particles = '';
+    for (let i = 0; i < count; i++) {
+        const begin = (-(duration / count) * i).toFixed(2);
+        particles += `
+            <circle r="3.4" fill="${color}">
+                <animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto">
+                    <mpath href="#${id}" xlink:href="#${id}"></mpath>
+                </animateMotion>
+            </circle>`;
+    }
+
+    return `<path id="${id}" d="${d}" fill="none" stroke="${color}" stroke-opacity="0.28" stroke-width="${strokeWidth}" stroke-linecap="round"></path>${particles}`;
 }
 
 function plotlyDefaultLayout() {
@@ -150,19 +193,29 @@ function buildControls(sim) {
 function renderSimChart(sim) {
     const overlay = document.getElementById('sim-dom-overlay');
     const readingsBody = document.getElementById('readings-body');
-    if (!overlay || typeof sim.compute !== 'function') return;
+    if (!overlay) return;
 
-    const result = sim.compute(simEngineState);
-    const layout = Object.assign(plotlyDefaultLayout(), result.layout || {});
-
-    if (typeof Plotly !== 'undefined') {
-        Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
-        // Pure-CSS fade so a chart update still feels alive without
-        // relying on Plotly's own (fragile, async) transition engine.
-        overlay.classList.remove('chart-fresh');
-        void overlay.offsetWidth; // force reflow to restart the animation
-        overlay.classList.add('chart-fresh');
+    let result;
+    if (typeof sim.customRender === 'function') {
+        // Simulations that need something Plotly can't express (e.g. an
+        // animated flow diagram) draw straight into the overlay div and
+        // just hand back the readings HTML.
+        result = sim.customRender(overlay, simEngineState) || {};
+    } else if (typeof sim.compute === 'function') {
+        result = sim.compute(simEngineState);
+        const layout = Object.assign(plotlyDefaultLayout(), result.layout || {});
+        if (typeof Plotly !== 'undefined') {
+            Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
+        }
+    } else {
+        return;
     }
+
+    // Pure-CSS fade so a chart update still feels alive without relying
+    // on Plotly's own (fragile, async) transition engine.
+    overlay.classList.remove('chart-fresh');
+    void overlay.offsetWidth; // force reflow to restart the animation
+    overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
         readingsBody.innerHTML = result.readings || '';
@@ -181,14 +234,17 @@ function renderSim(sim) {
     const overlay = document.getElementById('sim-dom-overlay');
 
     // Different simulations can have very different chart shapes (line vs
-    // bar, one axis vs two, sankey vs cartesian). Animating a Plotly.react
-    // "transition" between two incompatible layouts can throw deep inside
-    // Plotly's redraw code, so fully tear down the previous chart whenever
-    // we switch simulations. Slider-driven updates *within* the same
-    // simulation skip this (they call renderSimChart directly) and keep
-    // their smooth transition.
-    if (overlay && typeof Plotly !== 'undefined' && overlay.data) {
-        Plotly.purge(overlay);
+    // bar, one axis vs two, sankey vs cartesian, or a hand-built animated
+    // SVG). Reusing a container across two incompatible renders can throw
+    // deep inside Plotly's redraw code, so fully tear down whatever was
+    // there whenever we switch simulations. Slider-driven updates *within*
+    // the same simulation skip this (they call renderSimChart directly).
+    if (overlay) {
+        if (overlay.data && typeof Plotly !== 'undefined') {
+            Plotly.purge(overlay);
+        } else {
+            overlay.innerHTML = '';
+        }
     }
 
     if (conceptBody) {
