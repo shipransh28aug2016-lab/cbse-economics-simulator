@@ -123,6 +123,7 @@ if (typeof SIMS !== 'undefined') {
                         { x: ['Perfect Competition', 'Monopoly'], y: [Qc, Qm], name: 'Quantity', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' }
                     ],
                     layout: {
+                        xaxis: { title: 'Market Structure' },
                         yaxis: { title: 'Price (₹)', range: [0, 100] },
                         yaxis2: { title: 'Quantity', overlaying: 'y', side: 'right', range: [0, 100] },
                         barmode: 'group'
@@ -190,7 +191,7 @@ if (typeof SIMS !== 'undefined') {
                         type: 'bar',
                         marker: { color: ['#10b981', '#34d399', '#f87171', '#f97316'] }
                     }],
-                    layout: { yaxis: { title: '₹ Billion' }, showlegend: false },
+                    layout: { xaxis: { title: 'Budget Component' }, yaxis: { title: '₹ Billion' }, showlegend: false },
                     readings: `<div class="reading-row"><span>Total Receipts</span><b>₹${fmt(totalReceipts, 0)}B</b></div>
                                <div class="reading-row"><span>Total Expenditure</span><b>₹${fmt(totalExp, 0)}B</b></div>
                                <div class="reading-row"><span>Revenue Deficit</span><b>₹${fmt(Math.max(revenueDeficit, 0), 0)}B</b></div>
@@ -286,7 +287,7 @@ if (typeof SIMS !== 'undefined') {
                 const cv = (sd / mean) * 100;
                 return {
                     traces: [{ x: data.map((_, i) => `X${i + 1}`), y: data, type: 'bar', marker: { color: '#2563eb' } }],
-                    layout: { yaxis: { title: 'Value', range: [0, 100] }, showlegend: false },
+                    layout: { xaxis: { title: 'Data Point' }, yaxis: { title: 'Value', range: [0, 100] }, showlegend: false },
                     readings: `<div class="reading-row"><span>Mean</span><b>${fmt(mean)}</b></div>
                                <div class="reading-row"><span>Standard Deviation</span><b>${fmt(sd)}</b></div>
                                <div class="reading-row"><span>Coefficient of Variation</span><b>${fmt(cv)}%</b></div>
@@ -311,7 +312,7 @@ if (typeof SIMS !== 'undefined') {
                 for (let i = 1; i < years.length; i++) idx.push(idx[i - 1] * (1 + v.inf / 100));
                 return {
                     traces: [{ x: years, y: idx, mode: 'lines+markers', name: 'Price Index (Base=100)', line: { color: '#2563eb', width: 3 } }],
-                    layout: { yaxis: { title: 'Index (Base Year = 100)' }, showlegend: false },
+                    layout: { xaxis: { title: 'Year' }, yaxis: { title: 'Index (Base Year = 100)' }, showlegend: false },
                     readings: `<div class="reading-row"><span>Index in Year 5</span><b>${fmt(idx[4])}</b></div>
                                <div class="reading-row"><span>Cumulative Inflation</span><b>${fmt(idx[4] - 100)}%</b></div>
                                <div class="reading-row insight-row">💡 As the index climbs above 100, the same basket of goods costs more than it did in the base year — that rise in the index is exactly what "inflation" measures.</div>`
@@ -338,7 +339,7 @@ if (typeof SIMS !== 'undefined') {
                 for (let i = 1; i < years.length; i++) lit.push(lit[i - 1] + (100 - lit[i - 1]) * 0.25 * rate);
                 return {
                     traces: [{ x: years, y: lit, mode: 'lines+markers', name: 'Literacy Rate (%)', line: { color: '#10b981', width: 3 } }],
-                    layout: { yaxis: { title: 'Literacy Rate (%)', range: [50, 100] }, showlegend: false },
+                    layout: { xaxis: { title: 'Year' }, yaxis: { title: 'Literacy Rate (%)', range: [50, 100] }, showlegend: false },
                     readings: `<div class="reading-row"><span>Projected Literacy (latest)</span><b>${fmt(lit[lit.length - 1])}%</b></div>
                                <div class="reading-row insight-row">💡 Higher, sustained education spending compounds over time — the literacy gains grow faster the longer higher investment is maintained.</div>`
                 };
@@ -367,7 +368,7 @@ if (typeof SIMS !== 'undefined') {
                         type: 'bar',
                         marker: { color: ['#84cc16', '#f59e0b', '#3b82f6'] }
                     }],
-                    layout: { yaxis: { title: 'Share of Employment (%)', range: [0, 100] }, showlegend: false },
+                    layout: { xaxis: { title: 'Sector' }, yaxis: { title: 'Share of Employment (%)', range: [0, 100] }, showlegend: false },
                     readings: `<div class="reading-row"><span>Agriculture</span><b>${fmt(agri)}%</b></div>
                                <div class="reading-row"><span>Industry</span><b>${fmt(industry)}%</b></div>
                                <div class="reading-row"><span>Services</span><b>${fmt(services)}%</b></div>
