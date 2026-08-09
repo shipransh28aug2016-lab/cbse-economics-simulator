@@ -1,0 +1,70 @@
+
+<html>
+<head>
+    <script>
+        const results = { errors: [], tests: [] };
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            results.errors.push(`${msg} in ${url} at line ${lineNo}`);
+        };
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/simulations.js?v=2"></script>
+    <script src="js/app.js?v=2" defer></script>
+    <script defer>
+        setTimeout(() => {
+            try {
+                // Test 1: Is SIMS defined?
+                if (typeof SIMS !== 'undefined') {
+                    results.tests.push(`SIMS is defined with ${SIMS.length} modules.`);
+                } else {
+                    results.tests.push("SIMS is NOT defined.");
+                }
+
+                // Test 2: Did cards render?
+                const cards = document.querySelectorAll('.sim-card');
+                results.tests.push(`Found ${cards.length} simulation cards on screen.`);
+                
+                // Test 3: Can we open a simulation?
+                if (typeof openSim === 'function' && typeof SIMS !== 'undefined' && SIMS.length > 0) {
+                    openSim(SIMS[0].id);
+                    const title = document.getElementById('sim-title').innerText;
+                    results.tests.push(`Opened first module: ${title}`);
+                } else {
+                    results.tests.push("openSim function not found or SIMS is empty.");
+                }
+
+            } catch (e) {
+                results.errors.push(e.toString());
+            }
+
+            // Send results back to python
+            fetch('http://localhost:8083/report', {
+                method: 'POST',
+                body: JSON.stringify(results)
+            });
+        }, 1500); // give app.js 1.5s to initialize
+    </script>
+</head>
+<body>
+    <!-- App Structure expected by app.js -->
+    <header>
+        <div id="back-btn" class="hidden">Back</div>
+        <h1 id="main-title">Economics Simulator</h1>
+        <div class="lang-toggle"><button id="lang-btn">A/अ</button></div>
+    </header>
+    <main>
+        <div id="home-view" class="view active">
+            <div id="sim-grid" class="grid"></div>
+        </div>
+        <div id="sim-view" class="view hidden">
+            <h2 id="sim-title"></h2>
+            <div id="sim-container">
+                <canvas id="sim-canvas"></canvas>
+                <div id="sim-controls"></div>
+                <div id="sim-readings"></div>
+                <div id="sim-concept"></div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

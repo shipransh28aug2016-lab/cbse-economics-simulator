@@ -1,0 +1,16 @@
+
+        <html><head>
+        <script>
+            window.onerror = function(msg, url, lineNo, columnNo, error) {
+                fetch('http://localhost:8081/error', {
+                    method: 'POST',
+                    body: JSON.stringify({msg: msg, line: lineNo})
+                });
+            };
+        </script>
+        <script src="js/simulations.js?v=999"></script>
+        <script>
+            setTimeout(() => { fetch('http://localhost:8081/error', {method: 'POST', body: JSON.stringify({msg: 'NO_ERROR', line: 0})}); }, 2000);
+        </script>
+        </head><body></body></html>
+    

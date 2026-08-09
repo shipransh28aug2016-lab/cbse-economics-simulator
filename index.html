@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EconSim Pro | CBSE Class XI–XII Economics Simulator</title>
+  <meta name="description" content="Live gamified economics simulations for CBSE Class XI and XII students. Understand Supply & Demand, GDP, Multiplier, Correlation, and more through interactive labs." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css?v=3" />
+  <script>
+    window.addEventListener('error', function(e) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '0';
+      errorDiv.style.left = '0';
+      errorDiv.style.width = '100%';
+      errorDiv.style.background = 'rgba(248,113,113,0.95)';
+      errorDiv.style.color = '#000';
+      errorDiv.style.padding = '12px';
+      errorDiv.style.zIndex = '99999';
+      errorDiv.style.fontSize = '12px';
+      errorDiv.style.fontFamily = 'monospace';
+      errorDiv.style.whiteSpace = 'pre-wrap';
+      errorDiv.innerHTML = '<b>JS Error:</b> ' + e.message + ' at ' + e.filename + ':' + e.lineno + ':' + e.colno + '<br><small>' + (e.error ? e.error.stack : '') + '</small>';
+      document.body.appendChild(errorDiv);
+    });
+  </script>
+</head>
+<body>
+
+<!-- ░░ PARTICLE BACKGROUND ░░ -->
+<canvas id="particle-bg" aria-hidden="true"></canvas>
+
+<!-- ░░ NAVIGATION ░░ -->
+<nav id="main-nav">
+  <div class="nav-logo" onclick="showScreen('home')" style="cursor:pointer">
+    <span class="logo-mark">📈</span>
+    <span class="logo-text">EconSim<span class="logo-accent">Pro</span></span>
+    <span class="logo-sub">CBSE XI–XII</span>
+  </div>
+  <div class="nav-center" id="nav-breadcrumb"></div>
+  <div class="nav-right">
+    <button id="lang-toggle" onclick="toggleLanguage()" class="icon-btn" style="width:auto;padding:0 12px;font-size:12px;font-weight:600;margin-right:8px;border-radius:12px;background:rgba(255,255,255,0.1)">🌐 हिन्दी</button>
+    <div class="xp-chip">
+      <span class="xp-star">⭐</span>
+      <span id="nav-xp">0 XP</span>
+    </div>
+    <div class="level-chip" id="nav-level">Lv 1</div>
+    <button class="icon-btn" id="profile-nav-btn" onclick="showScreen('profile')" title="My Profile">👤</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: HOME
+══════════════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">🎓 CBSE Class XI & XII | Economics</div>
+    <h1 class="hero-title">Economics <span class="grad-text">comes alive</span><br/>in your hands</h1>
+    <p class="hero-sub">Interact with live simulations. Move curves, shift markets, build multipliers.<br/>
+    Earn XP, unlock badges, and ace your CBSE exams.</p>
+    <div class="hero-stats-row">
+      <div class="hstat"><span class="hstat-n">18</span><span class="hstat-l">Simulations</span></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><span class="hstat-n">4</span><span class="hstat-l">Modules</span></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><span class="hstat-n">72+</span><span class="hstat-l">Quiz Questions</span></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><span class="hstat-n">25</span><span class="hstat-l">Badges</span></div>
+    </div>
+    <div class="scroll-hint">↓ Choose a module below</div>
+  </section>
+
+  <!-- MODULES -->
+  <section class="modules-section">
+
+    <!-- MODULE: MICROECONOMICS -->
+    <div class="module-block">
+      <div class="module-header">
+        <div class="module-icon-badge micro-badge">μ</div>
+        <div>
+          <h2 class="module-title">Microeconomics</h2>
+          <p class="module-sub">Class XII · Chapters 2–6 · 6 Simulations</p>
+        </div>
+        <div class="module-progress-wrap">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
+            <circle class="ring-fg micro-ring" cx="18" cy="18" r="15.9" id="ring-micro"/>
+          </svg>
+          <span class="ring-pct" id="pct-micro">0%</span>
+        </div>
+      </div>
+      <div class="sims-grid" id="grid-micro"></div>
+    </div>
+
+    <!-- MODULE: MACROECONOMICS -->
+    <div class="module-block">
+      <div class="module-header">
+        <div class="module-icon-badge macro-badge">M</div>
+        <div>
+          <h2 class="module-title">Macroeconomics</h2>
+          <p class="module-sub">Class XII · Chapters 2–6 · 6 Simulations</p>
+        </div>
+        <div class="module-progress-wrap">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
+            <circle class="ring-fg macro-ring" cx="18" cy="18" r="15.9" id="ring-macro"/>
+          </svg>
+          <span class="ring-pct" id="pct-macro">0%</span>
+        </div>
+      </div>
+      <div class="sims-grid" id="grid-macro"></div>
+    </div>
+
+    <!-- MODULE: STATISTICS -->
+    <div class="module-block">
+      <div class="module-header">
+        <div class="module-icon-badge stats-badge">σ</div>
+        <div>
+          <h2 class="module-title">Statistics for Economics</h2>
+          <p class="module-sub">Class XI · Chapters 5–8 · 3 Simulations</p>
+        </div>
+        <div class="module-progress-wrap">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
+            <circle class="ring-fg stats-ring" cx="18" cy="18" r="15.9" id="ring-stats"/>
+          </svg>
+          <span class="ring-pct" id="pct-stats">0%</span>
+        </div>
+      </div>
+      <div class="sims-grid" id="grid-stats"></div>
+    </div>
+
+    <!-- MODULE: INDIAN ECONOMY -->
+    <div class="module-block">
+      <div class="module-header">
+        <div class="module-icon-badge india-badge">🇮🇳</div>
+        <div>
+          <h2 class="module-title">Indian Economic Development</h2>
+          <p class="module-sub">Class XI · Chapters 1–10 · 3 Simulations</p>
+        </div>
+        <div class="module-progress-wrap">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
+            <circle class="ring-fg india-ring" cx="18" cy="18" r="15.9" id="ring-india"/>
+          </svg>
+          <span class="ring-pct" id="pct-india">0%</span>
+        </div>
+      </div>
+      <div class="sims-grid" id="grid-india"></div>
+    </div>
+
+  </section>
+
+  <!-- RECENT ACHIEVEMENTS -->
+  <section class="achievements-section">
+    <h2 class="section-title">🏆 Recent Achievements</h2>
+    <div class="badges-row" id="recent-badges">
+      <p class="empty-hint">Complete your first simulation to earn a badge!</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer style="padding: 24px 28px; border-top: 1px solid var(--border2); display: flex; justify-content: space-between; align-items: center; color: var(--text3); font-size: 12px; margin-top: 40px; flex-wrap: wrap; gap: 8px;">
+    <span>EconSim Pro — CBSE Economics Lab</span>
+    <span>&copy; PP creations by Paras Pranav</span>
+  </footer>
+
+</div><!-- end screen-home -->
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: SIMULATION
+══════════════════════════════════════════════ -->
+<div id="screen-sim" class="screen">
+
+  <div class="sim-topbar">
+    <button class="back-btn" id="sim-back">← Back</button>
+    <div class="sim-topbar-mid">
+      <span class="sim-module-tag" id="sim-module-tag">Microeconomics</span>
+      <span class="sim-title-nav" id="sim-title-nav">Supply & Demand</span>
+    </div>
+    <div class="sim-xp-tag" id="sim-xp-tag">+100 XP</div>
+  </div>
+
+  <div class="sim-body">
+    <!-- LEFT: canvas + controls -->
+    <div class="sim-left">
+      <div class="canvas-shell" id="canvas-shell">
+        <canvas id="sim-canvas"></canvas>
+        <div id="sim-dom-overlay"></div><!-- for DOM-based sims -->
+      </div>
+      <div class="controls-panel" id="controls-panel"></div>
+    </div>
+
+    <!-- RIGHT: info sidebar -->
+    <div class="sim-right">
+      <div class="info-card">
+        <div class="info-card-header">📚 Concept</div>
+        <div class="info-card-body" id="concept-body"></div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-header">📐 Key Formulas</div>
+        <div class="info-card-body formula-body" id="formula-body"></div>
+      </div>
+      <div class="info-card readings-card">
+        <div class="info-card-header">📊 Live Readings</div>
+        <div class="readings-body" id="readings-body"></div>
+      </div>
+      <button class="quiz-launch-btn" id="quiz-launch-btn">🎯 Take the Quiz  →</button>
+      <div style="text-align: center; color: var(--text3); font-size: 11px; margin-top: 16px; margin-bottom: 8px; letter-spacing: 0.5px;">
+        &copy; PP creations by Paras Pranav
+      </div>
+    </div>
+  </div>
+
+</div><!-- end screen-sim -->
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: PROFILE
+══════════════════════════════════════════════ -->
+<div id="screen-profile" class="screen">
+  <div class="sim-topbar">
+    <button class="back-btn" onclick="showScreen('home')">← Back</button>
+    <div class="sim-topbar-mid"><span class="sim-title-nav">My Profile</span></div>
+    <div></div>
+  </div>
+  <div class="profile-wrap">
+    <div class="profile-hero-card">
+      <div class="p-avatar" id="p-avatar">🎓</div>
+      <div class="p-name" id="p-name">Economist</div>
+      <div class="p-level" id="p-level-text">Level 1 — Novice</div>
+      <div class="xp-progress-bar"><div class="xp-fill" id="xp-fill"></div></div>
+      <div class="xp-label" id="xp-label">0 / 500 XP to next level</div>
+    </div>
+    <div class="profile-stats-grid">
+      <div class="pstat"><span class="pstat-n" id="ps-totalxp">0</span><span class="pstat-l">Total XP</span></div>
+      <div class="pstat"><span class="pstat-n" id="ps-sims">0</span><span class="pstat-l">Labs Done</span></div>
+      <div class="pstat"><span class="pstat-n" id="ps-quizzes">0</span><span class="pstat-l">Quizzes Passed</span></div>
+      <div class="pstat"><span class="pstat-n" id="ps-badges">0</span><span class="pstat-l">Badges</span></div>
+    </div>
+    <div class="all-badges-section">
+      <h3 class="section-title">All Achievements</h3>
+      <div class="all-badges-grid" id="all-badges-grid"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer style="padding: 24px 0; border-top: 1px solid var(--border2); display: flex; justify-content: space-between; align-items: center; color: var(--text3); font-size: 12px; margin-top: 40px; flex-wrap: wrap; gap: 8px;">
+    <span>EconSim Pro Profile</span>
+    <span>&copy; PP creations by Paras Pranav</span>
+  </footer>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     QUIZ MODAL
+══════════════════════════════════════════════ -->
+<div id="quiz-overlay" class="overlay hidden">
+  <div class="quiz-modal">
+    <div class="quiz-modal-header">
+      <span class="quiz-module-icon" id="qm-icon">📈</span>
+      <span class="quiz-heading" id="qm-heading">Quick Quiz</span>
+      <button class="quiz-close-btn" id="quiz-close-btn">✕</button>
+    </div>
+    <div class="quiz-progress-bar-outer">
+      <div class="quiz-progress-bar-inner" id="quiz-pbar"></div>
+    </div>
+    <div class="quiz-q-counter" id="quiz-q-counter">Q 1 of 4</div>
+    <div class="quiz-question" id="quiz-question">Loading…</div>
+    <div class="quiz-options" id="quiz-options"></div>
+    <div class="quiz-feedback hidden" id="quiz-feedback"></div>
+    <div class="quiz-result hidden" id="quiz-result">
+      <div class="result-emoji" id="result-emoji">🎉</div>
+      <div class="result-score" id="result-score">3 / 4</div>
+      <div class="result-msg" id="result-msg">Great job!</div>
+      <button class="result-continue-btn" id="result-continue-btn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ░░ XP POPUP ░░ -->
+<div class="xp-popup hidden" id="xp-popup">+<span id="xp-pop-amt">100</span> XP</div>
+
+<!-- ░░ ACHIEVEMENT POPUP ░░ -->
+<div class="achievement-popup hidden" id="ach-popup">
+  <div class="ach-pop-icon" id="ach-pop-icon">🏆</div>
+  <div class="ach-pop-text">
+    <div class="ach-pop-title">Achievement Unlocked!</div>
+    <div class="ach-pop-desc" id="ach-pop-desc">First Steps</div>
+  </div>
+</div>
+
+<script src="js/i18n_hi.js"></script>
+<script src="js/i18n_engine.js"></script>
+<script src="js/plotly.min.js?v=2"></script>
+<script src="js/simulations.js?v=2"></script>
+<script src="js/simulations_extended.js?v=6"></script>
+<script src="js/nova_textbook.js?v=4"></script>
+<script src="js/robo_tutor.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
+</body>
+</html>
