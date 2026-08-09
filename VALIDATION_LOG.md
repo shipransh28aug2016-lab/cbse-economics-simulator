@@ -1,5 +1,7 @@
 # EconSim Pro — Validation Log
 
+> **See also `SYLLABUS_MAP.md`** for the full curriculum-coverage matrix (every CBSE chapter/topic vs. what each simulation actually models) and an honest list of what's still a gap. This log covers accuracy/UI/interaction status; the syllabus map covers topic *completeness*.
+
 Sequential validation of all 18 simulations against three checks:
 
 - **Economic accuracy** — concept, formulas, and direction of relationships checked against the CBSE Class XI/XII Economics curriculum (chapter structure as of this log; exact 2026–27 chapter numbering should still be verified against the official CBSE circular — see `REDESIGN_PROMPT.md`).

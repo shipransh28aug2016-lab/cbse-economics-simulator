@@ -216,11 +216,23 @@ function buildControls(sim) {
     resetBtn.addEventListener('click', () => {
         sim.controls.forEach(c => {
             simEngineState[c.id] = c.value;
-            const rangeEl = document.getElementById(`ctl-${c.id}`);
-            const numEl = document.getElementById(`ctl-${c.id}-num`);
-            if (rangeEl) rangeEl.value = c.value;
-            if (numEl) numEl.value = c.value;
+            if (c.type === 'select') {
+                const group = document.getElementById(`ctl-${c.id}`);
+                if (group) {
+                    group.querySelectorAll('.segmented-btn').forEach((btn, i) => {
+                        const isDefault = c.options[i].value === c.value;
+                        btn.classList.toggle('active', isDefault);
+                        btn.setAttribute('aria-pressed', String(isDefault));
+                    });
+                }
+            } else {
+                const rangeEl = document.getElementById(`ctl-${c.id}`);
+                const numEl = document.getElementById(`ctl-${c.id}-num`);
+                if (rangeEl) rangeEl.value = c.value;
+                if (numEl) numEl.value = c.value;
+            }
         });
+        applyControlVisibility(sim);
         renderSimChart(sim);
     });
     header.appendChild(resetBtn);
@@ -232,6 +244,47 @@ function buildControls(sim) {
 
         const row = document.createElement('div');
         row.className = 'control-row';
+        if (c.showWhen) {
+            row.dataset.showWhenId = c.showWhen.id;
+            row.dataset.showWhenEquals = String(c.showWhen.equals);
+        }
+
+        if (c.type === 'select') {
+            // A small segmented-button group for a categorical choice
+            // (e.g. "which elasticity?" or "which view?") rather than a
+            // continuous slider — some variables in the syllabus are a
+            // choice of mode, not a number.
+            row.innerHTML = `
+                <div class="control-label-row">
+                    <label>${c.label}</label>
+                </div>
+                <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${c.label}"></div>
+            `;
+            panel.appendChild(row);
+            const group = row.querySelector('.control-segmented');
+            c.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'segmented-btn';
+                btn.textContent = opt.label;
+                btn.setAttribute('aria-pressed', String(opt.value === c.value));
+                if (opt.value === c.value) btn.classList.add('active');
+                btn.addEventListener('click', () => {
+                    simEngineState[c.id] = opt.value;
+                    group.querySelectorAll('.segmented-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed', 'false');
+                    });
+                    btn.classList.add('active');
+                    btn.setAttribute('aria-pressed', 'true');
+                    applyControlVisibility(sim);
+                    renderSimChart(sim);
+                });
+                group.appendChild(btn);
+            });
+            return;
+        }
+
         row.innerHTML = `
             <div class="control-label-row">
                 <label for="ctl-${c.id}">${c.label}</label>
@@ -274,6 +327,22 @@ function buildControls(sim) {
             simEngineState[c.id] = clamped;
             renderSimChart(sim);
         });
+    });
+
+    applyControlVisibility(sim);
+}
+
+// Some controls only make sense for a particular mode of a "select"
+// control (e.g. the "Price of Related Good" slider only matters when
+// Elasticity Type = Cross). `showWhen: {id, equals}` on a control marks
+// it as conditional; this shows/hides those rows to match current state
+// without ever touching the controls that don't declare a condition.
+function applyControlVisibility(sim) {
+    const panel = document.getElementById('controls-panel');
+    if (!panel) return;
+    panel.querySelectorAll('.control-row[data-show-when-id]').forEach(row => {
+        const match = String(simEngineState[row.dataset.showWhenId]) === row.dataset.showWhenEquals;
+        row.classList.toggle('hidden', !match);
     });
 }
 
@@ -323,6 +392,18 @@ function renderSimChart(sim) {
         readingsBody.classList.remove('pulse');
         void readingsBody.offsetWidth; // force reflow to restart the CSS animation
         readingsBody.classList.add('pulse');
+    }
+
+    // A sim whose controls include a mode/view switch (e.g. Elasticity
+    // Type, or Product vs Cost view) can return its own `formulas` for
+    // the *current* mode, so the formula card stays relevant instead of
+    // always showing every mode's formulas at once. Sims that don't
+    // return this just keep the static list set once in renderSim().
+    if (Array.isArray(result.formulas)) {
+        const formulaBody = document.getElementById('formula-body');
+        if (formulaBody) {
+            formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${f}</div>`).join('');
+        }
     }
 }
 

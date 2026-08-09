@@ -517,6 +517,38 @@ header, .sim-topbar {
 
 .control-number:focus { border-color: var(--primary); }
 
+/* Segmented-button group: for a categorical control (a mode/view
+   choice) rather than a continuous numeric one. */
+.control-segmented {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.segmented-btn {
+  flex: 1 1 auto;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border1);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text2);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.segmented-btn:hover { transform: translateY(-1px); }
+
+.segmented-btn.active {
+  background: var(--micro-grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.control-row.hidden { display: none !important; }
+
 /* ── Info sidebar cards ──────────────────────────────────────── */
 .info-card {
   border-radius: 14px;
