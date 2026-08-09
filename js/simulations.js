@@ -20,6 +20,7 @@ const SIMS = [
         module: 'micro',
         title: 'Supply & Demand',
         desc: 'Interact with supply and demand curves to find equilibrium.',
+        chapter: 'Class XII Microeconomics · Ch. 2 & 4: Demand, Supply and Market Equilibrium',
         concept: '<p>The equilibrium price and quantity occur where the market demand curve and the market supply curve intersect. Shifting demand — say, due to a change in income, tastes, or a related good\'s price — moves this intersection along the supply curve, changing both the equilibrium price and quantity.</p>',
         formulas: ['Demand: P = 100 − 1.2Q', 'Supply: P = 20 + 0.8Q', 'Equilibrium: Qd = Qs'],
         controls: [
@@ -39,7 +40,8 @@ const SIMS = [
                 ],
                 layout: { xaxis: { title: 'Quantity', range: [0, 60] }, yaxis: { title: 'Price (₹)', range: [0, 110] } },
                 readings: `<div class="reading-row"><span>Equilibrium Price</span><b>₹${fmt(P)}</b></div>
-                           <div class="reading-row"><span>Equilibrium Quantity</span><b>${fmt(Q)} units</b></div>`
+                           <div class="reading-row"><span>Equilibrium Quantity</span><b>${fmt(Q)} units</b></div>
+                           <div class="reading-row insight-row">💡 ${v.shift > 0 ? 'Demand shifted right → both equilibrium price and quantity rise.' : v.shift < 0 ? 'Demand shifted left → both equilibrium price and quantity fall.' : 'No shift yet — try moving the slider to see the equilibrium change.'}</div>`
             };
         }
     },
@@ -48,6 +50,7 @@ const SIMS = [
         module: 'micro',
         title: 'Price Elasticity of Demand',
         desc: 'Understand how elasticity affects consumer and producer behavior.',
+        chapter: 'Class XII Microeconomics · Ch. 2: Consumer Equilibrium and Demand (Price Elasticity)',
         concept: '<p>Price elasticity of demand measures how responsive the quantity demanded is to a change in price. Demand is <b>elastic</b> (|Ed| &gt; 1) when quantity changes proportionally more than price, and <b>inelastic</b> (|Ed| &lt; 1) when quantity barely responds.</p>',
         formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', 'Demand: Q = 50 − 0.5P'],
         controls: [
@@ -59,6 +62,11 @@ const SIMS = [
             const ps = range(20).map(i => i * 5);
             const qs = ps.map(p => 50 - 0.5 * p);
             const label = Math.abs(Ed) > 1 ? 'Elastic' : Math.abs(Ed) < 1 ? 'Inelastic' : 'Unit Elastic';
+            const insight = Math.abs(Ed) > 1
+                ? 'Demand is elastic here — a price change causes a proportionally larger change in quantity demanded, so total revenue moves opposite to price.'
+                : Math.abs(Ed) < 1
+                    ? 'Demand is inelastic here — quantity barely responds to the price change, so total revenue moves with price.'
+                    : 'Demand is unit elastic here — %ΔQ exactly equals %ΔP.';
             return {
                 traces: [
                     { x: qs, y: ps, mode: 'lines', name: 'Demand', line: { color: '#2563eb', width: 3 } },
@@ -67,7 +75,8 @@ const SIMS = [
                 layout: { xaxis: { title: 'Quantity', range: [0, 55] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
                 readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
                            <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${fmt(Ed)}</b></div>
-                           <div class="reading-row"><span>Classification</span><b>${label}</b></div>`
+                           <div class="reading-row"><span>Classification</span><b>${label}</b></div>
+                           <div class="reading-row insight-row">💡 ${insight}</div>`
             };
         }
     },
@@ -76,6 +85,7 @@ const SIMS = [
         module: 'macro',
         title: 'GDP & Circular Flow',
         desc: 'Track the flow of money through households, firms, government and the foreign sector.',
+        chapter: 'Class XII Macroeconomics · Ch. 2: National Income and Related Aggregates (Circular Flow)',
         concept: '<p>The circular flow of income shows how money moves between households, firms, the government and the foreign sector. Government spending injects income into the flow while taxes withdraw it — the size of each flow affects aggregate demand and national income.</p>',
         formulas: ['GDP (expenditure method) = C + I + G + (X − M)', 'Injections = I + G + X', 'Leakages = S + T + M'],
         controls: [
@@ -101,7 +111,8 @@ const SIMS = [
                 layout: { showlegend: false },
                 readings: `<div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
                            <div class="reading-row"><span>Net Exports (X−M)</span><b>₹${nx}B</b></div>
-                           <div class="reading-row"><span>Injections (G + Exports, est.)</span><b>₹${fmt(g + exports, 0)}B</b></div>`
+                           <div class="reading-row"><span>Injections (G + Exports, est.)</span><b>₹${fmt(g + exports, 0)}B</b></div>
+                           <div class="reading-row insight-row">💡 Government spending and exports are <b>injections</b> into the circular flow — raising them increases the flow of income between households and firms and pushes national income up.</div>`
             };
         }
     },
@@ -110,6 +121,7 @@ const SIMS = [
         module: 'macro',
         title: 'The Multiplier Effect',
         desc: 'See how a change in investment leads to a larger change in national income.',
+        chapter: 'Class XII Macroeconomics · Ch. 4: Determination of Income and Employment (Investment Multiplier)',
         concept: '<p>Because one person\'s spending is another person\'s income, an initial injection of investment spending triggers successive rounds of consumption spending. The multiplier shows how much larger the final change in income is compared to the initial injection.</p>',
         formulas: ['k = 1 / (1 − MPC)', 'ΔY = k × ΔI', 'AE = C + I = a + MPC×Y + I'],
         controls: [
@@ -136,7 +148,8 @@ const SIMS = [
                 readings: `<div class="reading-row"><span>Multiplier (k)</span><b>${fmt(k)}</b></div>
                            <div class="reading-row"><span>Old Equilibrium Y</span><b>₹${fmt(Y0)}B</b></div>
                            <div class="reading-row"><span>New Equilibrium Y</span><b>₹${fmt(Y1)}B</b></div>
-                           <div class="reading-row"><span>ΔY (actual)</span><b>₹${fmt(Y1 - Y0)}B</b></div>`
+                           <div class="reading-row"><span>ΔY (actual)</span><b>₹${fmt(Y1 - Y0)}B</b></div>
+                           <div class="reading-row insight-row">💡 A higher MPC means households spend more of every extra rupee they earn, so each round of spending recycles further — a bigger multiplier and a bigger final change in income for the same ΔI.</div>`
             };
         }
     },
@@ -145,6 +158,7 @@ const SIMS = [
         module: 'stats',
         title: 'Correlation & Scatter',
         desc: 'Visualize data relationships in a scatter plot.',
+        chapter: 'Class XI Statistics for Economics · Ch. 7: Correlation',
         concept: '<p>Correlation measures the strength and direction of the linear relationship between two variables. A coefficient near +1 or −1 indicates a strong relationship; near 0 indicates little to no linear relationship.</p>',
         formulas: ['Karl Pearson\'s r = Σ(x−x̄)(y−ȳ) / √[Σ(x−x̄)² · Σ(y−ȳ)²]', '−1 ≤ r ≤ +1'],
         controls: [
@@ -170,7 +184,8 @@ const SIMS = [
                 ],
                 layout: { xaxis: { title: 'X', range: [-4, 4] }, yaxis: { title: 'Y', range: [-4, 4] }, showlegend: false },
                 readings: `<div class="reading-row"><span>Sample Correlation (r)</span><b>${fmt(actualR)}</b></div>
-                           <div class="reading-row"><span>Interpretation</span><b>${Math.abs(actualR) > 0.7 ? 'Strong' : Math.abs(actualR) > 0.3 ? 'Moderate' : 'Weak'} ${actualR >= 0 ? 'Positive' : 'Negative'}</b></div>`
+                           <div class="reading-row"><span>Interpretation</span><b>${Math.abs(actualR) > 0.7 ? 'Strong' : Math.abs(actualR) > 0.3 ? 'Moderate' : 'Weak'} ${actualR >= 0 ? 'Positive' : 'Negative'}</b></div>
+                           <div class="reading-row insight-row">💡 ${actualR >= 0 ? 'As X rises, Y tends to rise too' : 'As X rises, Y tends to fall'} — but remember, correlation only measures the linear relationship and never proves that one variable causes the other.</div>`
             };
         }
     },
@@ -179,6 +194,7 @@ const SIMS = [
         module: 'india',
         title: 'Poverty & Inequality',
         desc: 'Analyze income distribution and poverty lines using the Lorenz curve.',
+        chapter: 'Class XI Indian Economic Development · Ch. 4: Poverty',
         concept: '<p>The Lorenz curve plots the cumulative share of income received against the cumulative share of the population. The further it bows away from the diagonal "line of equality", the greater the income inequality — summarized by the Gini coefficient.</p>',
         formulas: ['Lorenz Curve: L(p) = p^k', 'Gini Coefficient ≈ (k−1) / (k+1)', 'Gini = 0 → perfect equality; Gini = 1 → perfect inequality'],
         controls: [
@@ -196,7 +212,8 @@ const SIMS = [
                 ],
                 layout: { xaxis: { title: 'Cumulative % of Population' }, yaxis: { title: 'Cumulative % of Income' } },
                 readings: `<div class="reading-row"><span>Approx. Gini Coefficient</span><b>${fmt(gini)}</b></div>
-                           <div class="reading-row"><span>Interpretation</span><b>${gini < 0.3 ? 'Relatively Equal' : gini < 0.5 ? 'Moderate Inequality' : 'High Inequality'}</b></div>`
+                           <div class="reading-row"><span>Interpretation</span><b>${gini < 0.3 ? 'Relatively Equal' : gini < 0.5 ? 'Moderate Inequality' : 'High Inequality'}</b></div>
+                           <div class="reading-row insight-row">💡 The further the red Lorenz curve bows away from the diagonal line of equality, the more national income is concentrated among fewer people.</div>`
             };
         }
     }
