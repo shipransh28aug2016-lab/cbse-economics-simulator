@@ -38,15 +38,53 @@ if (typeof SIMS !== 'undefined') {
         {
             id: 'micro-producer-costs',
             module: 'micro',
-            title: 'Producer Costs (AC & MC)',
-            desc: 'Explore how average and marginal cost curves relate to output.',
-            chapter: 'Class XII Microeconomics · Ch. 3: Producer Behaviour and Supply (Cost Curves)',
-            concept: '<p>Average Cost (AC) typically falls and then rises as output increases, forming a U-shape. Marginal Cost (MC) cuts AC at its minimum point — while MC is below AC, average cost is still falling; once MC rises above AC, average cost starts rising too.</p>',
+            title: 'Producer Behaviour: Product & Cost Curves',
+            desc: 'Explore Total/Average/Marginal Product (Returns to a Factor) and Average/Marginal Cost curves.',
+            chapter: 'Class XII Microeconomics · Ch. 3: Producer Behaviour and Supply (Returns to a Factor & Cost Curves)',
+            concept: '<p>Switch between two related views. <b>Product</b> shows the Law of Variable Proportions: as one variable factor (labour) increases with other factors fixed, Marginal Product rises (Stage I), then falls while still positive (Stage II), then turns negative (Stage III). <b>Cost</b> shows the mirror-image relationship: Average Cost (AC) falls then rises, and Marginal Cost (MC) cuts AC exactly at its minimum.</p>',
             formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ'],
             controls: [
-                { id: 'q', label: 'Output Level (Q)', min: 1, max: 30, step: 1, value: 10, unit: '' }
+                {
+                    id: 'view', label: 'View', type: 'select', value: 'costs',
+                    options: [
+                        { value: 'costs', label: 'Cost Curves (AC, MC)' },
+                        { value: 'product', label: 'Product Curves (TP, AP, MP)' }
+                    ]
+                },
+                { id: 'q', label: 'Output Level (Q)', min: 1, max: 30, step: 1, value: 10, unit: '', showWhen: { id: 'view', equals: 'costs' } },
+                { id: 'labor', label: 'Labour Units (L)', min: 1, max: 24, step: 1, value: 10, unit: '', showWhen: { id: 'view', equals: 'product' } }
             ],
             compute(v) {
+                if (v.view === 'product') {
+                    const L = v.labor;
+                    const Ls = range(24).map(i => i + 1);
+                    const tp = l => 30 * l * l - l * l * l;
+                    const ap = l => 30 * l - l * l;
+                    const mp = l => 60 * l - 3 * l * l;
+                    const TP = tp(L), AP = ap(L), MP = mp(L);
+                    const stage = MP > AP ? 'Stage I: Increasing Returns' : MP >= 0 ? 'Stage II: Diminishing Returns' : 'Stage III: Negative Returns';
+                    const stageNote = MP > AP
+                        ? 'Each extra worker adds more than the average — MP is still pulling AP up.'
+                        : MP >= 0
+                            ? 'Each extra worker adds less than before (and less than the average) — this is the normal, rational stage of production.'
+                            : 'Too much labour is now crowded onto fixed factors — an extra worker actually reduces Total Product.';
+                    return {
+                        traces: [
+                            { x: Ls, y: Ls.map(ap), mode: 'lines', name: 'Average Product (AP)', line: { color: '#2563eb', width: 3 } },
+                            { x: Ls, y: Ls.map(mp), mode: 'lines', name: 'Marginal Product (MP)', line: { color: '#f59e0b', width: 3 } },
+                            { x: Ls, y: Ls.map(() => 0), mode: 'lines', name: 'Zero', line: { color: '#9ca3af', dash: 'dot' } },
+                            { x: [L], y: [AP], mode: 'markers', name: 'AP at L', marker: { color: '#2563eb', size: 9 } },
+                            { x: [L], y: [MP], mode: 'markers', name: 'MP at L', marker: { color: '#f59e0b', size: 9 } }
+                        ],
+                        layout: { xaxis: { title: 'Labour Units (L)' }, yaxis: { title: 'Product (units)', range: [-60, 260] } },
+                        formulas: ['TP = f(L), other factors fixed', 'AP = TP / L', 'MP = ΔTP / ΔL', 'Law of Variable Proportions: MP rises, then falls, then turns negative'],
+                        readings: `<div class="reading-row"><span>Total Product (TP)</span><b>${fmt(TP, 0)}</b></div>
+                                   <div class="reading-row"><span>Average Product (AP)</span><b>${fmt(AP)}</b></div>
+                                   <div class="reading-row"><span>Marginal Product (MP)</span><b>${fmt(MP)}</b></div>
+                                   <div class="reading-row"><span>Stage</span><b>${stage}</b></div>
+                                   <div class="reading-row insight-row">💡 ${stageNote}</div>`
+                    };
+                }
                 const a = 100, b = 5, c = 0.3, Q = v.q;
                 const qs = range(30).map(i => i + 1);
                 const acs = qs.map(q => a / q + b + c * q);
@@ -60,6 +98,7 @@ if (typeof SIMS !== 'undefined') {
                         { x: [Q], y: [MC], mode: 'markers', name: 'MC at Q', marker: { color: '#f59e0b', size: 9 } }
                     ],
                     layout: { xaxis: { title: 'Output (Q)' }, yaxis: { title: 'Cost (₹)', range: [0, 60] } },
+                    formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ'],
                     readings: `<div class="reading-row"><span>Average Cost at Q</span><b>₹${fmt(AC)}</b></div>
                                <div class="reading-row"><span>Marginal Cost at Q</span><b>₹${fmt(MC)}</b></div>
                                <div class="reading-row"><span>AC is currently</span><b>${MC < AC ? 'Falling' : 'Rising'}</b></div>
@@ -143,8 +182,8 @@ if (typeof SIMS !== 'undefined') {
             title: 'Credit / Money Creation',
             desc: 'See how banks multiply an initial deposit through successive lending.',
             chapter: 'Class XII Macroeconomics · Ch. 3: Money and Banking (Credit Creation)',
-            concept: '<p>When a bank keeps only a fraction of deposits as reserves (the Legal Reserve Ratio) and lends out the rest, that lending becomes a new deposit elsewhere in the banking system. This process repeats, creating a total money supply many times the original deposit.</p>',
-            formulas: ['Credit Multiplier = 1 / LRR', 'Total Deposits Created = Initial Deposit × (1 / LRR)'],
+            concept: '<p>When a bank keeps only a fraction of deposits as reserves (the Legal Reserve Ratio, modeled by the slider below) and lends out the rest, that lending becomes a new deposit elsewhere in the banking system. This process repeats, creating a total money supply many times the original deposit. The central bank (RBI) controls this process using several named monetary-policy tools: <b>CRR</b> (Cash Reserve Ratio) and <b>SLR</b> (Statutory Liquidity Ratio) directly set the reserve requirement modeled here; the <b>Repo Rate</b>, <b>Reverse Repo Rate</b> and <b>Bank Rate</b> change how expensive it is for banks to borrow, indirectly affecting how much they lend; and <b>Open Market Operations (OMO)</b> — the RBI buying/selling government securities — directly add or remove money from circulation.</p>',
+            formulas: ['Credit Multiplier = 1 / LRR', 'Total Deposits Created = Initial Deposit × (1 / LRR)', 'RBI tools: CRR, SLR, Repo Rate, Reverse Repo Rate, Bank Rate, Open Market Operations'],
             controls: [
                 { id: 'rr', label: 'Legal Reserve Ratio (%)', min: 5, max: 50, step: 5, value: 20, unit: '%' },
                 { id: 'deposit', label: 'Initial Deposit (₹)', min: 1000, max: 10000, step: 500, value: 5000, unit: '' }
@@ -173,17 +212,19 @@ if (typeof SIMS !== 'undefined') {
             title: 'Government Budget',
             desc: 'Compare government receipts and expenditure and see the resulting deficits.',
             chapter: 'Class XII Macroeconomics · Ch. 5: Government Budget and the Economy',
-            concept: '<p>The government budget records planned receipts (revenue + capital) and expenditure (revenue + capital) for the year. When expenditure exceeds receipts, the shortfall shows up as a deficit — the revenue deficit and fiscal deficit are two key measures used to judge the budget\'s health.</p>',
-            formulas: ['Revenue Deficit = Revenue Expenditure − Revenue Receipts', 'Fiscal Deficit = Total Expenditure − Total Receipts (excl. borrowings)'],
+            concept: '<p>The government budget records planned receipts (revenue + capital) and expenditure (revenue + capital) for the year. When expenditure exceeds receipts, the shortfall shows up as a deficit. The NCERT chapter names three: <b>Revenue Deficit</b> (routine expenses exceeding routine receipts), <b>Fiscal Deficit</b> (total borrowing requirement), and <b>Primary Deficit</b> (fiscal deficit excluding interest on past borrowing — showing the deficit from this year\'s policy alone).</p>',
+            formulas: ['Revenue Deficit = Revenue Expenditure − Revenue Receipts', 'Fiscal Deficit = Total Expenditure − Total Receipts (excl. borrowings)', 'Primary Deficit = Fiscal Deficit − Interest Payments'],
             controls: [
                 { id: 'rr', label: 'Revenue Receipts (₹B)', min: 50, max: 300, step: 10, value: 150, unit: '' },
-                { id: 're', label: 'Revenue Expenditure (₹B)', min: 50, max: 300, step: 10, value: 180, unit: '' }
+                { id: 're', label: 'Revenue Expenditure (₹B)', min: 50, max: 300, step: 10, value: 180, unit: '' },
+                { id: 'interest', label: 'Interest Payments (₹B)', min: 0, max: 80, step: 5, value: 30, unit: '' }
             ],
             compute(v) {
-                const revenueReceipts = v.rr, capitalReceipts = 60, revenueExp = v.re, capitalExp = 90;
+                const revenueReceipts = v.rr, capitalReceipts = 60, revenueExp = v.re, capitalExp = 90, interest = v.interest;
                 const totalReceipts = revenueReceipts + capitalReceipts, totalExp = revenueExp + capitalExp;
                 const revenueDeficit = revenueExp - revenueReceipts;
                 const fiscalDeficit = totalExp - totalReceipts;
+                const primaryDeficit = fiscalDeficit - interest;
                 return {
                     traces: [{
                         x: ['Revenue Receipts', 'Capital Receipts', 'Revenue Exp.', 'Capital Exp.'],
@@ -196,7 +237,8 @@ if (typeof SIMS !== 'undefined') {
                                <div class="reading-row"><span>Total Expenditure</span><b>₹${fmt(totalExp, 0)}B</b></div>
                                <div class="reading-row"><span>Revenue Deficit</span><b>₹${fmt(Math.max(revenueDeficit, 0), 0)}B</b></div>
                                <div class="reading-row"><span>Fiscal Deficit (illustrative)</span><b>₹${fmt(Math.max(fiscalDeficit, 0), 0)}B</b></div>
-                               <div class="reading-row insight-row">💡 ${revenueDeficit > 0 ? 'A positive revenue deficit means the government is borrowing to cover routine, day-to-day expenses — not just investment.' : 'Revenue receipts cover revenue expenditure here, so there is no revenue deficit to finance through borrowing.'}</div>`
+                               <div class="reading-row"><span>Primary Deficit</span><b>₹${fmt(Math.max(primaryDeficit, 0), 0)}B</b></div>
+                               <div class="reading-row insight-row">💡 ${primaryDeficit <= 0 ? 'Primary deficit is zero or negative — this year\'s fiscal deficit is entirely (or more than) explained by interest owed on past borrowing, not fresh overspending.' : 'A positive primary deficit means the government is borrowing for more than just interest on old debt — it reflects this year\'s own spending decisions.'}</div>`
                 };
             }
         },
@@ -206,8 +248,8 @@ if (typeof SIMS !== 'undefined') {
             title: 'Balance of Payments & Exchange Rate',
             desc: 'See how demand and supply of foreign exchange set the exchange rate.',
             chapter: 'Class XII Macroeconomics · Ch. 6: Balance of Payments (Foreign Exchange Market)',
-            concept: '<p>The exchange rate (₹ per US$) is set where the demand for foreign exchange (driven by imports and capital outflows) equals the supply of foreign exchange (driven by exports and capital inflows). A rise in demand for dollars depreciates the rupee.</p>',
-            formulas: ['Demand for $ ↑ ⇒ Rupee depreciates (₹/$ rises)', 'Equilibrium: Demand for $ = Supply of $'],
+            concept: '<p>This lab models a <b>flexible (floating) exchange rate</b> system, where the rate (₹ per US$) is set purely by market forces — the demand for foreign exchange (driven by imports and capital outflows) equals the supply of foreign exchange (driven by exports and capital inflows). A rise in demand for dollars depreciates the rupee. The NCERT chapter also names two alternatives: a <b>fixed exchange rate</b>, where the central bank officially pegs the rate rather than letting it float (so there\'s no market diagram to explore — it\'s an administrative decision, not a market outcome); and a <b>managed floating</b> system — India\'s actual regime — where the rate mostly floats but the RBI intervenes occasionally to smooth out volatility.</p>',
+            formulas: ['Demand for $ ↑ ⇒ Rupee depreciates (₹/$ rises)', 'Equilibrium: Demand for $ = Supply of $', 'Exchange rate systems: Fixed · Flexible (floating) · Managed Floating'],
             controls: [
                 { id: 'shift', label: 'Demand for $ Shift (Imports)', min: -30, max: 30, step: 5, value: 0, unit: '' }
             ],
@@ -270,10 +312,10 @@ if (typeof SIMS !== 'undefined') {
             id: 'stats-dispersion',
             module: 'stats',
             title: 'Measures of Dispersion',
-            desc: 'See how spread-out data affects mean, standard deviation and CV.',
+            desc: 'See how spread-out data affects Range, Quartile Deviation, SD and CV.',
             chapter: 'Class XI Statistics for Economics · Ch. 6: Measures of Dispersion',
-            concept: '<p>While the mean summarizes the "centre" of a dataset, dispersion measures like standard deviation describe how spread out the values are around that centre. Two datasets can share the same mean yet look very different once you compare their spread.</p>',
-            formulas: ['Mean (x̄) = Σx / n', 'SD (σ) = √[Σ(x−x̄)² / n]', 'Coefficient of Variation = (σ / x̄) × 100'],
+            concept: '<p>While the mean summarizes the "centre" of a dataset, dispersion measures describe how spread out the values are around that centre. The NCERT chapter covers several: the simple <b>Range</b> and <b>Quartile Deviation</b> (based on position), and the more powerful <b>Standard Deviation</b> and <b>Coefficient of Variation</b> (based on every value). Two datasets can share the same mean yet look very different once you compare their spread.</p>',
+            formulas: ['Range = Maximum − Minimum', 'Quartile Deviation (QD) = (Q3 − Q1) / 2', 'Mean (x̄) = Σx / n', 'SD (σ) = √[Σ(x−x̄)² / n]', 'Coefficient of Variation = (σ / x̄) × 100'],
             controls: [
                 { id: 'spread', label: 'Spread Factor', min: 1, max: 10, step: 1, value: 4, unit: '' }
             ],
@@ -285,13 +327,24 @@ if (typeof SIMS !== 'undefined') {
                 const variance = data.reduce((s, x) => s + (x - mean) ** 2, 0) / data.length;
                 const sd = Math.sqrt(variance);
                 const cv = (sd / mean) * 100;
+                const sorted = [...data].sort((a, b) => a - b);
+                const range_ = sorted[sorted.length - 1] - sorted[0];
+                const quartile = (p) => {
+                    const pos = p * (sorted.length - 1);
+                    const lo = Math.floor(pos), hi = Math.ceil(pos);
+                    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+                };
+                const q1 = quartile(0.25), q3 = quartile(0.75);
+                const qd = (q3 - q1) / 2;
                 return {
                     traces: [{ x: data.map((_, i) => `X${i + 1}`), y: data, type: 'bar', marker: { color: '#2563eb' } }],
                     layout: { xaxis: { title: 'Data Point' }, yaxis: { title: 'Value', range: [0, 100] }, showlegend: false },
-                    readings: `<div class="reading-row"><span>Mean</span><b>${fmt(mean)}</b></div>
+                    readings: `<div class="reading-row"><span>Range</span><b>${fmt(range_)}</b></div>
+                               <div class="reading-row"><span>Quartile Deviation (QD)</span><b>${fmt(qd)}</b></div>
+                               <div class="reading-row"><span>Mean</span><b>${fmt(mean)}</b></div>
                                <div class="reading-row"><span>Standard Deviation</span><b>${fmt(sd)}</b></div>
                                <div class="reading-row"><span>Coefficient of Variation</span><b>${fmt(cv)}%</b></div>
-                               <div class="reading-row insight-row">💡 A higher Coefficient of Variation means the data is more spread out relative to its mean — useful for comparing the consistency of two datasets even when their means differ.</div>`
+                               <div class="reading-row insight-row">💡 Range and QD only use the extreme/positional values, so they're quick but ignore most of the data. SD and CV use every value, so they're more reliable — CV is best for comparing the consistency of two datasets with different means.</div>`
                 };
             }
         },
@@ -348,16 +401,40 @@ if (typeof SIMS !== 'undefined') {
         {
             id: 'india-employment-structure',
             module: 'india',
-            title: 'Structural Transformation of Employment',
-            desc: 'See how employment shifts from agriculture to industry and services as the economy grows.',
+            title: 'Employment: Structural Transformation & Informalisation',
+            desc: 'See how employment shifts from agriculture to industry/services, and from informal to formal work.',
             chapter: 'Class XI Indian Economic Development · Ch. 7: Employment: Growth, Informalisation and Related Issues',
-            concept: '<p>As economies develop, the share of the workforce employed in agriculture typically falls while the shares in industry and services rise — a pattern known as structural transformation, closely tied to rising productivity and incomes.</p>',
+            concept: '<p>The Employment chapter covers two related shifts. <b>Structural transformation</b>: as economies develop, the workforce share in agriculture typically falls while industry and services rise. <b>Informalisation</b>: workers move (unevenly) from the <b>informal sector</b> — no job security, no social security, often self-employed or casual labour — toward <b>formal sector</b> jobs with regular wages and legal protection. Switch views below to explore either.</p>',
             formulas: ['Structural Transformation: labour shifts from Agriculture → Industry & Services as the economy develops'],
             controls: [
+                {
+                    id: 'view', label: 'View', type: 'select', value: 'sector',
+                    options: [
+                        { value: 'sector', label: 'Sector Shift' },
+                        { value: 'formality', label: 'Formal vs Informal' }
+                    ]
+                },
                 { id: 'yr', label: 'Years of Growth', min: 0, max: 30, step: 1, value: 10, unit: ' yrs' }
             ],
             compute(v) {
                 const t = v.yr / 30;
+                if (v.view === 'formality') {
+                    const formal = 10 + 40 * t;
+                    const informal = 100 - formal;
+                    return {
+                        traces: [{
+                            x: ['Informal Sector', 'Formal Sector'],
+                            y: [informal, formal],
+                            type: 'bar',
+                            marker: { color: ['#f97316', '#3b82f6'] }
+                        }],
+                        layout: { xaxis: { title: 'Employment Category' }, yaxis: { title: 'Share of Workforce (%)', range: [0, 100] }, showlegend: false },
+                        formulas: ['Informal Sector: no job/social security, often self-employed or casual labour', 'Formal Sector: registered enterprises, regular wages, legal & social protection'],
+                        readings: `<div class="reading-row"><span>Informal Sector</span><b>${fmt(informal)}%</b></div>
+                                   <div class="reading-row"><span>Formal Sector</span><b>${fmt(formal)}%</b></div>
+                                   <div class="reading-row insight-row">💡 India's workforce has historically been overwhelmingly informal. A rising formal share means more workers gaining job security, social security and legal protection — the "informalisation" concern is that this shift has been slow and uneven.</div>`
+                    };
+                }
                 const agri = 50 - 30 * t;
                 const services = 25 + 25 * t;
                 const industry = 100 - agri - services;
@@ -369,6 +446,7 @@ if (typeof SIMS !== 'undefined') {
                         marker: { color: ['#84cc16', '#f59e0b', '#3b82f6'] }
                     }],
                     layout: { xaxis: { title: 'Sector' }, yaxis: { title: 'Share of Employment (%)', range: [0, 100] }, showlegend: false },
+                    formulas: ['Structural Transformation: labour shifts from Agriculture → Industry & Services as the economy develops'],
                     readings: `<div class="reading-row"><span>Agriculture</span><b>${fmt(agri)}%</b></div>
                                <div class="reading-row"><span>Industry</span><b>${fmt(industry)}%</b></div>
                                <div class="reading-row"><span>Services</span><b>${fmt(services)}%</b></div>

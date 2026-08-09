@@ -48,15 +48,62 @@ const SIMS = [
     {
         id: 'micro-elasticity',
         module: 'micro',
-        title: 'Price Elasticity of Demand',
-        desc: 'Understand how elasticity affects consumer and producer behavior.',
-        chapter: 'Class XII Microeconomics · Ch. 2: Consumer Equilibrium and Demand (Price Elasticity)',
-        concept: '<p>Price elasticity of demand measures how responsive the quantity demanded is to a change in price. Demand is <b>elastic</b> (|Ed| &gt; 1) when quantity changes proportionally more than price, and <b>inelastic</b> (|Ed| &lt; 1) when quantity barely responds.</p>',
+        title: 'Elasticity of Demand (Price / Income / Cross)',
+        desc: 'Explore all three CBSE-named elasticities of demand in one lab.',
+        chapter: 'Class XII Microeconomics · Ch. 2: Consumer Equilibrium and Demand (Price, Income & Cross Elasticity)',
+        concept: '<p>The NCERT syllabus names three distinct elasticities of demand. <b>Price elasticity (Ed)</b> measures responsiveness to the good\'s own price. <b>Income elasticity (Ey)</b> measures responsiveness to consumer income — positive for a normal good, negative for an inferior good. <b>Cross elasticity (Exy)</b> measures responsiveness to a <i>related</i> good\'s price — positive for substitutes, negative for complements. Use the switch below to explore all three.</p>',
         formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', 'Demand: Q = 50 − 0.5P'],
         controls: [
-            { id: 'price', label: 'Price (₹)', min: 5, max: 95, step: 1, value: 40, unit: '' }
+            {
+                id: 'type', label: 'Elasticity Type', type: 'select', value: 'price',
+                options: [
+                    { value: 'price', label: 'Price (Ed)' },
+                    { value: 'income', label: 'Income (Ey)' },
+                    { value: 'cross', label: 'Cross (Exy)' }
+                ]
+            },
+            { id: 'price', label: 'Price (₹)', min: 5, max: 95, step: 1, value: 40, unit: '', showWhen: { id: 'type', equals: 'price' } },
+            { id: 'income', label: 'Consumer Income (₹\'000/mo)', min: 10, max: 100, step: 5, value: 40, unit: '', showWhen: { id: 'type', equals: 'income' } },
+            { id: 'pricey', label: 'Price of Related Good Y (₹)', min: 5, max: 95, step: 1, value: 40, unit: '', showWhen: { id: 'type', equals: 'cross' } }
         ],
         compute(v) {
+            if (v.type === 'income') {
+                const Y = v.income, Q = Math.max(0.01, 5 + 0.3 * Y);
+                const Ey = 0.3 * (Y / Q);
+                const ys = range(21).map(i => i * 5);
+                const qs = ys.map(y => 5 + 0.3 * y);
+                const label = Ey > 1 ? 'Luxury Good' : Ey > 0 ? 'Necessity (Normal Good)' : 'Inferior Good';
+                return {
+                    traces: [
+                        { x: ys, y: qs, mode: 'lines', name: 'Engel Curve', line: { color: '#10b981', width: 3 } },
+                        { x: [Y], y: [Q], mode: 'markers', name: 'Current Point', marker: { color: '#ef4444', size: 10 } }
+                    ],
+                    layout: { xaxis: { title: 'Consumer Income (₹\'000/month)', range: [0, 105] }, yaxis: { title: 'Quantity Demanded', range: [0, 35] } },
+                    formulas: ['Ey = (%ΔQ) / (%ΔY)', 'Point elasticity: Ey = (dQ/dY) × (Y/Q)', 'Demand: Q = 5 + 0.3Y (normal good)'],
+                    readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
+                               <div class="reading-row"><span>Income Elasticity (Ey)</span><b>${fmt(Ey)}</b></div>
+                               <div class="reading-row"><span>Classification</span><b>${label}</b></div>
+                               <div class="reading-row insight-row">💡 Ey &gt; 0 means demand rises with income (a normal good) — Ey &gt; 1 marks it a luxury, 0 &lt; Ey &lt; 1 a necessity. An inferior good (not modeled here) would show Ey &lt; 0.</div>`
+                };
+            }
+            if (v.type === 'cross') {
+                const Py = v.pricey, Qx = Math.max(0.01, 10 + 0.5 * Py);
+                const Exy = 0.5 * (Py / Qx);
+                const pys = range(20).map(i => i * 5);
+                const qxs = pys.map(py => 10 + 0.5 * py);
+                return {
+                    traces: [
+                        { x: pys, y: qxs, mode: 'lines', name: 'Demand for X vs Price of Y', line: { color: '#f59e0b', width: 3 } },
+                        { x: [Py], y: [Qx], mode: 'markers', name: 'Current Point', marker: { color: '#ef4444', size: 10 } }
+                    ],
+                    layout: { xaxis: { title: 'Price of Related Good Y (₹)', range: [0, 100] }, yaxis: { title: 'Quantity Demanded of Good X', range: [0, 60] } },
+                    formulas: ['Exy = (%ΔQx) / (%ΔPy)', 'Point elasticity: Exy = (dQx/dPy) × (Py/Qx)', 'Demand: Qx = 10 + 0.5Py (X and Y are substitutes)'],
+                    readings: `<div class="reading-row"><span>Quantity Demanded of X</span><b>${fmt(Qx)}</b></div>
+                               <div class="reading-row"><span>Cross Elasticity (Exy)</span><b>${fmt(Exy)}</b></div>
+                               <div class="reading-row"><span>Relationship</span><b>Substitutes (Exy &gt; 0)</b></div>
+                               <div class="reading-row insight-row">💡 Exy &gt; 0 (e.g. tea &amp; coffee) means a price rise in Y pushes buyers toward X — they're substitutes. Complements (e.g. car &amp; petrol) would show Exy &lt; 0 instead.</div>`
+                };
+            }
             const P = v.price, Q = Math.max(0.01, 50 - 0.5 * P);
             const Ed = -0.5 * (P / Q);
             const ps = range(20).map(i => i * 5);
@@ -73,6 +120,7 @@ const SIMS = [
                     { x: [Q], y: [P], mode: 'markers', name: 'Current Point', marker: { color: '#ef4444', size: 10 } }
                 ],
                 layout: { xaxis: { title: 'Quantity', range: [0, 55] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
+                formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', 'Demand: Q = 50 − 0.5P'],
                 readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
                            <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${fmt(Ed)}</b></div>
                            <div class="reading-row"><span>Classification</span><b>${label}</b></div>
@@ -86,11 +134,13 @@ const SIMS = [
         title: 'GDP & Circular Flow (Real Flow vs Money Flow)',
         desc: 'Watch the real flow of factors & goods move opposite to the money flow that pays for them.',
         chapter: 'Class XII Macroeconomics · Ch. 2: National Income and Related Aggregates (Circular Flow of Income)',
-        concept: '<p>The circular flow has two mirror-image halves that always move in <b>opposite directions</b> for the same transaction. The <b>real flow</b> (solid-outline, square markers) is what physically changes hands: households supply <b>factor services</b> — labour, land, capital, enterprise — to firms, and firms supply <b>goods &amp; services</b> back to households. The <b>money flow</b> (dashed, round markers) is the payment for it, moving the other way: firms pay <b>factor payments</b> (wages, rent, interest, profit) to households, and households pay <b>consumption expenditure</b> to firms. Government spending and exports are injections into this flow; taxes and imports are leakages out of it.</p>',
+        concept: '<p>The circular flow has two mirror-image halves that always move in <b>opposite directions</b> for the same transaction. The <b>real flow</b> (dashed wire, square markers) is what physically changes hands: households supply <b>factor services</b> — labour, land, capital, enterprise — to firms, and firms supply <b>goods &amp; services</b> back to households. The <b>money flow</b> (solid wire, round markers) is the payment for it, moving the other way: firms pay <b>factor payments</b> (wages, rent, interest, profit) to households, and households pay <b>consumption expenditure</b> to firms. Government spending and exports are injections into this flow; taxes and imports are leakages out of it.</p><p>This flow of income adds up to <b>GDP</b> (Gross Domestic Product — everything produced <i>within</i> the country). <b>GNP</b> = GDP + income earned abroad by residents − income earned domestically by non-residents. <b>NDP</b>/<b>NNP</b> subtract depreciation (wear-and-tear of capital) from GDP/GNP respectively — "Net" figures reflect only genuinely new output, not just replacing worn-out capital.</p>',
         formulas: [
             'Factor Services HH→Firms (real) moves opposite to Factor Payments Firms→HH (money)',
             'Goods &amp; Services Firms→HH (real) moves opposite to Consumption Exp. HH→Firms (money)',
             'GDP (expenditure method) = C + I + G + (X − M)',
+            'GNP = GDP + Net Factor Income from Abroad',
+            'NDP/NNP = GDP/GNP − Depreciation',
             'Injections (G + X) vs Leakages (T + M)'
         ],
         controls: [
@@ -249,8 +299,8 @@ const SIMS = [
         title: 'Correlation & Scatter',
         desc: 'Study Hours vs Test Score — visualize how two economic/statistical variables relate.',
         chapter: 'Class XI Statistics for Economics · Ch. 7: Correlation',
-        concept: '<p>Correlation measures the strength and direction of the linear relationship between two variables — here, a class\'s weekly study hours and their test scores. A coefficient near +1 or −1 indicates a strong relationship; near 0 indicates little to no linear relationship. This is the same method used to study real economic variable pairs, e.g. advertisement expenditure and sales, or price and quantity demanded.</p>',
-        formulas: ['Karl Pearson\'s r = Σ(x−x̄)(y−ȳ) / √[Σ(x−x̄)² · Σ(y−ȳ)²]', '−1 ≤ r ≤ +1'],
+        concept: '<p>Correlation measures the strength and direction of the linear relationship between two variables — here, a class\'s weekly study hours and their test scores. A coefficient near +1 or −1 indicates a strong relationship; near 0 indicates little to no linear relationship. This is the same method used to study real economic variable pairs, e.g. advertisement expenditure and sales, or price and quantity demanded. NCERT also covers <b>Spearman\'s Rank Correlation</b> — the same idea applied to <i>ranked</i> (ordinal) data instead of raw numeric values, useful when only relative order matters, e.g. ranking two judges\' preferences.</p>',
+        formulas: ['Karl Pearson\'s r = Σ(x−x̄)(y−ȳ) / √[Σ(x−x̄)² · Σ(y−ȳ)²]', 'Spearman\'s Rank r = 1 − [6Σd² / n(n²−1)], d = rank difference', '−1 ≤ r ≤ +1'],
         controls: [
             { id: 'r', label: 'Target Correlation (r)', min: -1, max: 1, step: 0.1, value: 0.7, unit: '' }
         ],
@@ -290,8 +340,8 @@ const SIMS = [
         module: 'india',
         title: 'Poverty & Inequality',
         desc: 'Analyze income distribution and poverty lines using the Lorenz curve.',
-        chapter: 'Class XI Indian Economic Development · Ch. 4: Poverty (Income Inequality — supplementary tool)',
-        concept: '<p>Beyond the poverty line, economists also study <b>income inequality</b> — how unevenly national income is distributed — using the Lorenz curve and Gini coefficient (standard statistical tools, used here to extend the NCERT poverty-line discussion). The Lorenz curve plots the cumulative share of income received against the cumulative share of the population. The further it bows away from the diagonal "line of equality", the greater the income inequality.</p>',
+        chapter: 'Class XI Indian Economic Development · Ch. 4: Poverty (Poverty Line & Income Inequality)',
+        concept: '<p>NCERT\'s core method for identifying the poor is the <b>poverty line</b> — a calorie-based minimum consumption expenditure (historically ~2400 kcal/day rural, ~2100 kcal/day urban) converted into a rupee cutoff; anyone below it is counted as <b>absolutely poor</b>. Beyond that headline number, economists also study <b>income inequality</b> — how unevenly income is distributed even among the non-poor — using the Lorenz curve and Gini coefficient (standard statistical tools, used here to extend the poverty-line discussion). The Lorenz curve plots the cumulative share of income received against the cumulative share of the population; the further it bows away from the diagonal "line of equality", the greater the inequality.</p>',
         formulas: ['Lorenz Curve: L(p) = p^k', 'Gini Coefficient ≈ (k−1) / (k+1)', 'Gini = 0 → perfect equality; Gini = 1 → perfect inequality'],
         controls: [
             { id: 'e', label: 'Inequality Parameter', min: 0, max: 5, step: 0.25, value: 1.5, unit: '' }
