@@ -82,14 +82,14 @@ function initApp() {
             // by cloning were previously unresponsive to clicks.
             if (grids[sim.module]) {
                 const card = document.createElement('div');
-                card.className = 'sim-card';
+                card.className = `sim-card sim-card--${sim.module}`;
                 card.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
                 card.onclick = () => openSim(sim.id);
                 grids[sim.module].appendChild(card);
             }
             if (grids['all']) {
                 const sysCard = document.createElement('div');
-                sysCard.className = 'sim-card';
+                sysCard.className = `sim-card sim-card--${sim.module}`;
                 sysCard.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
                 sysCard.onclick = () => openSim(sim.id);
                 grids['all'].appendChild(sysCard);
