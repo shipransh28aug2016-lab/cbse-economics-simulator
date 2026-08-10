@@ -72,8 +72,9 @@ function renderDataLabTable(sim, container) {
     const canRemove = dataLabRows.length > minRows;
     const canAdd = dataLabRows.length < maxRows;
 
-    let html = `<div class="controls-panel-header"><span>📋 Your Data — edit any cell</span>
+    let html = `<div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>📋 Your Data — edit any cell</span>
             <button type="button" class="reset-btn" id="datalab-reset">↺ Reset</button>
+            <span class="panel-chevron" aria-hidden="true">⌄</span>
         </div>
         <p class="controls-panel-hint">Type your own numbers directly into the table below — the calculation, chart and interpretation update instantly. Add or remove rows to try a dataset of your own, not just the sample.</p>
         <div class="datalab-table-wrap"><table class="datalab-table"><thead><tr>`;
@@ -125,11 +126,19 @@ function renderDataLabTable(sim, container) {
         recomputeDataLab(sim, true);
     });
     const resetBtn = document.getElementById('datalab-reset');
-    if (resetBtn) resetBtn.addEventListener('click', () => {
-        dataLabRows = cloneRows(sim.dataLab.defaultRows);
-        dataLabPrevRows = null;
-        recomputeDataLab(sim, true);
-    });
+    if (resetBtn) {
+        // Reset sits inside the same header that toggles collapse — stop
+        // the click from bubbling up and also toggling the panel.
+        resetBtn.addEventListener('click', (e) => e.stopPropagation());
+        resetBtn.addEventListener('click', () => {
+            dataLabRows = cloneRows(sim.dataLab.defaultRows);
+            dataLabPrevRows = null;
+            recomputeDataLab(sim, true);
+        });
+    }
+
+    const dataLabHeader = container.querySelector('.controls-panel-header');
+    if (dataLabHeader && typeof initPanelCollapse === 'function') initPanelCollapse(container, dataLabHeader, 'controls', false);
 }
 
 function recomputeDataLab(sim, rebuildTable) {

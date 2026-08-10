@@ -290,7 +290,10 @@ function buildControls(sim) {
     }
 
     const header = document.createElement('div');
-    header.className = 'controls-panel-header';
+    header.className = 'controls-panel-header collapsible-header';
+    header.dataset.panelKey = 'controls';
+    header.setAttribute('role', 'button');
+    header.setAttribute('tabindex', '0');
     header.innerHTML = `<span>🎛️ Adjust the Variables</span>`;
 
     const hint = document.createElement('p');
@@ -301,6 +304,10 @@ function buildControls(sim) {
     resetBtn.type = 'button';
     resetBtn.className = 'reset-btn';
     resetBtn.innerHTML = '↺ Reset';
+    // Reset sits inside the same header that toggles collapse (a bigger,
+    // more ergonomic click target than a chevron alone) — stop the click
+    // from bubbling up and also toggling the panel collapsed/expanded.
+    resetBtn.addEventListener('click', (e) => { e.stopPropagation(); });
     resetBtn.addEventListener('click', () => {
         sim.controls.forEach(c => {
             simEngineState[c.id] = c.value;
@@ -324,8 +331,14 @@ function buildControls(sim) {
         renderSimChart(sim);
     });
     header.appendChild(resetBtn);
+    const chevron = document.createElement('span');
+    chevron.className = 'panel-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.textContent = '⌄';
+    header.appendChild(chevron);
     panel.appendChild(header);
     panel.appendChild(hint);
+    if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, header, 'controls', false);
 
     sim.controls.forEach(c => {
         simEngineState[c.id] = c.value;

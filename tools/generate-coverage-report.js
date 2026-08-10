@@ -8,7 +8,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const FILES = [
-    'js/curriculum-data.js', 'js/sim-engine.js', 'js/datalab-engine.js', 'js/explorer-engine.js',
+    'js/curriculum-data.js', 'js/panel-collapse.js', 'js/sim-engine.js', 'js/datalab-engine.js', 'js/explorer-engine.js',
     'js/simulations.js', 'js/simulations_extended.js', 'js/simulations_class11_micro.js',
     'js/simulations_statistics_datalab.js', 'js/simulations_macro_datalab.js', 'js/simulations_ied_class12.js'
 ];
