@@ -90,6 +90,14 @@
        thing the "no wrong class mapping" check validates. -->
   <section class="modules-section">
 
+    <!-- Every module panel below is collapsible (click its header, or use
+         this one master switch) — collapsed panels show just the header,
+         so the whole app fits in far less scrolling. State is remembered
+         per-panel in localStorage. See js/panel-collapse.js. -->
+    <div class="panel-toolbar">
+      <button type="button" class="panel-toolbar-btn" id="home-collapse-toggle">🗂️ Collapse All</button>
+    </div>
+
     <div class="class-block">
       <div class="class-block-header">
         <h2 class="class-title">Class XI <span class="class-title-sub">— Subject Code 030</span></h2>
@@ -97,8 +105,8 @@
       </div>
 
       <!-- MODULE: STATISTICS -->
-      <div class="module-block">
-        <div class="module-header">
+      <div class="module-block" id="module-stats">
+        <div class="module-header collapsible-header" data-panel-key="module-stats" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge stats-badge">σ</div>
           <div>
             <h2 class="module-title">Statistics for Economics</h2>
@@ -111,13 +119,14 @@
             </svg>
             <span class="ring-pct" id="pct-stats">0%</span>
           </div>
+          <span class="panel-chevron" aria-hidden="true">⌄</span>
         </div>
         <div class="sims-grid" id="grid-stats"></div>
       </div>
 
       <!-- MODULE: MICROECONOMICS -->
-      <div class="module-block">
-        <div class="module-header">
+      <div class="module-block" id="module-micro">
+        <div class="module-header collapsible-header" data-panel-key="module-micro" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge micro-badge">μ</div>
           <div>
             <h2 class="module-title">Introductory Microeconomics</h2>
@@ -130,6 +139,7 @@
             </svg>
             <span class="ring-pct" id="pct-micro">0%</span>
           </div>
+          <span class="panel-chevron" aria-hidden="true">⌄</span>
         </div>
         <div class="sims-grid" id="grid-micro"></div>
       </div>
@@ -142,8 +152,8 @@
       </div>
 
       <!-- MODULE: MACROECONOMICS -->
-      <div class="module-block">
-        <div class="module-header">
+      <div class="module-block" id="module-macro">
+        <div class="module-header collapsible-header" data-panel-key="module-macro" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge macro-badge">M</div>
           <div>
             <h2 class="module-title">Introductory Macroeconomics</h2>
@@ -156,13 +166,14 @@
             </svg>
             <span class="ring-pct" id="pct-macro">0%</span>
           </div>
+          <span class="panel-chevron" aria-hidden="true">⌄</span>
         </div>
         <div class="sims-grid" id="grid-macro"></div>
       </div>
 
       <!-- MODULE: INDIAN ECONOMIC DEVELOPMENT -->
-      <div class="module-block">
-        <div class="module-header">
+      <div class="module-block" id="module-india">
+        <div class="module-header collapsible-header" data-panel-key="module-india" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge india-badge">🇮🇳</div>
           <div>
             <h2 class="module-title">Indian Economic Development</h2>
@@ -175,6 +186,7 @@
             </svg>
             <span class="ring-pct" id="pct-india">0%</span>
           </div>
+          <span class="panel-chevron" aria-hidden="true">⌄</span>
         </div>
         <div class="sims-grid" id="grid-india"></div>
       </div>
@@ -222,26 +234,33 @@
       <div class="controls-panel" id="controls-panel"></div>
     </div>
 
-    <!-- RIGHT: info sidebar -->
+    <!-- RIGHT: info sidebar. Every card is collapsible — click its header
+         (or use the master switch below) to shrink it to just its title,
+         so the full sidebar can be scanned, and the whole screen viewed,
+         with far less scrolling. State remembers per-card across sims.
+         See js/panel-collapse.js. -->
     <div class="sim-right">
-      <div class="info-card">
-        <div class="info-card-header">📚 Concept</div>
+      <div class="panel-toolbar">
+        <button type="button" class="panel-toolbar-btn" id="sim-collapse-toggle">🗂️ Collapse All</button>
+      </div>
+      <div class="info-card collapsed" id="concept-card">
+        <div class="info-card-header collapsible-header" data-panel-key="concept" role="button" tabindex="0" aria-expanded="false">📚 Concept<span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="concept-body"></div>
       </div>
-      <div class="info-card">
-        <div class="info-card-header">📐 Key Formulas</div>
+      <div class="info-card collapsed" id="formulas-card">
+        <div class="info-card-header collapsible-header" data-panel-key="formulas" role="button" tabindex="0" aria-expanded="false">📐 Key Formulas<span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body formula-body" id="formula-body"></div>
       </div>
-      <div class="info-card readings-card">
-        <div class="info-card-header">📊 Live Readings</div>
+      <div class="info-card readings-card" id="readings-card">
+        <div class="info-card-header collapsible-header" data-panel-key="readings" role="button" tabindex="0" aria-expanded="true">📊 Live Readings<span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="readings-body" id="readings-body"></div>
       </div>
-      <div class="info-card hidden" id="practice-card">
-        <div class="info-card-header">🧩 Guided Practice</div>
+      <div class="info-card hidden collapsed" id="practice-card">
+        <div class="info-card-header collapsible-header" data-panel-key="practice" role="button" tabindex="0" aria-expanded="false">🧩 Guided Practice<span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="practice-body"></div>
       </div>
-      <div class="info-card hidden" id="challenge-card">
-        <div class="info-card-header">🎯 Challenge</div>
+      <div class="info-card hidden collapsed" id="challenge-card">
+        <div class="info-card-header collapsible-header" data-panel-key="challenge" role="button" tabindex="0" aria-expanded="false">🎯 Challenge<span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="challenge-body"></div>
       </div>
       <button class="quiz-launch-btn" id="quiz-launch-btn">🎯 Take the Quiz  →</button>
@@ -331,6 +350,7 @@
 <script src="js/i18n_hi.js"></script>
 <script src="js/i18n_engine.js"></script>
 <script src="js/curriculum-data.js?v=1"></script>
+<script src="js/panel-collapse.js?v=1"></script>
 <script src="js/plotly.min.js?v=2"></script>
 <script src="js/sim-engine.js?v=2"></script>
 <script src="js/datalab-engine.js?v=1"></script>

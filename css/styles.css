@@ -404,6 +404,70 @@ header, .sim-topbar {
   margin-bottom: 10px;
 }
 
+/* ── Collapsible panels (every module block, info card and the
+   controls panel) — click a header (or the master switch) to shrink a
+   panel to just its title, so the whole app fits with far less
+   scrolling. See js/panel-collapse.js. ─────────────────────────── */
+.panel-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.panel-toolbar-btn {
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  color: var(--primary-2);
+  font-weight: 700;
+  font-size: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.panel-toolbar-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25); }
+
+.collapsible-header { cursor: pointer; }
+.collapsible-header:hover { filter: brightness(0.98); }
+
+.panel-chevron {
+  display: inline-block;
+  margin-left: auto;
+  padding-left: 10px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text3);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+/* Info cards (Concept / Formulas / Readings / Practice / Challenge):
+   header text + chevron share one flex row (see index.html), body is a
+   sibling that collapses away entirely. */
+.info-card-header.collapsible-header {
+  display: flex;
+  align-items: center;
+}
+.info-card.collapsed > .info-card-body,
+.info-card.collapsed > .readings-body {
+  display: none;
+}
+.info-card.collapsed .panel-chevron { transform: rotate(-90deg); }
+
+/* Home screen module blocks: collapse away the simulation-card grid,
+   keep the header (with its progress ring) always visible. */
+.module-block.collapsed .sims-grid { display: none; }
+.module-block.collapsed .module-header { margin-bottom: 0; }
+.module-block.collapsed .panel-chevron { transform: rotate(-90deg); }
+
+/* The controls panel (sliders / data-lab table / explorer nav) is
+   rebuilt from scratch by JS on every sim switch, always with a
+   `.controls-panel-header` as its first element — collapsing hides
+   every OTHER direct child, so the header (title + Reset + chevron)
+   stays put as the click target. */
+.controls-panel-header.collapsible-header { cursor: pointer; }
+.controls-panel.collapsed > :not(.controls-panel-header) { display: none; }
+.controls-panel.collapsed .panel-chevron { transform: rotate(-90deg); }
+
 /* ── Controls panel (sliders + numeric inputs) ───────────────── */
 .controls-panel {
   border-radius: 16px;

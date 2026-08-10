@@ -17,6 +17,8 @@ const appGlobals = {
     refreshChallenge: 'readonly', renderPractice: 'readonly', renderChallengeShell: 'readonly',
     describeWhatChanged: 'readonly',
     renderDataLab: 'readonly', renderExplorer: 'readonly',
+    initPanelCollapse: 'readonly', initStaticPanelCollapse: 'readonly', wireCollapseAllToggle: 'readonly',
+    loadPanelCollapsed: 'readonly', savePanelCollapsed: 'readonly', setPanelCollapsed: 'readonly',
     SIMS: 'writable',
     showScreen: 'readonly', openSim: 'readonly', applyLanguage: 'readonly',
     toggleLanguage: 'readonly', initApp: 'readonly', currentLang: 'writable'

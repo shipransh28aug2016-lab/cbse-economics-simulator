@@ -52,8 +52,9 @@ function renderTimelineExplorer(sim, panel, overlay) {
         const era = eras[i];
 
         panel.innerHTML = `
-            <div class="controls-panel-header"><span>🧭 Explore the Timeline</span>
+            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>🧭 Explore the Timeline</span>
                 <button type="button" class="reset-btn" id="explorer-reset">↺ Reset</button>
+                <span class="panel-chevron" aria-hidden="true">⌄</span>
             </div>
             <p class="controls-panel-hint">Step through each period, or jump straight to one — the panel on the right explains why that period mattered economically.</p>
             <div class="explorer-timeline-nav" id="explorer-timeline-nav"></div>
@@ -73,7 +74,10 @@ function renderTimelineExplorer(sim, panel, overlay) {
         });
         document.getElementById('explorer-prev').addEventListener('click', () => { explorerState.timelineIndex--; draw(); });
         document.getElementById('explorer-next').addEventListener('click', () => { explorerState.timelineIndex++; draw(); });
-        document.getElementById('explorer-reset').addEventListener('click', () => { explorerState.timelineIndex = 0; draw(); });
+        const timelineResetBtn = document.getElementById('explorer-reset');
+        timelineResetBtn.addEventListener('click', (e) => e.stopPropagation());
+        timelineResetBtn.addEventListener('click', () => { explorerState.timelineIndex = 0; draw(); });
+        if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
 
         overlay.innerHTML = `
             <div class="explorer-timeline-card">
@@ -104,11 +108,15 @@ function renderCardsExplorer(sim, panel, overlay) {
 
     function draw() {
         panel.innerHTML = `
-            <div class="controls-panel-header"><span>🧭 Classify Each Statement</span>
+            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>🧭 Classify Each Statement</span>
                 <button type="button" class="reset-btn" id="explorer-reset">↺ Reset</button>
+                <span class="panel-chevron" aria-hidden="true">⌄</span>
             </div>
             <p class="controls-panel-hint">Pick an answer for each card on the right — you'll see the correct classification and a short explanation immediately.</p>`;
-        document.getElementById('explorer-reset').addEventListener('click', () => { explorerState.cardAnswers = {}; draw(); });
+        const cardsResetBtn = document.getElementById('explorer-reset');
+        cardsResetBtn.addEventListener('click', (e) => e.stopPropagation());
+        cardsResetBtn.addEventListener('click', () => { explorerState.cardAnswers = {}; draw(); });
+        if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
 
         overlay.innerHTML = `<div class="explorer-cards-list">${cards.map((c, idx) => {
             const ans = explorerState.cardAnswers[idx];
@@ -149,8 +157,9 @@ function renderScenarioExplorer(sim, panel, overlay) {
         const current = scenarios.find(s => s.id === explorerState.scenarioId) || scenarios[0];
 
         panel.innerHTML = `
-            <div class="controls-panel-header"><span>🧭 Choose a Scenario</span>
+            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>🧭 Choose a Scenario</span>
                 <button type="button" class="reset-btn" id="explorer-reset">↺ Reset</button>
+                <span class="panel-chevron" aria-hidden="true">⌄</span>
             </div>
             <p class="controls-panel-hint">Switch between scenarios to compare them side by side.</p>
             <div class="control-segmented control-segmented--stacked" id="explorer-scenario-group" role="group"></div>`;
@@ -163,7 +172,10 @@ function renderScenarioExplorer(sim, panel, overlay) {
             btn.addEventListener('click', () => { explorerState.scenarioId = s.id; draw(); });
             group.appendChild(btn);
         });
-        document.getElementById('explorer-reset').addEventListener('click', () => { explorerState.scenarioId = scenarios[0].id; draw(); });
+        const scenarioResetBtn = document.getElementById('explorer-reset');
+        scenarioResetBtn.addEventListener('click', (e) => e.stopPropagation());
+        scenarioResetBtn.addEventListener('click', () => { explorerState.scenarioId = scenarios[0].id; draw(); });
+        if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
 
         overlay.innerHTML = `<div class="explorer-scenario-card">
             <h3 class="explorer-scenario-title">${current.label}</h3>

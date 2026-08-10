@@ -49,6 +49,14 @@ function ok(cond, label) {
     const executablePath = fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined;
     const browser = await chromium.launch({ executablePath });
     const page = await browser.newPage();
+    // The app's idle "float" animations on cards/headers (see
+    // css/styles.css's module-float) are continuous, which makes
+    // Playwright's click-stability check spin forever on them. The app
+    // already promises to honour prefers-reduced-motion (kills all
+    // animation/transition durations — see the @media block in
+    // css/styles.css) — emulating it here is the legitimate fix, and
+    // doubles as a real check that promise is actually kept.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
 
     // Known-benign noise in this sandboxed test run, unrelated to the
     // app's own code: Google Fonts is an external CDN this environment's
@@ -82,15 +90,76 @@ function ok(cond, label) {
     const cardCount = await page.locator('.sim-card').count();
     ok(cardCount === simIds.length * 2 || cardCount === simIds.length, `home page rendered simulation cards (${cardCount} cards for ${simIds.length} sims — app.js renders each sim into its module grid; a *2 count only happens on system_test.html's combined grid, so on index.html this should equal simIds.length)`);
 
+    // ── Collapsible panels: home screen (module blocks) ──────────
+    // Checked before the main sweep below, while every panel is still
+    // at its pristine, never-clicked default state.
+    const statsBlock = page.locator('#module-stats');
+    ok(!(await statsBlock.evaluate(el => el.classList.contains('collapsed'))), 'home: module blocks start expanded by default');
+    await page.locator('#module-stats .module-header').click();
+    ok(await statsBlock.evaluate(el => el.classList.contains('collapsed')), 'home: clicking a module header collapses it');
+    ok(!(await page.locator('#grid-stats').isVisible()), 'home: collapsing a module hides its simulation-card grid');
+    await page.locator('#module-stats .module-header').click();
+    ok(!(await statsBlock.evaluate(el => el.classList.contains('collapsed'))), 'home: clicking the same header again re-expands it');
+    ok(await page.locator('#grid-stats').isVisible(), 'home: re-expanding shows the grid again');
+
+    await page.locator('#home-collapse-toggle').click();
+    const allHomeCollapsedAfterClick1 = await page.locator('.module-block').evaluateAll(els => els.every(el => el.classList.contains('collapsed')));
+    ok(allHomeCollapsedAfterClick1, 'home: "Collapse All" master switch collapses every module block at once');
+    await page.locator('#home-collapse-toggle').click();
+    const allHomeExpandedAfterClick2 = await page.locator('.module-block').evaluateAll(els => els.every(el => !el.classList.contains('collapsed')));
+    ok(allHomeExpandedAfterClick2, 'home: clicking the master switch again expands every module block back');
+
+    // ── Collapsible panels: sim screen (info cards) ──────────────
+    await page.evaluate(() => window.openSim('micro-ppf'));
+    await page.waitForTimeout(80);
+    ok(await page.locator('#concept-card').evaluate(el => el.classList.contains('collapsed')), 'sim screen: Concept card starts collapsed by default (secondary content)');
+    ok(!(await page.locator('#readings-card').evaluate(el => el.classList.contains('collapsed'))), 'sim screen: Live Readings starts expanded by default (core content)');
+    await page.locator('#concept-card .info-card-header').click();
+    ok(!(await page.locator('#concept-card').evaluate(el => el.classList.contains('collapsed'))), 'sim screen: clicking the Concept header expands it');
+    ok(await page.locator('#concept-body').isVisible(), 'sim screen: expanded Concept card shows its body text');
+    // Clicking Reset inside the (dynamically rebuilt) controls panel
+    // header must NOT also toggle that panel's collapse state.
+    const controlsBeforeReset = await page.locator('#controls-panel').evaluate(el => el.classList.contains('collapsed'));
+    await page.locator('#controls-panel .reset-btn').click();
+    const controlsAfterReset = await page.locator('#controls-panel').evaluate(el => el.classList.contains('collapsed'));
+    ok(controlsBeforeReset === controlsAfterReset, 'sim screen: clicking Reset inside the controls-panel header does not also toggle its collapse state');
+    // ...but the controls panel IS itself collapsible — clicking the rest
+    // of its header (not the Reset button) must still toggle it, and the
+    // toggle must survive that header being rebuilt from scratch (every
+    // sim-controls change rebuilds it; here just re-verify after Reset).
+    await page.locator('#controls-panel .controls-panel-header span').first().click();
+    ok(await page.locator('#controls-panel').evaluate(el => el.classList.contains('collapsed')), 'sim screen: clicking the controls-panel header (away from Reset) collapses it');
+    await page.locator('#controls-panel .controls-panel-header span').first().click();
+    ok(!(await page.locator('#controls-panel').evaluate(el => el.classList.contains('collapsed'))), 'sim screen: clicking it again re-expands the controls panel');
+
+    // Persistence: a panel's collapsed/expanded choice is a per-panel
+    // preference (localStorage), not per-sim state — switching sims (or
+    // reloading) must not silently reset it.
+    await page.evaluate(() => window.openSim('macro-gdp'));
+    await page.waitForTimeout(80);
+    ok(!(await page.locator('#concept-card').evaluate(el => el.classList.contains('collapsed'))), 'sim screen: Concept stays expanded after switching to a different sim (preference, not per-sim state)');
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForSelector('#screen-home.active');
+    await page.evaluate(() => window.openSim('macro-gdp'));
+    await page.waitForTimeout(80);
+    ok(!(await page.locator('#concept-card').evaluate(el => el.classList.contains('collapsed'))), 'sim screen: Concept stays expanded even after a full page reload (localStorage persistence)');
+    // Reset back to the default for the rest of this run, so later
+    // assertions in the main sweep below see the documented defaults.
+    await page.locator('#concept-card .info-card-header').click();
+
     console.log(`Sweeping ${simIds.length} simulations...`);
     for (const id of simIds) {
         const before = errors.length;
         await page.evaluate((simId) => { window.openSim(simId); }, id);
         await page.waitForTimeout(80);
 
+        // Concept starts collapsed by default (see below), so its content
+        // is present in the DOM but not rendered — .textContent() (not
+        // .innerText(), which reflects layout and reads empty on hidden
+        // elements) is what correctly checks it regardless of collapse state.
         const hasChapterTag = await page.locator('#concept-body .chapter-tag').count();
         ok(hasChapterTag > 0, `${id}: renders a Class/Part/Unit chapter tag`);
-        const tagText = hasChapterTag ? await page.locator('#concept-body .chapter-tag').innerText() : '';
+        const tagText = hasChapterTag ? (await page.locator('#concept-body .chapter-tag').textContent()) || '' : '';
         ok(/Class (XI|XII)/.test(tagText), `${id}: chapter tag names a real class (got "${tagText}")`);
 
         const readingsText = await page.locator('#readings-body').innerText().catch(() => '');

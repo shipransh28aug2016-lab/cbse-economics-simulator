@@ -57,6 +57,19 @@ Class XII — Part A: Introductory Macroeconomics (Units 1–5)
   All three modes share: Reset, a generic "🔄 What changed" diff line (computed from the
   previous vs. current control state — no per-sim code needed), and an optional
   `practice` checklist + auto-checked `challenge`.
+- `js/panel-collapse.js` — every panel (home screen module blocks; the sim screen's
+  Concept/Formulas/Readings/Practice/Challenge cards; the controls panel) is collapsible by
+  clicking its header, with the choice persisted per-panel (not per-sim) in `localStorage`
+  and a "Collapse All" master switch on each screen — see `initPanelCollapse()`,
+  `initStaticPanelCollapse()`, `wireCollapseAllToggle()`. Static panels (module blocks, the
+  five info cards) are wired once in `app.js`'s `initApp()`; the controls panel is rebuilt
+  from scratch on every sim switch (and, for Data Labs, every add/remove row), so
+  `buildControls()`/`renderDataLabTable()`/the explorer render functions each re-call
+  `initPanelCollapse()` on their freshly-built header — it's idempotent, so this never
+  stacks duplicate listeners. Defaults: Concept/Formulas/Practice/Challenge start collapsed
+  (secondary/reference content); Live Readings and the controls panel start expanded (the
+  core interactive loop) — chosen so a lab's whole screen fits with minimal scrolling
+  without hiding the parts a student needs first.
 - `js/simulations.js`, `js/simulations_extended.js`, `js/simulations_class11_micro.js`,
   `js/simulations_statistics_datalab.js`, `js/simulations_macro_datalab.js`,
   `js/simulations_ied_class12.js` — all push onto the single global `SIMS` array. Every

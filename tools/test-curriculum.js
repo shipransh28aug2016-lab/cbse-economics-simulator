@@ -24,6 +24,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const FILES = [
     'js/curriculum-data.js',
+    'js/panel-collapse.js',
     'js/sim-engine.js',
     'js/datalab-engine.js',
     'js/explorer-engine.js',

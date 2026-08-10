@@ -97,6 +97,16 @@ function initApp() {
         });
     }
 
+    // Every module block (home) and info card (sim screen) is
+    // collapsible — wire up the click/keyboard toggles and the two
+    // "Collapse All" master switches once, here, since these headers
+    // are static markup present from page load (see js/panel-collapse.js).
+    if (typeof initStaticPanelCollapse === 'function') initStaticPanelCollapse();
+    if (typeof wireCollapseAllToggle === 'function') {
+        wireCollapseAllToggle(document.getElementById('home-collapse-toggle'), '.module-block');
+        wireCollapseAllToggle(document.getElementById('sim-collapse-toggle'), '.sim-right .info-card:not(.hidden)');
+    }
+
     // Attach back button behaviors
     const backBtnIndex = document.getElementById('sim-back');
     if (backBtnIndex) {
