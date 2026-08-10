@@ -1,0 +1,18 @@
+{
+  "name": "econsim-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EconSim Pro — CBSE Economics (030) Class XI/XII interactive simulator, data labs and concept explorers. Static HTML/CSS/JS, no bundler.",
+  "scripts": {
+    "typecheck": "for f in js/*.js; do node --check \"$f\" || exit 1; done && echo 'typecheck OK: all js/*.js files parse'",
+    "lint": "eslint js/*.js",
+    "test": "node tools/test-curriculum.js",
+    "smoke": "node tools/smoke.js",
+    "build": "node tools/build-check.js",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run smoke"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "playwright": "^1.62.1"
+  }
+}

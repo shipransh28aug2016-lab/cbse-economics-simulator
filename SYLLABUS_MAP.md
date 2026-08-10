@@ -1,3 +1,9 @@
+> **⚠️ Superseded.** This document predates the 2026–27 curriculum integration pass and describes the
+> **pre-2026-27 class mapping** (it treats Microeconomics/Macroeconomics as Class XII and Indian Economic
+> Development as Class XI, which the 2026-27 taxonomy reverses — see `CLAUDE.md`). Kept for history only.
+> For the current, auto-generated, 100%-covered syllabus matrix, see `reports/SYLLABUS_COVERAGE_REPORT.md`
+> and `reports/REMAINING_UNMAPPED_CONTENT.md`.
+
 # CBSE Class XI–XII Economics — Syllabus Map & Simulation Coverage
 
 **Purpose:** a full breakdown of the CBSE Economics curriculum (both books, both classes), cross-referenced against what EconSim Pro's 18 simulations actually cover — so gaps are visible and honest, not implied away.
