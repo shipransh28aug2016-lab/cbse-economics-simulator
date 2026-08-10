@@ -321,7 +321,7 @@ header, .sim-topbar {
   align-items: center;
   justify-content: center;
   position: relative;
-  min-height: 340px;
+  min-height: 380px;
   padding: 8px;
 }
 
@@ -1027,6 +1027,302 @@ header, .sim-topbar {
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 14px;
 }
+
+/* ── Class hierarchy grouping (Class XI / Class XII) ─────────────
+   Wraps the module blocks belonging to one CBSE class so the
+   Class -> Part -> Module hierarchy is visible, not just implied by
+   card order. See index.html and js/curriculum-data.js. */
+.class-block { margin-bottom: 40px; }
+.class-block:last-child { margin-bottom: 8px; }
+
+.class-block-header {
+  padding: 4px 4px 14px;
+  border-bottom: 2px solid var(--border1);
+  margin-bottom: 22px;
+}
+
+.class-title {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--text1);
+}
+
+.class-title-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text3);
+  margin-left: 6px;
+}
+
+.class-title-parts {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 600;
+}
+
+/* ── Mode badge + enrichment tag (Simulator is unmarked/default) ── */
+.mode-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin: 0 0 10px 8px;
+}
+
+.mode-badge--datalab { color: #0e7490; background: rgba(6, 182, 212, 0.14); border: 1px solid rgba(6, 182, 212, 0.28); }
+.mode-badge--explorer { color: #b45309; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.28); }
+
+.enrichment-tag {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #be185d;
+  background: rgba(236, 72, 153, 0.1);
+  border: 1px dashed rgba(236, 72, 153, 0.35);
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: help;
+}
+
+/* ── "What changed?" diff line (simulator, data lab, explorer) ──── */
+.reading-row.whatchanged-row {
+  display: block;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  color: var(--text1);
+  font-size: 12px;
+  border-top: none !important;
+}
+.reading-row.whatchanged-row span { color: var(--text2); font-weight: 700; }
+
+/* ── Guided Practice + Challenge sidebar cards ───────────────────── */
+.practice-item {
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.4);
+}
+.practice-item:last-child { margin-bottom: 0; }
+.practice-item summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text1);
+}
+.practice-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.challenge-prompt { margin: 0 0 8px 0; font-size: 12.5px; line-height: 1.5; }
+.challenge-status {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text3);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+}
+.challenge-status.challenge-solved {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.14);
+}
+
+/* ── Data Lab: editable table (DATA -> TABLE -> CALCULATION) ────── */
+.datalab-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  margin-bottom: 12px;
+}
+
+.datalab-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.datalab-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--text2);
+  font-weight: 700;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+.datalab-table td { padding: 4px 6px; border-top: 1px solid var(--border2); }
+.datalab-row-action-col { width: 32px; }
+
+.datalab-cell {
+  width: 100%;
+  min-width: 64px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border1);
+  background: rgba(255, 255, 255, 0.75);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text1);
+}
+.datalab-cell:focus { border-color: var(--primary); outline: none; }
+.datalab-cell:invalid { border-color: #ef4444; }
+
+.datalab-row-remove {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border1);
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.datalab-row-remove:hover { transform: scale(1.12); background: rgba(239, 68, 68, 0.18); }
+
+.datalab-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.datalab-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  color: var(--primary-2);
+  font-weight: 700;
+  font-size: 12.5px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.datalab-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25); }
+.datalab-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.datalab-btn--ghost { background: transparent; }
+
+.datalab-row-count { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+/* ── Concept Explorer: timeline ──────────────────────────────────── */
+.explorer-timeline-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.explorer-timeline-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: rgba(255, 255, 255, 0.5);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.explorer-timeline-btn:hover { transform: translateX(2px); }
+.explorer-timeline-btn.active {
+  background: var(--india-grad);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(217, 70, 239, 0.3);
+}
+.explorer-timeline-btn.active .explorer-timeline-period,
+.explorer-timeline-btn.active .explorer-timeline-title { color: #fff; }
+
+.explorer-timeline-period { font-size: 10.5px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; }
+.explorer-timeline-title { font-size: 12.5px; font-weight: 700; color: var(--text1); }
+
+.explorer-timeline-controls { display: flex; gap: 10px; }
+.explorer-timeline-controls .datalab-btn { flex: 1; }
+
+.explorer-timeline-card {
+  border-radius: 16px;
+  padding: 24px 26px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  height: 100%;
+  overflow-y: auto;
+}
+.explorer-timeline-card-period { font-size: 12px; font-weight: 800; letter-spacing: 0.5px; color: var(--primary-2); text-transform: uppercase; }
+.explorer-timeline-card-title { margin: 6px 0 12px; font-size: 20px; font-weight: 900; }
+.explorer-timeline-card-body { font-size: 13.5px; line-height: 1.7; color: var(--text2); }
+
+.explorer-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.explorer-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(217, 70, 239, 0.12);
+  color: #a21caf;
+}
+
+.explorer-progress-dots { display: flex; gap: 6px; margin-top: 20px; }
+.explorer-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border1); }
+.explorer-dot.active { background: var(--india-grad); }
+
+/* ── Concept Explorer: classification cards ──────────────────────── */
+/* height:100% + overflow-y:auto (matching the timeline/scenario cards
+   below) keeps this contained within #sim-dom-overlay's fixed-size box
+   (sized to fit a Plotly chart) — without it, more than a couple of
+   cards would silently render UNDER the controls panel beneath it,
+   since the overlay is position:absolute and doesn't grow the page. */
+.explorer-cards-list { display: flex; flex-direction: column; gap: 14px; padding: 4px; height: 100%; overflow-y: auto; }
+.explorer-card {
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+.explorer-card-prompt { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.explorer-card-options { display: flex; gap: 10px; flex-wrap: wrap; }
+.explorer-card-opt {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border1);
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--text2);
+  transition: transform 0.15s ease;
+}
+.explorer-card-opt:hover:not(:disabled) { transform: translateY(-1px); }
+.explorer-card-opt:disabled { cursor: default; }
+.explorer-card-opt.correct { background: rgba(16, 185, 129, 0.18); border-color: #10b981; color: #047857; }
+.explorer-card-opt.incorrect { background: rgba(239, 68, 68, 0.18); border-color: #ef4444; color: #b91c1c; }
+.explorer-card-explain { margin-top: 10px; font-size: 12.5px; line-height: 1.5; color: var(--text2); }
+
+/* ── Concept Explorer: scenario comparison ───────────────────────── */
+.control-segmented--stacked { flex-direction: column; }
+.control-segmented--stacked .segmented-btn { text-align: left; white-space: normal; }
+
+.explorer-scenario-card {
+  border-radius: 16px;
+  padding: 24px 26px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  height: 100%;
+  overflow-y: auto;
+}
+.explorer-scenario-title { margin: 0 0 8px; font-size: 19px; font-weight: 900; }
+.explorer-scenario-summary { font-size: 13.5px; line-height: 1.6; color: var(--text2); margin: 0 0 16px; }
+.explorer-scenario-section { margin-bottom: 14px; }
+.explorer-scenario-heading { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary-2); margin-bottom: 6px; }
+.explorer-scenario-list { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text2); }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {

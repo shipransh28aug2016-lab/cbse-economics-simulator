@@ -1,3 +1,8 @@
+> **⚠️ Superseded.** This log predates the 2026–27 curriculum integration pass (18 simulations, pre-2026-27
+> class mapping). For the current QA/regression results across all 34 labs (Simulators, Data Labs and
+> Concept Explorers), see `reports/QA_REGRESSION_REPORT.md` and `reports/CALCULATION_TEST_REPORT.md`. Kept
+> for history only.
+
 # EconSim Pro — Validation Log
 
 > **See also `SYLLABUS_MAP.md`** for the full curriculum-coverage matrix (every CBSE chapter/topic vs. what each simulation actually models) and an honest list of what's still a gap. This log covers accuracy/UI/interaction status; the syllabus map covers topic *completeness*.

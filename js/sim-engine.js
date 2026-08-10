@@ -186,9 +186,97 @@ function styledAxisTitle(axis) {
 }
 
 let simEngineState = {};
+let prevSimEngineState = {};
+let suppressNextWhatChanged = true;
 
 function clamp(v, min, max) {
     return Math.min(max, Math.max(min, v));
+}
+
+// ── "What changed?" (generic, works for every simulator control) ──
+// Looks up a human label (and, for a `select` control, the option's
+// display label rather than its raw value) so the diff line reads like
+// "Consumer Income: 0 → 8", not "income: 0 → 8".
+function controlMeta(sim, key) {
+    if (!sim || !sim.controls) return null;
+    return sim.controls.find(c => c.id === key) || null;
+}
+
+function displayValue(ctl, raw) {
+    if (!ctl) return String(raw);
+    if (ctl.type === 'select') {
+        const opt = (ctl.options || []).find(o => String(o.value) === String(raw));
+        return opt ? opt.label : String(raw);
+    }
+    return typeof raw === 'number' ? fmt(raw, Number.isInteger(raw) ? 0 : 2) : String(raw);
+}
+
+// Diffs `next` against `prev` using the sim's own control labels, and
+// returns a short "🔄 What changed" line naming exactly the field(s) the
+// student just touched. Returns '' when nothing differs (or on the very
+// first render of a simulation, where "changed" has no meaning yet).
+function describeWhatChanged(sim, prev, next) {
+    if (!sim || !sim.controls || !sim.controls.length) return '';
+    const changes = [];
+    sim.controls.forEach(c => {
+        const before = prev[c.id];
+        const after = next[c.id];
+        if (before === undefined || after === undefined) return;
+        if (String(before) === String(after)) return;
+        changes.push(`<b>${c.label}</b>: ${displayValue(c, before)} → ${displayValue(c, after)}`);
+    });
+    if (!changes.length) return '';
+    return `<div class="reading-row whatchanged-row">🔄 <span>What changed:</span> ${changes.join(', ')}</div>`;
+}
+
+// ── Practice checklist + auto-checked Challenge (generic, optional) ──
+// A sim opts in by declaring `practice: [{prompt, hint?}, ...]` and/or
+// `challenge: {prompt, check?(state, metrics) => boolean}`. Neither
+// requires touching the rendering pipeline for other sims/modes.
+function renderPractice(sim) {
+    const card = document.getElementById('practice-card');
+    const body = document.getElementById('practice-body');
+    if (!card || !body) return;
+    if (!sim.practice || !sim.practice.length) {
+        card.classList.add('hidden');
+        return;
+    }
+    card.classList.remove('hidden');
+    body.innerHTML = sim.practice.map(p => {
+        const item = typeof p === 'string' ? { prompt: p } : p;
+        return `<details class="practice-item">
+            <summary>${item.prompt}</summary>
+            ${item.hint ? `<div class="practice-hint">💡 ${item.hint}</div>` : ''}
+        </details>`;
+    }).join('');
+}
+
+function renderChallengeShell(sim) {
+    const card = document.getElementById('challenge-card');
+    const body = document.getElementById('challenge-body');
+    if (!card || !body) return;
+    if (!sim.challenge) {
+        card.classList.add('hidden');
+        return;
+    }
+    card.classList.remove('hidden');
+    body.innerHTML = `<p class="challenge-prompt">${sim.challenge.prompt}</p><div class="challenge-status" id="challenge-status">${sim.challenge.check ? 'Not yet — keep adjusting the inputs.' : 'Work it out, then check your reasoning against the readings panel.'}</div>`;
+}
+
+function refreshChallenge(sim, metrics) {
+    if (!sim.challenge || typeof sim.challenge.check !== 'function') return;
+    const statusEl = document.getElementById('challenge-status');
+    if (!statusEl) return;
+    let solved;
+    try {
+        solved = !!sim.challenge.check(simEngineState, metrics || {});
+    } catch {
+        // A challenge.check() that throws (e.g. against a mid-edit,
+        // momentarily-inconsistent state) just reads as "not solved yet".
+        solved = false;
+    }
+    statusEl.textContent = solved ? '✅ Challenge complete — nice work!' : 'Not yet — keep adjusting the inputs.';
+    statusEl.classList.toggle('challenge-solved', solved);
 }
 
 function buildControls(sim) {
@@ -351,6 +439,11 @@ function renderSimChart(sim) {
     const readingsBody = document.getElementById('readings-body');
     if (!overlay) return;
 
+    // Snapshot the diff line BEFORE recording this render's state as
+    // "previous" — it names exactly what the student just moved.
+    const whatChangedHTML = suppressNextWhatChanged ? '' : describeWhatChanged(sim, prevSimEngineState, simEngineState);
+    suppressNextWhatChanged = false;
+
     let result;
     if (typeof sim.customRender === 'function') {
         // Simulations that need something Plotly can't express (e.g. an
@@ -386,7 +479,7 @@ function renderSimChart(sim) {
     overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
-        readingsBody.innerHTML = result.readings || '';
+        readingsBody.innerHTML = whatChangedHTML + (result.readings || '');
         // Restart the highlight animation on every recompute so students
         // notice the readings actually changed.
         readingsBody.classList.remove('pulse');
@@ -405,6 +498,9 @@ function renderSimChart(sim) {
             formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${f}</div>`).join('');
         }
     }
+
+    refreshChallenge(sim, result.metrics);
+    prevSimEngineState = Object.assign({}, simEngineState);
 }
 
 function renderSim(sim) {
@@ -428,10 +524,15 @@ function renderSim(sim) {
     }
 
     if (conceptBody) {
-        const chapterTag = sim.chapter
-            ? `<div class="chapter-tag">📘 ${sim.chapter}</div>`
+        const tagText = (typeof chapterTagText === 'function' && chapterTagText(sim)) || sim.chapter || '';
+        const chapterTag = tagText ? `<div class="chapter-tag">📘 ${tagText}</div>` : '';
+        const modeBadge = sim.mode && sim.mode !== 'simulator'
+            ? `<div class="mode-badge mode-badge--${sim.mode}">${sim.mode === 'datalab' ? '📊 Data Lab' : '🧭 Concept Explorer'}</div>`
             : '';
-        conceptBody.innerHTML = chapterTag + (sim.concept || '');
+        const enrichmentTag = sim.enrichment
+            ? `<div class="enrichment-tag" title="${(sim.enrichmentNote || '').replace(/"/g, '&quot;')}">✨ Enrichment — beyond the 2026–27 unit list for this topic</div>`
+            : '';
+        conceptBody.innerHTML = chapterTag + modeBadge + enrichmentTag + (sim.concept || '');
     }
     if (formulaBody) {
         formulaBody.innerHTML = (sim.formulas || [])
@@ -443,6 +544,21 @@ function renderSim(sim) {
     if (canvas) canvas.style.display = 'none';
 
     simEngineState = {};
-    buildControls(sim);
-    renderSimChart(sim);
+    prevSimEngineState = {};
+    suppressNextWhatChanged = true;
+    renderPractice(sim);
+    renderChallengeShell(sim);
+
+    if (sim.mode === 'datalab' && typeof renderDataLab === 'function') {
+        const panel = document.getElementById('controls-panel');
+        if (panel) panel.innerHTML = '';
+        renderDataLab(sim, overlay);
+    } else if (sim.mode === 'explorer' && typeof renderExplorer === 'function') {
+        const panel = document.getElementById('controls-panel');
+        if (panel) panel.innerHTML = '';
+        renderExplorer(sim, overlay);
+    } else {
+        buildControls(sim);
+        renderSimChart(sim);
+    }
 }

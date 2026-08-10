@@ -1,14 +1,22 @@
 // Base simulation set (Microeconomics/Macroeconomics/Statistics/India
 // Economy, one flagship sim per module). Additional simulations are
-// appended by js/simulations_extended.js to reach the full 18-lab count
-// advertised on the home page.
+// appended by js/simulations_extended.js and the newer
+// js/simulations_class11_micro.js, js/simulations_statistics_datalab.js,
+// js/simulations_macro_datalab.js and js/simulations_ied_class12.js
+// files to reach the full curriculum-mapped lab count.
 //
-// Each entry:
-//   id, module, title, desc  — used for cards + navigation
-//   concept                  — short HTML explanation shown in the sim screen
-//   formulas                 — list of formula strings
-//   controls                 — slider definitions: {id,label,min,max,step,value,unit}
-//   compute(values)           — returns {traces, layout, readings} for Plotly
+// Each entry's data contract:
+//   id, module, title, desc          — used for cards + navigation
+//   class, part, unit, unitTitle     — 2026-27 curriculum placement (see
+//                                       curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md)
+//   syllabusIds                      — CURRICULUM_NODES id(s) this sim covers (js/curriculum-data.js)
+//   mode                             — 'simulator' (default), 'datalab', or 'explorer'
+//   enrichment, enrichmentNote       — set when content goes beyond the named 2026-27 topic list
+//   concept                          — short HTML explanation shown in the sim screen
+//   formulas                        — list of formula strings
+//   controls                        — slider/select definitions: {id,label,min,max,step,value,unit}
+//   compute(values)                  — returns {traces, layout, readings, metrics?} for Plotly
+//   practice, challenge              — optional guided-practice checklist + auto-checked challenge
 
 const _corrRandN = makeRandN(42);
 const _corrX = range(30).map(() => _corrRandN());
@@ -20,8 +28,10 @@ const SIMS = [
         module: 'micro',
         title: 'Supply & Demand: Every Determinant',
         desc: 'Every named CBSE determinant of demand and supply as its own live control — not just one abstract "shift".',
-        chapter: 'Class XII Microeconomics · Ch. 2 & 4: Determinants of Demand & Supply, Market Equilibrium',
-        concept: '<p>Demand and supply each shift for specific, named reasons — this lab makes every one of them a separate control instead of one abstract "shift" number. <b>Demand</b> shifts with consumer income, the price of substitute/complement goods, and tastes &amp; preferences. <b>Supply</b> shifts with input/factor costs, technology, and government tax or subsidy policy. Move any factor and watch exactly how it moves its own curve — and the resulting equilibrium.</p>',
+        class: 'XI', part: 'B', unit: '5–7', unitTitle: 'Demand, Supply & Market Equilibrium', topicLabel: 'Every Named Determinant',
+        syllabusIds: ['XI-B-U5-DEMAND', 'XI-B-U6-SUPPLY', 'XI-B-U7-MARKET-EQ', 'XI-B-U7-PERFECT-COMP'],
+        mode: 'simulator',
+        concept: '<p>Demand and supply each shift for specific, named reasons — this lab makes every one of them a separate control instead of one abstract "shift" number. <b>Demand</b> shifts with consumer income, the price of substitute/complement goods, and tastes &amp; preferences. <b>Supply</b> shifts with input/factor costs, technology, and government tax or subsidy policy. Move any factor and watch exactly how it moves its own curve — and the resulting equilibrium.</p><p>This equilibrium is the one taught for a <b>Perfect Competition</b> market — many buyers and sellers, an identical (homogeneous) product, free entry and exit, and every buyer/seller a price-taker rather than a price-setter — which is why one demand curve and one supply curve are enough to pin down a single market price.</p>',
         formulas: [
             'Demand: P = 100 − 1.2Q + (net demand shift)',
             'Supply: P = 20 + 0.8Q + (net supply shift)',
@@ -68,6 +78,7 @@ const SIMS = [
                     { x: [Q], y: [P], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 10 } }
                 ],
                 layout: { xaxis: { title: 'Quantity', range: [0, 80] }, yaxis: { title: 'Price (₹)', range: [0, 160] } },
+                metrics: { equilibriumPrice: P, equilibriumQuantity: Q, demandShift, supplyShift },
                 readings: `<div class="reading-row"><span>Net Demand Shift</span><b>${demandShift >= 0 ? '+' : ''}${demandShift}</b></div>
                            <div class="reading-row"><span>Net Supply Shift</span><b>${supplyShift >= 0 ? '+' : ''}${supplyShift}</b></div>
                            <div class="reading-row"><span>Equilibrium Price</span><b>₹${fmt(P)}</b></div>
@@ -76,23 +87,33 @@ const SIMS = [
                                ? `The biggest mover right now is <b>${biggest.label}</b> (Δ${biggest.v >= 0 ? '+' : ''}${biggest.v}). ${demandShift !== 0 ? (demandShift > 0 ? 'Demand has shifted right (increased)' : 'Demand has shifted left (decreased)') + '. ' : ''}${supplyShift !== 0 ? (supplyShift < 0 ? 'Supply has shifted right (increased) — lower net cost/higher tech/subsidy.' : 'Supply has shifted left (decreased) — higher net cost/tax.') : ''}`
                                : 'All factors are at zero — move any slider to see its own named effect on demand or supply.'}</div>`
             };
+        },
+        practice: [
+            { prompt: 'Move only "Consumer Income" — which curve moves, and which way?', hint: 'Income is a demand determinant — only the Demand line shifts. A positive income change shifts Demand right (more is demanded at every price).' },
+            { prompt: 'Move only "Input / Factor Cost" up — which curve moves, and which way?', hint: 'Cost is a supply determinant — only the Supply line shifts, and it shifts left/up: sellers need a higher price to supply the same quantity.' }
+        ],
+        challenge: {
+            prompt: 'Find a mix of demand-side and supply-side factors that pushes the Equilibrium Quantity above 55 units while keeping the Equilibrium Price under ₹65.',
+            check(state, metrics) { return !!metrics && metrics.equilibriumQuantity > 55 && metrics.equilibriumPrice < 65; }
         }
     },
     {
         id: 'micro-elasticity',
         module: 'micro',
         title: 'Elasticity of Demand (Price / Income / Cross)',
-        desc: 'Explore all three CBSE-named elasticities of demand in one lab.',
-        chapter: 'Class XII Microeconomics · Ch. 2: Consumer Equilibrium and Demand (Price, Income & Cross Elasticity)',
-        concept: '<p>The NCERT syllabus names three distinct elasticities of demand. <b>Price elasticity (Ed)</b> measures responsiveness to the good\'s own price. <b>Income elasticity (Ey)</b> measures responsiveness to consumer income — positive for a normal good, negative for an inferior good. <b>Cross elasticity (Exy)</b> measures responsiveness to a <i>related</i> good\'s price — positive for substitutes, negative for complements. Use the switch below to explore all three.</p>',
+        desc: 'The CBSE-named Price Elasticity of Demand, plus Income and Cross elasticity as extra contrast.',
+        class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topicLabel: 'Price Elasticity of Demand',
+        syllabusIds: ['XI-B-U5-ELASTICITY'],
+        mode: 'simulator',
+        concept: '<p>The 2026–27 Class XI Microeconomics unit names <b>Price elasticity of demand (Ed)</b> — responsiveness to the good\'s own price — with its determinants (substitutes, necessity vs luxury, share of income, time) and its two measurement methods (percentage-change, total-expenditure). This lab also lets you explore <b>Income elasticity (Ey)</b> and <b>Cross elasticity (Exy)</b> as useful contrast — they sharpen what "elasticity" means in general, even though the supplied 2026–27 topic list names price elasticity specifically, not these two by name.</p>',
         formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', 'Demand: Q = 50 − 0.5P'],
         controls: [
             {
                 id: 'type', label: 'Elasticity Type', type: 'select', value: 'price',
                 options: [
-                    { value: 'price', label: 'Price (Ed)' },
-                    { value: 'income', label: 'Income (Ey)' },
-                    { value: 'cross', label: 'Cross (Exy)' }
+                    { value: 'price', label: 'Price (Ed) — core syllabus' },
+                    { value: 'income', label: 'Income (Ey) — contrast' },
+                    { value: 'cross', label: 'Cross (Exy) — contrast' }
                 ]
             },
             { id: 'price', label: 'Price (₹)', min: 5, max: 95, step: 1, value: 40, unit: '', showWhen: { id: 'type', equals: 'price' } },
@@ -114,6 +135,7 @@ const SIMS = [
                     ],
                     layout: { xaxis: { title: 'Consumer Income (₹\'000/month)', range: [0, 105] }, yaxis: { title: 'Quantity Demanded', range: [0, 35] } },
                     formulas: ['Ey = (%ΔQ) / (%ΔY)', 'Point elasticity: Ey = (dQ/dY) × (Y/Q)', 'Demand: Q = 5 + 0.3Y (normal good)'],
+                    metrics: { Ey, mode: 'income' },
                     readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
                                <div class="reading-row"><span>Income Elasticity (Ey)</span><b>${fmt(Ey)}</b></div>
                                <div class="reading-row"><span>Classification</span><b>${label}</b></div>
@@ -132,6 +154,7 @@ const SIMS = [
                     ],
                     layout: { xaxis: { title: 'Price of Related Good Y (₹)', range: [0, 100] }, yaxis: { title: 'Quantity Demanded of Good X', range: [0, 60] } },
                     formulas: ['Exy = (%ΔQx) / (%ΔPy)', 'Point elasticity: Exy = (dQx/dPy) × (Py/Qx)', 'Demand: Qx = 10 + 0.5Py (X and Y are substitutes)'],
+                    metrics: { Exy, mode: 'cross' },
                     readings: `<div class="reading-row"><span>Quantity Demanded of X</span><b>${fmt(Qx)}</b></div>
                                <div class="reading-row"><span>Cross Elasticity (Exy)</span><b>${fmt(Exy)}</b></div>
                                <div class="reading-row"><span>Relationship</span><b>Substitutes (Exy &gt; 0)</b></div>
@@ -160,11 +183,20 @@ const SIMS = [
                 ],
                 layout: { xaxis: { title: 'Quantity', range: [0, 55] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
                 formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', `Demand: Q = 50 − ${fmt(bEff, 1)}P (steeper slope with more substitutes)`, 'Determinants of Ed: substitutes, necessity vs luxury, share of income, time period'],
+                metrics: { Ed, mode: 'price', substitutes: subs },
                 readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
                            <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${fmt(Ed)}</b></div>
                            <div class="reading-row"><span>Classification</span><b>${label}</b></div>
                            <div class="reading-row insight-row">💡 ${insight}</div>`
             };
+        },
+        practice: [
+            { prompt: 'With Elasticity Type = Price, push Substitutes from 0 to 5 at a fixed price. What happens to |Ed|?', hint: 'More close substitutes make demand more elastic — |Ed| rises as the slider increases.' },
+            { prompt: 'Find a price where demand is exactly unit elastic (Ed = −1) with 1 substitute.', hint: 'With bEff = 0.4, Ed = −1 when P/Q = 2.5 — try prices around ₹36–38 and watch the readings panel.' }
+        ],
+        challenge: {
+            prompt: 'Using Price Elasticity mode, find a price/substitutes combination where demand is Elastic (|Ed| > 1.5).',
+            check(state, metrics) { return metrics && metrics.mode === 'price' && Math.abs(metrics.Ed) > 1.5; }
         }
     },
     {
@@ -172,8 +204,10 @@ const SIMS = [
         module: 'macro',
         title: 'GDP & Circular Flow (Real Flow vs Money Flow)',
         desc: 'Watch the real flow of factors & goods move opposite to the money flow that pays for them.',
-        chapter: 'Class XII Macroeconomics · Ch. 2: National Income and Related Aggregates (Circular Flow of Income)',
-        concept: '<p>The circular flow has two mirror-image halves that always move in <b>opposite directions</b> for the same transaction. The <b>real flow</b> (dashed wire, square markers) is what physically changes hands: households supply <b>factor services</b> — labour, land, capital, enterprise — to firms, and firms supply <b>goods &amp; services</b> back to households. The <b>money flow</b> (solid wire, round markers) is the payment for it, moving the other way: firms pay <b>factor payments</b> (wages, rent, interest, profit) to households, and households pay <b>consumption expenditure</b> to firms. Government spending and exports are injections into this flow; taxes and imports are leakages out of it.</p><p>This flow of income adds up to <b>GDP</b> (Gross Domestic Product — everything produced <i>within</i> the country). <b>GNP</b> = GDP + income earned abroad by residents − income earned domestically by non-residents. <b>NDP</b>/<b>NNP</b> subtract depreciation (wear-and-tear of capital) from GDP/GNP respectively — "Net" figures reflect only genuinely new output, not just replacing worn-out capital.</p>',
+        class: 'XII', part: 'A', unit: 1, unitTitle: 'National Income and Related Aggregates', topicLabel: 'Circular Flow of Income',
+        syllabusIds: ['XII-A-U1-CIRCULAR-FLOW', 'XII-A-U1-AGGREGATES', 'XII-A-U1-MACRO-MEANING'],
+        mode: 'simulator',
+        concept: '<p><b>Macroeconomics</b> studies the economy as a whole — aggregates like total output, the overall price level and total employment — rather than a single household or firm (that\'s microeconomics). The circular flow below is macroeconomics\' starting picture of how the whole economy fits together.</p><p>The circular flow has two mirror-image halves that always move in <b>opposite directions</b> for the same transaction. The <b>real flow</b> (dashed wire, square markers) is what physically changes hands: households supply <b>factor services</b> — labour, land, capital, enterprise — to firms, and firms supply <b>goods &amp; services</b> back to households. The <b>money flow</b> (solid wire, round markers) is the payment for it, moving the other way: firms pay <b>factor payments</b> (wages, rent, interest, profit) to households, and households pay <b>consumption expenditure</b> to firms. Government spending and exports are injections into this flow; taxes and imports are leakages out of it.</p><p>This flow of income adds up to <b>GDP</b> (Gross Domestic Product — everything produced <i>within</i> the country). <b>GNP</b> = GDP + income earned abroad by residents − income earned domestically by non-residents. <b>NDP</b>/<b>NNP</b> subtract depreciation (wear-and-tear of capital) from GDP/GNP respectively — "Net" figures reflect only genuinely new output, not just replacing worn-out capital.</p>',
         formulas: [
             'Factor Services HH→Firms (real) moves opposite to Factor Payments Firms→HH (money)',
             'Goods &amp; Services Firms→HH (real) moves opposite to Consumption Exp. HH→Firms (money)',
@@ -286,23 +320,37 @@ const SIMS = [
                     ${legendSVG}
                 </svg>`;
 
+            const gdpExp = consumption + g + 50 + nx; // C + G + (illustrative I=50) + NX — illustrative expenditure-method total for this flow diagram's own figures
             return {
+                metrics: { consumption, wages, g, nx, gdpExp },
                 readings: `<div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
                            <div class="reading-row"><span>Factor Payments (Wages etc.)</span><b>₹${wages}B</b></div>
                            <div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
                            <div class="reading-row"><span>Net Exports (X−M)</span><b>₹${nx}B</b></div>
                            <div class="reading-row insight-row">💡 Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms. Raising G or exports adds new injections and speeds up the whole flow.</div>`
             };
+        },
+        practice: [
+            { prompt: 'Raise Net Exports to the maximum. Which flow (Exports or Imports) becomes visibly thicker?', hint: 'A higher X−M means Exports grow relative to Imports — watch the Exports wire to the Foreign Sector thicken and speed up.' },
+            { prompt: 'Set Government Spending to 0. Does the real flow between Households and Firms stop?', hint: "No — G only affects the Government leg. The Households↔Firms real/money flows (factor services/goods vs wages/consumption) keep moving on their own." }
+        ],
+        challenge: {
+            prompt: 'Push Consumption Expenditure and Government Spending both to their maximum while keeping Net Exports negative — can you still tell which wire is "real" vs "money" just from the animation style?',
+            check(state) { return state.consumption >= 145 && state.g >= 95 && state.nx < 0; }
         }
     },
     {
         id: 'macro-multiplier',
         module: 'macro',
         title: 'The Multiplier Effect: Investment, Government Spending & Tax',
-        desc: 'Compare all three named multipliers — Investment, Government Spending, and Tax — in one lab.',
-        chapter: 'Class XII Macroeconomics · Ch. 4: Determination of Income and Employment (Investment, Govt. Spending & Tax Multipliers)',
-        concept: '<p>Because one person\'s spending is another person\'s income, an injection of spending triggers successive rounds of further spending. NCERT names three such multipliers with the same underlying logic: the <b>Investment Multiplier</b> and <b>Government Spending Multiplier</b> are identical in size (k = 1/(1−MPC)) since both are direct injections of spending; the <b>Tax Multiplier</b> is smaller and works in the opposite direction (a tax cut raises disposable income, only a fraction of which — MPC — gets spent).</p>',
-        formulas: ['Spending Multiplier: k = 1 / (1 − MPC)  — applies equally to ΔI and ΔG', 'Tax Multiplier: kt = −MPC / (1 − MPC)  — smaller, opposite sign', 'ΔY = k×(ΔI + ΔG) + kt×ΔT'],
+        desc: 'The named Investment Multiplier, plus Government Spending and Tax multipliers as extra contrast.',
+        class: 'XII', part: 'A', unit: 3, unitTitle: 'Determination of Income and Employment', topicLabel: 'Investment Multiplier',
+        syllabusIds: ['XII-A-U3-MULTIPLIER', 'XII-A-U3-EQUILIBRIUM'],
+        mode: 'simulator',
+        enrichment: false,
+        enrichmentNote: 'The Government Spending and Tax multipliers extend beyond the single "Investment Multiplier" topic named in the 2026–27 Unit 3 list; they are standard NCERT content (Ch. on Determination of Income) and are kept because they make the Investment Multiplier itself easier to understand by contrast, not counted as separate core coverage.',
+        concept: '<p>The chart\'s "Old Equilibrium" and "New Equilibrium" markers are exactly the syllabus\'s <b>short-run equilibrium output</b> — the income level where Aggregate Expenditure equals income (AE = Y, the point where the AE line crosses the 45° line). Because one person\'s spending is another person\'s income, an injection of spending triggers successive rounds of further spending, moving that equilibrium. NCERT\'s named <b>Investment Multiplier</b> captures this: k = 1/(1−MPC). This lab also shows the Government Spending Multiplier (identical in size to the investment multiplier, since both are direct injections) and the Tax Multiplier (smaller, opposite-signed, since a tax cut only raises spending indirectly through disposable income) as contrast.</p>',
+        formulas: ['Investment Multiplier: k = 1 / (1 − MPC)', 'Tax Multiplier (contrast): kt = −MPC / (1 − MPC)', 'ΔY = k×(ΔI + ΔG) + kt×ΔT'],
         controls: [
             { id: 'mpc', label: 'Marginal Propensity to Consume', min: 0.1, max: 0.9, step: 0.05, value: 0.6, unit: '' },
             { id: 'di', label: 'Additional Investment (ΔI)', min: 0, max: 60, step: 5, value: 20, unit: '₹B' },
@@ -330,55 +378,103 @@ const SIMS = [
                     { x: [Y1], y: [Y1], mode: 'markers', name: 'New Equilibrium', marker: { color: '#ef4444', size: 9 } }
                 ],
                 layout: { xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Aggregate Expenditure (AE)', range: [0, 400] } },
-                readings: `<div class="reading-row"><span>Spending Multiplier (k)</span><b>${fmt(k)}</b></div>
-                           <div class="reading-row"><span>Tax Multiplier (kt)</span><b>${fmt(kt)}</b></div>
+                metrics: { k, kt, dySpending, dyTax, Y1 },
+                readings: `<div class="reading-row"><span>Investment Multiplier (k)</span><b>${fmt(k)}</b></div>
+                           <div class="reading-row"><span>Tax Multiplier (kt, contrast)</span><b>${fmt(kt)}</b></div>
                            <div class="reading-row"><span>ΔY from Spending (I+G)</span><b>₹${fmt(dySpending)}B</b></div>
                            <div class="reading-row"><span>ΔY from Tax</span><b>₹${fmt(dyTax)}B</b></div>
                            <div class="reading-row"><span>New Equilibrium Y</span><b>₹${fmt(Y1)}B</b></div>
-                           <div class="reading-row insight-row">💡 A higher MPC means each round of spending recycles further — a bigger spending multiplier. The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.</div>`
+                           <div class="reading-row insight-row">💡 A higher MPC means each round of spending recycles further — a bigger multiplier. The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.</div>`
             };
+        },
+        practice: [
+            { prompt: 'Set MPC to 0.9, then 0.1, keeping ΔI = 20. How much does k change?', hint: 'k = 1/(1−MPC): at MPC=0.9, k=10; at MPC=0.1, k≈1.11 — a much smaller multiplier when people save more of each extra rupee.' },
+            { prompt: 'Verify k − |kt| = 1 at any MPC.', hint: 'k=1/(1−c) and kt=−c/(1−c), so k−|kt| = (1−c)/(1−c) = 1 always — check the readings panel at any MPC.' }
+        ],
+        challenge: {
+            prompt: 'Using only ΔI (keep ΔG = 0, ΔT = 0), reach a New Equilibrium Y of at least ₹300B.',
+            check(state, metrics) { return state.dg === 0 && state.dt === 0 && metrics && metrics.Y1 >= 300; }
         }
     },
     {
         id: 'stats-correlation',
         module: 'stats',
-        title: 'Correlation & Scatter',
-        desc: 'Study Hours vs Test Score — visualize how two economic/statistical variables relate.',
-        chapter: 'Class XI Statistics for Economics · Ch. 7: Correlation',
-        concept: '<p>Correlation measures the strength and direction of the linear relationship between two variables — here, a class\'s weekly study hours and their test scores. A coefficient near +1 or −1 indicates a strong relationship; near 0 indicates little to no linear relationship. This is the same method used to study real economic variable pairs, e.g. advertisement expenditure and sales, or price and quantity demanded. NCERT also covers <b>Spearman\'s Rank Correlation</b> — the same idea applied to <i>ranked</i> (ordinal) data instead of raw numeric values, useful when only relative order matters, e.g. ranking two judges\' preferences.</p>',
-        formulas: ['Karl Pearson\'s r = Σ(x−x̄)(y−ȳ) / √[Σ(x−x̄)² · Σ(y−ȳ)²]', 'Spearman\'s Rank r = 1 − [6Σd² / n(n²−1)], d = rank difference', '−1 ≤ r ≤ +1'],
-        controls: [
-            { id: 'r', label: 'Target Correlation (r)', min: -1, max: 1, step: 0.1, value: 0.7, unit: '' }
-        ],
-        compute(v) {
-            const r = v.r;
-            const xsStd = _corrX;
-            const ysStd = xsStd.map((x, i) => r * x + Math.sqrt(Math.max(0, 1 - r * r)) * _corrNoise[i]);
-            // Rescale the standardized synthetic data into a believable
-            // real-world example (Karl Pearson's r is scale-invariant, so
-            // this doesn't change the correlation, just the units shown).
-            const xs = xsStd.map(x => Math.max(0.5, +(5 + 1.6 * x).toFixed(1)));
-            const ys = ysStd.map(y => Math.max(30, Math.min(100, +(70 + 9 * y).toFixed(1))));
+        title: 'Correlation: Scatter, Karl Pearson & Spearman\'s Rank',
+        desc: 'Enter your own paired data and see Karl Pearson\'s r and Spearman\'s Rank correlation computed live — table, scatter and interpretation together.',
+        class: 'XI', part: 'A', unit: 3, unitTitle: 'Statistical Tools and Interpretation', topicLabel: "Correlation — Karl Pearson's & Spearman's Rank",
+        syllabusIds: ['XI-A-U3-CORRELATION'],
+        mode: 'datalab',
+        concept: '<p>Correlation measures the strength and direction of the relationship between two variables. <b>Karl Pearson\'s coefficient (r)</b> uses the raw values; <b>Spearman\'s Rank Correlation</b> uses only each value\'s <i>rank</i> — useful when data is ordinal or when you want a quick, outlier-resistant measure. Edit the Study Hours / Test Score table below (or switch to your own numbers entirely) and both coefficients recompute live, with ranks and rank-differences shown so you can see exactly how Spearman\'s formula uses them.</p>',
+        formulas: ['Karl Pearson\'s r = Σ(x−x̄)(y−ȳ) / √[Σ(x−x̄)² · Σ(y−ȳ)²]', "Spearman's Rank r = 1 − [6Σd² / n(n²−1)], d = rank(x) − rank(y)", '−1 ≤ r ≤ +1'],
+        dataLab: {
+            columns: [
+                { id: 'x', label: 'Study Hours / Week', type: 'number', step: 0.5, min: 0, max: 40, default: 5 },
+                { id: 'y', label: 'Test Score (%)', type: 'number', step: 1, min: 0, max: 100, default: 50 }
+            ],
+            minRows: 4,
+            maxRows: 15,
+            addRowDefault: { x: 5, y: 60 },
+            defaultRows: [
+                { x: 2, y: 45 }, { x: 4, y: 52 }, { x: 5, y: 58 }, { x: 6, y: 62 },
+                { x: 7, y: 68 }, { x: 8, y: 74 }, { x: 9, y: 80 }, { x: 10, y: 88 }
+            ],
+            calculate(rows) {
+                const n = rows.length;
+                const xs = rows.map(r => r.x), ys = rows.map(r => r.y);
+                const xbar = xs.reduce((s, x) => s + x, 0) / n;
+                const ybar = ys.reduce((s, y) => s + y, 0) / n;
+                let num = 0, dx2 = 0, dy2 = 0;
+                for (let i = 0; i < n; i++) {
+                    num += (xs[i] - xbar) * (ys[i] - ybar);
+                    dx2 += (xs[i] - xbar) ** 2;
+                    dy2 += (ys[i] - ybar) ** 2;
+                }
+                const denom = Math.sqrt(dx2 * dy2);
+                const pearsonR = denom === 0 ? 0 : num / denom;
 
-            const n = xs.length;
-            const xbar = xs.reduce((s, x) => s + x, 0) / n;
-            const ybar = ys.reduce((s, y) => s + y, 0) / n;
-            let num = 0, dx2 = 0, dy2 = 0;
-            for (let i = 0; i < n; i++) {
-                num += (xs[i] - xbar) * (ys[i] - ybar);
-                dx2 += (xs[i] - xbar) ** 2;
-                dy2 += (ys[i] - ybar) ** 2;
+                // Spearman: average ("mid") rank for ties, per NCERT's
+                // repeated-ranks treatment.
+                function ranksOf(vals) {
+                    const idx = vals.map((v, i) => i).sort((a, b) => vals[a] - vals[b]);
+                    const ranks = new Array(vals.length);
+                    let i = 0;
+                    while (i < idx.length) {
+                        let j = i;
+                        while (j + 1 < idx.length && vals[idx[j + 1]] === vals[idx[i]]) j++;
+                        const avgRank = (i + j) / 2 + 1;
+                        for (let k = i; k <= j; k++) ranks[idx[k]] = avgRank;
+                        i = j + 1;
+                    }
+                    return ranks;
+                }
+                const rx = ranksOf(xs), ry = ranksOf(ys);
+                const d2sum = rx.reduce((s, r, i) => s + (r - ry[i]) ** 2, 0);
+                const spearmanR = n > 1 ? 1 - (6 * d2sum) / (n * (n * n - 1)) : 0;
+                const hasTies = new Set(xs).size < n || new Set(ys).size < n;
+
+                const strength = r => Math.abs(r) > 0.7 ? 'Strong' : Math.abs(r) > 0.3 ? 'Moderate' : 'Weak';
+                const direction = r => r >= 0 ? 'Positive' : 'Negative';
+
+                return {
+                    traces: [{ x: xs, y: ys, mode: 'markers', name: 'Data', marker: { color: '#2563eb', size: 9 } }],
+                    layout: { xaxis: { title: 'Study Hours / Week' }, yaxis: { title: 'Test Score (%)' }, showlegend: false },
+                    stats: [
+                        { label: 'n (data points)', value: n },
+                        { label: "Karl Pearson's r", value: fmt(pearsonR) },
+                        { label: "Spearman's Rank r", value: fmt(spearmanR) + (hasTies ? ' (ties averaged)' : '') }
+                    ],
+                    metrics: { pearsonR, spearmanR, n },
+                    interpretation: `${strength(pearsonR)} ${direction(pearsonR)} correlation (Pearson r = ${fmt(pearsonR)}). Spearman's rank r (${fmt(spearmanR)}) is close to it here because the data has few reversals in rank order — the two methods can diverge more with outliers or non-linear patterns, which is exactly why NCERT teaches both. Correlation never proves that one variable causes the other.`
+                };
             }
-            const actualR = num / Math.sqrt(dx2 * dy2);
-            return {
-                traces: [
-                    { x: xs, y: ys, mode: 'markers', name: 'Students', marker: { color: '#2563eb', size: 8 } }
-                ],
-                layout: { xaxis: { title: 'Study Hours per Week' }, yaxis: { title: 'Test Score (%)' }, showlegend: false },
-                readings: `<div class="reading-row"><span>Sample Correlation (r)</span><b>${fmt(actualR)}</b></div>
-                           <div class="reading-row"><span>Interpretation</span><b>${Math.abs(actualR) > 0.7 ? 'Strong' : Math.abs(actualR) > 0.3 ? 'Moderate' : 'Weak'} ${actualR >= 0 ? 'Positive' : 'Negative'}</b></div>
-                           <div class="reading-row insight-row">💡 ${actualR >= 0 ? 'As study hours rise, test scores tend to rise too' : 'As study hours rise, test scores tend to fall'} — but remember, correlation only measures the linear relationship and never proves that one variable causes the other.</div>`
-            };
+        },
+        practice: [
+            { prompt: 'Change one Test Score to an outlier (e.g. row 1 → 95) while keeping Study Hours low. What happens to Pearson\'s r vs Spearman\'s r?', hint: "Pearson's r is sensitive to the outlier's exact distance; Spearman's r only cares about its rank, so it often moves less." },
+            { prompt: 'Make two rows share the exact same Study Hours value. Watch how Spearman handles the tie.', hint: 'The Data Lab averages ("mid-ranks") tied values before computing Spearman\'s r, per the NCERT repeated-ranks method.' }
+        ],
+        challenge: {
+            prompt: 'Edit the table so that Karl Pearson\'s r comes out negative (Study Hours and Test Score move in opposite directions).',
+            check(state, metrics) { return metrics && metrics.pearsonR < -0.1; }
         }
     },
     {
@@ -386,7 +482,11 @@ const SIMS = [
         module: 'india',
         title: 'Poverty & Inequality',
         desc: 'Analyze income distribution and poverty lines using the Lorenz curve.',
-        chapter: 'Class XI Indian Economic Development · Ch. 4: Poverty (Poverty Line & Income Inequality)',
+        class: 'XII', part: 'B', unit: 7, unitTitle: 'Current Challenges facing Indian Economy', topicLabel: 'Poverty & Income Inequality',
+        syllabusIds: [],
+        mode: 'simulator',
+        enrichment: true,
+        enrichmentNote: "Poverty is well-established NCERT Indian Economic Development content, but the supplied 2026–27 taxonomy's Unit 7 (Current Challenges facing Indian Economy) names only Human Capital Formation, Rural Development, Employment and Sustainable Economic Development as topics — Poverty is not listed as a standalone Unit 7 topic in that document. Retained here as enrichment (and moved from the old, incorrect Class XI tag to Class XII, since Indian Economic Development itself is a Class XII part in 2026–27), not counted toward core Unit 7 coverage until confirmed against the official CBSE circular.",
         concept: '<p>NCERT\'s core method for identifying the poor is the <b>poverty line</b> — a calorie-based minimum consumption expenditure (historically ~2400 kcal/day rural, ~2100 kcal/day urban) converted into a rupee cutoff; anyone below it is counted as <b>absolutely poor</b>. Beyond that headline number, economists also study <b>income inequality</b> — how unevenly income is distributed even among the non-poor — using the Lorenz curve and Gini coefficient (standard statistical tools, used here to extend the poverty-line discussion). The Lorenz curve plots the cumulative share of income received against the cumulative share of the population; the further it bows away from the diagonal "line of equality", the greater the inequality.</p>',
         formulas: ['Lorenz Curve: L(p) = p^k', 'Gini Coefficient ≈ (k−1) / (k+1)', 'Headcount Ratio = % of population below the Poverty Line', 'Gini = 0 → perfect equality; Gini = 1 → perfect inequality'],
         controls: [
@@ -422,11 +522,19 @@ const SIMS = [
                     { x: [headcount / 100, headcount / 100], y: [0, 1], mode: 'lines', name: 'Headcount Cutoff', line: { color: '#f59e0b', dash: 'dash', width: 2 } }
                 ],
                 layout: { xaxis: { title: 'Cumulative % of Population' }, yaxis: { title: 'Cumulative % of Income' } },
+                metrics: { gini, headcount },
                 readings: `<div class="reading-row"><span>Approx. Gini Coefficient</span><b>${fmt(gini)}</b></div>
                            <div class="reading-row"><span>Interpretation</span><b>${gini < 0.3 ? 'Relatively Equal' : gini < 0.5 ? 'Moderate Inequality' : 'High Inequality'}</b></div>
                            <div class="reading-row"><span>Headcount Ratio (illustrative)</span><b>${fmt(headcount, 1)}%</b></div>
                            <div class="reading-row insight-row">💡 The amber dashed line marks the population share below your Poverty Line — that percentage is exactly what NCERT calls the <b>headcount ratio</b>. Raise the Poverty Line and more people fall below it; raise inequality and, for the same line, a larger low-income group forms.</div>`
             };
+        },
+        practice: [
+            { prompt: 'Keep the Poverty Line fixed and raise the Inequality Parameter. What happens to the Headcount Ratio?', hint: 'More inequality (higher Gini) concentrates income at the top, pushing more people under a fixed poverty line — headcount rises.' }
+        ],
+        challenge: {
+            prompt: 'Find a Poverty Line / Inequality combination that gives a Headcount Ratio between 40% and 60%.',
+            check(state, metrics) { return metrics && metrics.headcount >= 40 && metrics.headcount <= 60; }
         }
     }
 ];
