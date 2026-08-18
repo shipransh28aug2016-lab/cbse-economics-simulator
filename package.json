@@ -9,7 +9,13 @@
     "test": "node tools/test-curriculum.js",
     "smoke": "node tools/smoke.js",
     "build": "node tools/build-check.js",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run smoke"
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run smoke",
+    "vlab:typecheck": "for f in vlab/*.js vlab/src/**/*.js vlab/tools/*.js; do node --check \"$f\" || exit 1; done && echo 'typecheck OK: all vlab/**/*.js files parse'",
+    "vlab:lint": "eslint vlab/*.js vlab/src/**/*.js vlab/tools/*.js vlab/sw.js",
+    "vlab:test": "node vlab/tools/test-vlab.js",
+    "vlab:build": "node vlab/tools/build-check.js",
+    "vlab:smoke": "node vlab/tools/smoke.js",
+    "vlab:verify": "npm run vlab:typecheck && npm run vlab:lint && npm run vlab:test && npm run vlab:build && npm run vlab:smoke"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,0 +1,12 @@
+{
+  "name": "CBSE V-LAB 2026-27",
+  "short_name": "V-LAB",
+  "description": "Offline-first CBSE virtual laboratory — Class XI/XII simulations and practicals.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0f1e",
+  "theme_color": "#0a0f1e",
+  "orientation": "any",
+  "icons": []
+}

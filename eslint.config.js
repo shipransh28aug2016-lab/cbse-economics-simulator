@@ -57,5 +57,51 @@ module.exports = [
             sourceType: 'commonjs',
             globals: { require: 'readonly', module: 'writable', process: 'readonly', console: 'readonly', __dirname: 'readonly' }
         }
+    },
+    {
+        // CBSE V-LAB (vlab/) — a separate, subject-agnostic module living
+        // alongside EconSim Pro (see vlab/docs/ARCHITECTURE.md for why it
+        // isn't merged into the js/ globals above). Browser-side src/*.js
+        // and app.js are plain <script> tags sharing one window.VLAB
+        // namespace, each also carrying a module.exports guard so
+        // vlab/tools/test-vlab.js can require() them directly under Node.
+        files: ['vlab/*.js', 'vlab/src/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'script',
+            globals: {
+                window: 'readonly', document: 'readonly', console: 'readonly',
+                navigator: 'readonly', location: 'readonly',
+                localStorage: 'readonly', indexedDB: 'readonly',
+                module: 'writable', require: 'readonly', globalThis: 'readonly'
+            }
+        },
+        rules: {
+            'no-unused-vars': ['warn', { args: 'none', varsIgnorePattern: '^_' }],
+            'no-undef': 'error',
+            'no-redeclare': ['error', { builtinGlobals: false }],
+            'no-empty': ['warn', { allowEmptyCatch: true }]
+        }
+    },
+    {
+        files: ['vlab/sw.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'script',
+            globals: { self: 'readonly', caches: 'readonly', fetch: 'readonly' }
+        }
+    },
+    {
+        files: ['vlab/tools/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'commonjs',
+            globals: {
+                require: 'readonly', module: 'writable', process: 'readonly', console: 'readonly', __dirname: 'readonly',
+                // These files also pass page.evaluate(() => ...) callbacks
+                // to Playwright, which run in the browser, not Node.
+                window: 'readonly', document: 'readonly', navigator: 'readonly'
+            }
+        }
     }
 ];

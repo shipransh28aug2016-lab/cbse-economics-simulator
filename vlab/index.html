@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="CBSE V-LAB 2026-27 — offline-first virtual laboratory. MVP slice: Class XII Chemistry (043) volumetric analysis, standardizing an unknown KMnO4 solution against oxalic acid.">
+<meta name="theme-color" content="#0a0f1e">
+<title>CBSE V-LAB 2026-27 — Chemistry Volumetric Analysis</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="app-header">
+    <h1>CBSE V-LAB 2026-27</h1>
+    <p class="subtitle">Offline-first virtual laboratory · Class XII Chemistry (043) · Volumetric Analysis</p>
+</header>
+
+<div id="app" aria-live="polite"></div>
+
+<footer class="app-footer">
+    Runs entirely offline, no account, no network calls. Progress is saved locally on this device.
+</footer>
+
+<!-- Curriculum & core engine (order matters: registry before experiments before UI) -->
+<script src="src/curriculum/registry.js"></script>
+<script src="src/core/state-machine.js"></script>
+<script src="src/simulation/permanganometry-model.js"></script>
+<script src="src/experiments/xii-chem-permanganometry.js"></script>
+<script src="src/offline/db.js"></script>
+<script src="src/offline/progress-store.js"></script>
+<script src="src/ui/render.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

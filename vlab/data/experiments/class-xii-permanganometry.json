@@ -1,0 +1,8 @@
+{
+  "_readme": "This experiment's full authoring content (apparatus, procedure, viva bank, assessment, safety notes) lives in vlab/src/experiments/xii-chem-permanganometry.js as the single source of truth, for the same file:// / no-fetch() reason documented in vlab/data/curriculum/cbse-2026-27-chemistry.json. This stub exists so /data/experiments/class-xii/ is a discoverable index of what exists, per docs/EXPERIMENT_AUTHORING.md.",
+  "id": "xii-chem-permanganometry-v1",
+  "class": "XII",
+  "subject": "Chemistry",
+  "definedIn": "vlab/src/experiments/xii-chem-permanganometry.js",
+  "curriculumNodeId": "XII-CHEM-VOLUMETRIC-PERMANGANOMETRY"
+}

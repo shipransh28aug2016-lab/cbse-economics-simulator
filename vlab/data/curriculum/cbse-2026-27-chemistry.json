@@ -1,0 +1,20 @@
+{
+  "_readme": "Human-readable audit copy of vlab/src/curriculum/registry.js's CURRICULUM_NODES. The .js file is what the app and tools/test-vlab.js actually load at runtime (plain <script> tag, no fetch() of local JSON — Chrome blocks that under file://, same reasoning as js/curriculum-data.js in the parent EconSim Pro app). If you edit curriculum content, edit both files and keep them identical.",
+  "curriculumYear": "2026-27",
+  "board": "CBSE",
+  "nodes": [
+    {
+      "id": "XII-CHEM-VOLUMETRIC-PERMANGANOMETRY",
+      "class": "XII",
+      "subject": "Chemistry",
+      "subjectCode": "043",
+      "unit": "Practicals — Volumetric Analysis",
+      "topic": "Standardization of an unknown KMnO4 solution by titration against a standard oxalic acid solution (permanganometry)",
+      "contentStatus": "review",
+      "verificationStatus": "needs-review",
+      "sourceReference": "NCERT Chemistry Practical Manual, Class XII — Volumetric Analysis (redox/permanganometric titration). Needs cross-check against the official CBSE 2026-27 Chemistry (043) Practical syllabus PDF once it is added to this repo.",
+      "lastVerified": null,
+      "verifiedBy": null
+    }
+  ]
+}
