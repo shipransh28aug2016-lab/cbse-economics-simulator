@@ -177,8 +177,9 @@ function recomputeDataLab(sim, rebuildTable) {
     overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
-        const statsHTML = (result.stats || []).map(s => `<div class="reading-row"><span>${s.label}</span><b>${s.value}</b></div>`).join('');
-        readingsBody.innerHTML = whatChangedHTML + statsHTML + (result.interpretation ? `<div class="reading-row insight-row">💡 ${result.interpretation}</div>` : '');
+        const statsHTML = (result.stats || []).map(s => `<div class="reading-row"><span>${translateReadings(sim, s.label)}</span><b>${translateReadings(sim, String(s.value))}</b></div>`).join('');
+        const interpretation = result.interpretation ? translateReadings(sim, result.interpretation) : '';
+        readingsBody.innerHTML = whatChangedHTML + statsHTML + (interpretation ? `<div class="reading-row insight-row">💡 ${interpretation}</div>` : '');
         readingsBody.classList.remove('pulse');
         void readingsBody.offsetWidth;
         readingsBody.classList.add('pulse');
@@ -186,7 +187,7 @@ function recomputeDataLab(sim, rebuildTable) {
 
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
-        if (formulaBody) formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${f}</div>`).join('');
+        if (formulaBody) formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${translateReadings(sim, f)}</div>`).join('');
     }
 
     if (typeof refreshChallenge === 'function') refreshChallenge(sim, result.metrics);

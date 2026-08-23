@@ -177,3 +177,23 @@ if (typeof SIM_I18N_HI !== 'undefined') {
         }
     });
 }
+
+// Dynamically-computed reading labels + insight sentences for
+// ied-comparison-neighbours (the only datalab-mode sim in this group —
+// the three explorer-mode sims' insight text is fully static, already
+// covered by hi.explorer.eras/scenarios.*.insight above) — see
+// js/sim-engine.js's translateReadings() doc comment. Country names
+// (India/Pakistan/China, or whatever a student renames a row to) are
+// user/default data, not translated — same treatment as a Data Lab
+// category name elsewhere.
+if (typeof READINGS_I18N_HI !== 'undefined') {
+    Object.assign(READINGS_I18N_HI, {
+        'ied-comparison-neighbours': [
+            ['Highest HDI', 'सर्वोच्च HDI'],
+            ['Fastest GDP Growth', 'सबसे तेज़ GDP संवृद्धि'],
+            ['Most Agriculture-Dependent', 'सबसे अधिक कृषि-निर्भर'],
+            [' has the highest Human Development Index here, while ', ' का यहाँ सबसे अधिक मानव विकास सूचकांक है, जबकि '],
+            [" shows the fastest GDP growth — a reminder that fast growth and high human development don't automatically move together; growth has to translate into health, education and income gains to raise HDI.", ' सबसे तेज़ GDP संवृद्धि दिखाता है — एक अनुस्मारक कि तेज़ संवृद्धि और उच्च मानव विकास स्वतः साथ-साथ नहीं चलते; HDI बढ़ाने के लिए संवृद्धि को स्वास्थ्य, शिक्षा और आय लाभ में परिवर्तित होना चाहिए।']
+        ]
+    });
+}

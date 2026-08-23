@@ -102,3 +102,56 @@ if (typeof SIM_I18N_HI !== 'undefined') {
         }
     });
 }
+
+// Dynamically-computed reading labels + insight sentences for the
+// simulator-mode sims above (micro-positive-normative is explorer 'cards'
+// mode — its score-dependent insight text is handled generically by
+// js/explorer-engine.js's tEngine() calls, not per-sim here) — see
+// js/sim-engine.js's translateReadings() doc comment.
+if (typeof READINGS_I18N_HI !== 'undefined') {
+    Object.assign(READINGS_I18N_HI, {
+        'micro-ppf': [
+            ['Point Status', 'बिंदु स्थिति'],
+            ['Good Y at this point', 'इस बिंदु पर वस्तु Y'],
+            ['Opportunity Cost of 1 more X (in Y)', '1 अधिक X की अवसर लागत (Y में)'],
+            ['Inside the PPF — Inefficient', 'PPF के भीतर — अकुशल'],
+            ['Outside the PPF — Unattainable', 'PPF के बाहर — अप्राप्य'],
+            ['On the PPF — Productively Efficient', 'PPF पर — उत्पादक रूप से कुशल'],
+            ['Resources are unemployed or badly allocated — the economy could produce more of BOTH goods by moving out to the frontier, without sacrificing anything.', 'संसाधन बेरोजगार हैं या खराब आवंटित हैं — अर्थव्यवस्था सीमा की ओर बढ़कर, बिना कुछ त्यागे, दोनों वस्तुओं का अधिक उत्पादन कर सकती है।'],
+            ['This combination needs more resources or better technology than the economy currently has — it cannot be produced right now.', 'इस संयोजन के लिए अर्थव्यवस्था के पास वर्तमान में मौजूद से अधिक संसाधन या बेहतर प्रौद्योगिकी चाहिए — इसे अभी उत्पादित नहीं किया जा सकता।'],
+            ['Every point on the curve already uses all resources fully — the only way to get more X is to give up some Y. That trade-off IS opportunity cost.', 'वक्र पर हर बिंदु पहले से ही सभी संसाधनों का पूरा उपयोग करता है — अधिक X पाने का एकमात्र तरीका कुछ Y त्यागना है। वह व्यापार-बंद ही अवसर लागत है।'],
+            [' At X=', ' X='],
+            [', giving up ', ' पर, Y की '],
+            [' units of Y buys one more unit of X — and that cost keeps rising as X increases, because resources are progressively less suited to producing X.', ' इकाइयाँ छोड़ने से X की एक और इकाई मिलती है — और X बढ़ने पर यह लागत बढ़ती रहती है, क्योंकि संसाधन X के उत्पादन के लिए क्रमशः कम उपयुक्त होते जाते हैं।']
+        ],
+        'micro-indifference-curve': [
+            ['Equilibrium Quantity of X', 'X की संतुलन मात्रा'],
+            ['Equilibrium Quantity of Y', 'Y की संतुलन मात्रा'],
+            ['MRS at Equilibrium', 'संतुलन पर MRS'],
+            ['Price Ratio (Px/Py)', 'कीमत अनुपात (Px/Py)'],
+            ['The budget line just touches (is tangent to) the middle indifference curve exactly at the red point — that\'s why MRS ≈ Price Ratio there (', 'बजट रेखा ठीक लाल बिंदु पर मध्य तटस्थता वक्र को स्पर्श करती है (उसकी स्पर्शरेखा है) — यही कारण है कि वहाँ MRS ≈ कीमत अनुपात है ('],
+            ['). The lower curve is attainable but gives less satisfaction; the higher curve would be preferred but costs more than the budget allows.', ')। निचला वक्र प्राप्य है लेकिन कम संतुष्टि देता है; ऊँचे वक्र को प्राथमिकता दी जाती लेकिन इसकी लागत बजट की अनुमति से अधिक है।']
+        ],
+        'micro-revenue-producer-equilibrium': [
+            ["Producer's Equilibrium Output (Q*)", 'उत्पादक के संतुलन का उत्पादन (Q*)'],
+            ['MR at Q*', 'Q* पर MR'],
+            ['MC at Q*', 'Q* पर MC'],
+            ['Total Revenue at Q*', 'Q* पर कुल आगम'],
+            ['Profit (TR − TC)', 'लाभ (TR − TC)'],
+            ['The red point marks where MR = MC — the profit-maximising output.', 'लाल बिंदु वह चिह्नित करता है जहाँ MR = MC है — लाभ-अधिकतमकारी उत्पादन।'],
+            ['Because this firm is a price-taker, AR and MR sit on the same flat line at the market price.', 'क्योंकि यह फर्म एक मूल्य-स्वीकर्ता है, AR और MR बाजार कीमत पर एक ही सपाट रेखा पर बैठते हैं।'],
+            ['With a downward-sloping demand curve, MR falls twice as fast as AR/Price — a standard contrast case, shown here to make the perfect-competition AR=MR result easier to recognise.', 'नीचे की ओर झुकती माँग वक्र के साथ, MR, AR/कीमत से दोगुनी तेज़ी से गिरता है — एक मानक तुलना मामला, यहाँ पूर्ण-प्रतिस्पर्धा AR=MR परिणाम को पहचानना आसान बनाने के लिए दिखाया गया है।']
+        ],
+        'micro-elasticity-supply': [
+            ['Quantity Supplied', 'आपूर्ति की गई मात्रा'],
+            ['Price Elasticity of Supply (Es)', 'आपूर्ति की मूल्य लोच (Es)'],
+            ['Classification', 'वर्गीकरण'],
+            ['Unit Elastic', 'इकाई लोचदार'],
+            ['Inelastic', 'बेलोचदार'],
+            ['Elastic', 'लोचदार'],
+            ['In the market period, output is already produced and nearly fixed — supply barely responds to price, so Es is close to 0.', 'बाजार अवधि में, उत्पादन पहले से हो चुका है और लगभग स्थिर है — आपूर्ति कीमत पर मुश्किल से प्रतिक्रिया करती है, इसलिए Es 0 के करीब है।'],
+            ['In the long run, producers can build new capacity or exit the industry entirely — supply responds strongly to price, so Es is well above 1.', 'दीर्घकाल में, उत्पादक नई क्षमता बना सकते हैं या उद्योग से पूरी तरह बाहर निकल सकते हैं — आपूर्ति कीमत पर दृढ़ता से प्रतिक्रिया करती है, इसलिए Es 1 से काफी ऊपर है।'],
+            ['In the short run, firms can vary some inputs (e.g. overtime, more raw material) but not fixed capacity — a middling elasticity.', 'अल्पकाल में, फर्में कुछ इनपुट बदल सकती हैं (जैसे ओवरटाइम, अधिक कच्चा माल) लेकिन स्थिर क्षमता नहीं — एक मध्यम लोच।']
+        ]
+    });
+}

@@ -10,8 +10,9 @@
 // field missing from its entry) simply falls back to English — see those
 // helpers' doc comments. Dynamically-computed text (a sim's own readings/
 // interpretation/insight strings, generated inside compute()/
-// dataLab.calculate() from live numbers) is intentionally NOT translated
-// here — see js/i18n_hi_dynamic.js instead.
+// dataLab.calculate() from live numbers) can't be pre-translated as static
+// content the same way — see the READINGS_I18N_HI block at the bottom of
+// this file, and js/sim-engine.js's translateReadings() doc comment.
 //
 // This file covers the 6 sims in js/simulations.js. Further sims are
 // covered by js/i18n_hi_extended.js, js/i18n_hi_class11_micro.js,
@@ -143,5 +144,91 @@ if (typeof SIM_I18N_HI !== 'undefined') {
             ],
             challenge: { prompt: 'ऐसा गरीबी रेखा / असमानता संयोजन खोजें जो 40% और 60% के बीच हेडकाउंट अनुपात दे।' }
         }
+    });
+}
+
+// Dynamically-computed reading labels + insight sentences for the 6 sims
+// above — see js/sim-engine.js's translateReadings() doc comment.
+if (typeof READINGS_I18N_HI !== 'undefined') {
+    Object.assign(READINGS_I18N_HI, {
+        'micro-supply-demand': [
+            ['Net Demand Shift', 'निवल माँग शिफ्ट'],
+            ['Net Supply Shift', 'निवल आपूर्ति शिफ्ट'],
+            ['Equilibrium Price', 'संतुलन कीमत'],
+            ['Equilibrium Quantity', 'संतुलन मात्रा'],
+            [' units', ' इकाइयाँ'],
+            ['The biggest mover right now is', 'अभी सबसे बड़ा प्रभावकारी है'],
+            ['Price of Substitute', 'स्थानापन्न की कीमत'],
+            ['Price of Complement', 'पूरक की कीमत'],
+            ['Input Cost', 'इनपुट लागत'],
+            ['Govt. Tax/Subsidy', 'सरकारी कर/सब्सिडी'],
+            ['Technology', 'प्रौद्योगिकी'],
+            ['Tastes', 'रुचियाँ'],
+            ['Income', 'आय'],
+            ['Demand has shifted right (increased)', 'माँग दाईं ओर शिफ्ट हुई है (बढ़ी)'],
+            ['Demand has shifted left (decreased)', 'माँग बाईं ओर शिफ्ट हुई है (घटी)'],
+            ['Supply has shifted right (increased) — lower net cost/higher tech/subsidy.', 'आपूर्ति दाईं ओर शिफ्ट हुई है (बढ़ी) — कम निवल लागत/अधिक तकनीक/सब्सिडी।'],
+            ['Supply has shifted left (decreased) — higher net cost/tax.', 'आपूर्ति बाईं ओर शिफ्ट हुई है (घटी) — अधिक निवल लागत/कर।'],
+            ['All factors are at zero — move any slider to see its own named effect on demand or supply.', 'सभी कारक शून्य पर हैं — माँग या आपूर्ति पर अपना नामित प्रभाव देखने के लिए कोई भी स्लाइडर हिलाएँ।']
+        ],
+        'micro-elasticity': [
+            ['Quantity Demanded of X', 'X की माँगी गई मात्रा'],
+            ['Quantity Demanded', 'माँगी गई मात्रा'],
+            ['Income Elasticity (Ey)', 'आय लोच (Ey)'],
+            ['Cross Elasticity (Exy)', 'क्रॉस लोच (Exy)'],
+            ['Point Elasticity (Ed)', 'बिंदु लोच (Ed)'],
+            ['Classification', 'वर्गीकरण'],
+            ['Relationship', 'संबंध'],
+            ['Luxury Good', 'विलासिता वस्तु'],
+            ['Necessity (Normal Good)', 'आवश्यकता (सामान्य वस्तु)'],
+            ['Inferior Good', 'निम्नस्तरीय वस्तु'],
+            ['Substitutes (Exy &gt; 0)', 'स्थानापन्न (Exy &gt; 0)'],
+            ['Unit Elastic', 'इकाई लोचदार'],
+            ['Inelastic', 'बेलोचदार'],
+            ['Elastic', 'लोचदार'],
+            ['Ey &gt; 0 means demand rises with income (a normal good) — Ey &gt; 1 marks it a luxury, 0 &lt; Ey &lt; 1 a necessity. An inferior good (not modeled here) would show Ey &lt; 0.', 'Ey &gt; 0 का अर्थ है माँग आय के साथ बढ़ती है (एक सामान्य वस्तु) — Ey &gt; 1 इसे विलासिता चिह्नित करता है, 0 &lt; Ey &lt; 1 एक आवश्यकता। एक निम्नस्तरीय वस्तु (यहाँ मॉडल नहीं की गई) Ey &lt; 0 दिखाएगी।'],
+            ['Exy &gt; 0 (e.g. tea &amp; coffee) means a price rise in Y pushes buyers toward X — they\'re substitutes. Complements (e.g. car &amp; petrol) would show Exy &lt; 0 instead.', 'Exy &gt; 0 (जैसे चाय और कॉफ़ी) का अर्थ है Y में कीमत वृद्धि खरीदारों को X की ओर धकेलती है — वे स्थानापन्न हैं। पूरक (जैसे कार और पेट्रोल) इसके बजाय Exy &lt; 0 दिखाएँगे।'],
+            ['Demand is elastic here — a price change causes a proportionally larger change in quantity demanded, so total revenue moves opposite to price.', 'यहाँ माँग लोचदार है — एक कीमत परिवर्तन माँगी गई मात्रा में आनुपातिक रूप से बड़ा परिवर्तन करता है, इसलिए कुल आगम कीमत के विपरीत चलता है।'],
+            ['Demand is inelastic here — quantity barely responds to the price change, so total revenue moves with price.', 'यहाँ माँग बेलोचदार है — मात्रा कीमत परिवर्तन पर मुश्किल से प्रतिक्रिया करती है, इसलिए कुल आगम कीमत के साथ चलता है।'],
+            ['Demand is unit elastic here — %ΔQ exactly equals %ΔP.', 'यहाँ माँग इकाई-लोचदार है — %ΔQ बिल्कुल %ΔP के बराबर है।']
+        ],
+        'macro-gdp': [
+            ['Consumption Expenditure (C)', 'उपभोग व्यय (C)'],
+            ['Factor Payments (Wages etc.)', 'कारक भुगतान (मज़दूरी आदि)'],
+            ['Govt Spending (G)', 'सरकारी व्यय (G)'],
+            ['Net Exports (X−M)', 'निवल निर्यात (X−M)'],
+            ['Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms. Raising G or exports adds new injections and speeds up the whole flow.', 'ध्यान दें कि <b>वास्तविक प्रवाह</b> (धराशायी, वर्गाकार) हमेशा <b>मुद्रा प्रवाह</b> (ठोस, गोल) के विपरीत चलता है जो इसका भुगतान करता है — कारक सेवाएँ फर्मों की ओर बहती हैं जबकि कारक भुगतान परिवारों की ओर वापस बहते हैं, और वस्तुएँ व सेवाएँ परिवारों की ओर बहती हैं जबकि उपभोग व्यय फर्मों की ओर वापस बहता है। G या निर्यात बढ़ाने से नए अंतःक्षेप जुड़ते हैं और पूरा प्रवाह तेज़ होता है।']
+        ],
+        'macro-multiplier': [
+            ['Investment Multiplier (k)', 'निवेश गुणक (k)'],
+            ['Tax Multiplier (kt, contrast)', 'कर गुणक (kt, तुलना)'],
+            ['ΔY from Spending (I+G)', 'व्यय से ΔY (I+G)'],
+            ['ΔY from Tax', 'कर से ΔY'],
+            ['New Equilibrium Y', 'नया संतुलन Y'],
+            ['A higher MPC means each round of spending recycles further — a bigger multiplier. The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.', 'एक उच्च MPC का अर्थ है व्यय का हर दौर आगे और पुनर्चक्रित होता है — एक बड़ा गुणक। कर गुणक हमेशा व्यय गुणक से परिमाण में छोटा होता है (ठीक एक इकाई से: k − |kt| = 1), क्योंकि एक कर परिवर्तन केवल प्रयोज्य आय के माध्यम से अप्रत्यक्ष रूप से व्यय को प्रभावित करता है।']
+        ],
+        'stats-correlation': [
+            ['n (data points)', 'n (डेटा बिंदु)'],
+            ["Karl Pearson's r", 'कार्ल पियरसन का r'],
+            ["Spearman's Rank r", 'स्पीयरमैन रैंक r'],
+            [' (ties averaged)', ' (टाई औसत)'],
+            ['Strong', 'प्रबल'],
+            ['Moderate', 'मध्यम'],
+            ['Weak', 'कमजोर'],
+            ['Positive', 'सकारात्मक'],
+            ['Negative', 'ऋणात्मक'],
+            [' correlation (Pearson r = ', ' सहसंबंध (पियरसन r = '],
+            ["). Spearman's rank r (", '). स्पीयरमैन रैंक r ('],
+            [") is close to it here because the data has few reversals in rank order — the two methods can diverge more with outliers or non-linear patterns, which is exactly why NCERT teaches both. Correlation never proves that one variable causes the other.", ') यहाँ इसके करीब है क्योंकि डेटा में रैंक क्रम में कम उलटफेर हैं — दोनों विधियाँ आउटलायर या गैर-रैखिक पैटर्न के साथ अधिक भिन्न हो सकती हैं, यही कारण है कि NCERT दोनों सिखाता है। सहसंबंध कभी साबित नहीं करता कि एक चर दूसरे का कारण है।']
+        ],
+        'india-poverty': [
+            ['Approx. Gini Coefficient', 'अनुमानित गिनी गुणांक'],
+            ['Interpretation', 'व्याख्या'],
+            ['Relatively Equal', 'अपेक्षाकृत समान'],
+            ['Moderate Inequality', 'मध्यम असमानता'],
+            ['High Inequality', 'उच्च असमानता'],
+            ['Headcount Ratio (illustrative)', 'हेडकाउंट अनुपात (उदाहरणात्मक)'],
+            ['The amber dashed line marks the population share below your Poverty Line — that percentage is exactly what NCERT calls the <b>headcount ratio</b>. Raise the Poverty Line and more people fall below it; raise inequality and, for the same line, a larger low-income group forms.', 'एम्बर धराशायी रेखा आपकी गरीबी रेखा से नीचे जनसंख्या के हिस्से को चिह्नित करती है — वह प्रतिशत ठीक वही है जिसे NCERT <b>हेडकाउंट अनुपात</b> कहता है। गरीबी रेखा बढ़ाएँ और अधिक लोग इसके नीचे आ जाते हैं; असमानता बढ़ाएँ और, समान रेखा के लिए, एक बड़ा निम्न-आय समूह बनता है।']
+        ]
     });
 }

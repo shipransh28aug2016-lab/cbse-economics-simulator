@@ -122,6 +122,17 @@ if (typeof I18N_HI === 'undefined') {
 if (typeof SIM_I18N_HI === 'undefined') {
     var SIM_I18N_HI = {}; // populated by js/i18n_hi.js: SIM_I18N_HI['sim-id'] = {...}
 }
+if (typeof READINGS_I18N_HI === 'undefined') {
+    // Ordered [English, Hindi] literal-substring pairs per sim, applied by
+    // js/sim-engine.js's/js/datalab-engine.js's translateReadings() against
+    // a compute()/dataLab.calculate()'s already-rendered English readings/
+    // interpretation/dynamic-formulas HTML — see that function's doc
+    // comment for why this (rather than pre-translating readings as static
+    // content) is how DYNAMICALLY COMPUTED text gets translated. Populated
+    // by js/i18n_hi*.js: READINGS_I18N_HI['sim-id'] = [['English label', 'हिन्दी लेबल'], ...].
+    var READINGS_I18N_HI = {};
+    if (typeof window !== 'undefined') window.READINGS_I18N_HI = READINGS_I18N_HI;
+}
 
 // Applies I18N_HI to every element in the DOM carrying one of the
 // data-i18n* attributes below. Safe to call repeatedly (e.g. once per

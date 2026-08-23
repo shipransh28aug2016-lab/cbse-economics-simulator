@@ -56,3 +56,34 @@ if (typeof SIM_I18N_HI !== 'undefined') {
         }
     });
 }
+
+// Dynamically-computed reading labels + insight sentences for
+// macro-national-income-methods and macro-propensity (macro-basic-concepts
+// is explorer 'cards' mode — its score-dependent insight text is handled
+// generically by js/explorer-engine.js's tEngine() calls, not per-sim
+// here) — see js/sim-engine.js's translateReadings() doc comment.
+if (typeof READINGS_I18N_HI !== 'undefined') {
+    Object.assign(READINGS_I18N_HI, {
+        'macro-national-income-methods': [
+            ['GDP — Value Added Method', 'GDP — मूल्य वर्धित विधि'],
+            ['GDP — Income Method', 'GDP — आय विधि'],
+            ['Implied Total Profit', 'अंतर्निहित कुल लाभ'],
+            ['GDP — Expenditure (C+I+G+NX, illustrative split)', 'GDP — व्यय (C+I+G+NX, उदाहरणात्मक विभाजन)'],
+            ['Value Added (₹', 'मूल्य वर्धित (₹'],
+            [') and Income Method (₹', ') और आय विधि (₹'],
+            [') match exactly — they must, because Profit is defined as whatever value-added is left after paying Wages, Rent and Interest.', ') बिल्कुल मेल खाते हैं — उन्हें मेल खाना ही है, क्योंकि लाभ को मज़दूरी, किराया और ब्याज चुकाने के बाद बचे मूल्य वर्धित के रूप में परिभाषित किया गया है।'],
+            ['Note: implied Profit is negative for the economy as a whole — the wages/rent/interest you entered exceed the value added, i.e. these firms are running a collective loss.', 'ध्यान दें: पूरी अर्थव्यवस्था के लिए अंतर्निहित लाभ ऋणात्मक है — आपके द्वारा दर्ज मज़दूरी/किराया/ब्याज मूल्य वर्धित से अधिक है, यानी ये फर्में सामूहिक हानि में चल रही हैं।'],
+            [" The Expenditure split shown is illustrative (fixed 60/20/15/5% shares of the same total), since C/I/G/NX aren't naturally per-firm figures.", ' दिखाया गया व्यय विभाजन उदाहरणात्मक है (समान कुल के स्थिर 60/20/15/5% हिस्से), क्योंकि C/I/G/NX स्वाभाविक रूप से प्रति-फर्म आँकड़े नहीं हैं।']
+        ],
+        'macro-propensity': [
+            ['MPC (fitted slope)', 'MPC (फिट की गई ढलान)'],
+            ['APC (latest period)', 'APC (नवीनतम अवधि)'],
+            ['APS (latest period)', 'APS (नवीनतम अवधि)'],
+            ['Break-even Income', 'ब्रेक-ईवन आय'],
+            [' (always 1, by definition). ', ' (परिभाषा से हमेशा 1)। '],
+            ['APC exceeds 1 in the latest period — the household is dissaving (spending more than its income).', 'नवीनतम अवधि में APC 1 से अधिक है — परिवार बचत-अपकर्षण कर रहा है (अपनी आय से अधिक खर्च)।'],
+            ['At the break-even income of ', 'ब्रेक-ईवन आय '],
+            [', saving is exactly zero — below it households dissave, above it they save.', ' पर, बचत ठीक शून्य है — इससे नीचे परिवार बचत-अपकर्षण करते हैं, इससे ऊपर वे बचत करते हैं।']
+        ]
+    });
+}

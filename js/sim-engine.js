@@ -205,6 +205,33 @@ function hiPath(sim, path) {
     return node === undefined || node === null ? undefined : node;
 }
 
+// Best-effort translation of a sim's DYNAMICALLY COMPUTED readings/
+// interpretation HTML (built inside compute()/dataLab.calculate()/
+// customRender() from live numbers, so it can't be pre-translated as
+// static content the way sim.hi's other fields are — see js/i18n_hi.js's
+// header comment). Looks up an ordered list of [English, Hindi] literal
+// substring pairs for this sim from READINGS_I18N_HI (declared by
+// js/i18n_engine.js, populated per-sim-group by js/i18n_hi*.js, mirroring
+// the QUIZ_BANK/SIM_I18N_HI population pattern) and applies them in order
+// against the already-rendered English HTML — translating every reading
+// LABEL and every static sentence fragment while leaving embedded numbers,
+// ₹ amounts and other live-computed values untouched (a plain string
+// substring replace never touches the digits/markup around it). Falls
+// through to the original English HTML untouched when Hindi isn't active,
+// this sim has no entry, or (defensively) something in the dictionary
+// doesn't match — never blocks rendering.
+function translateReadings(sim, html) {
+    if (!html || typeof currentLang === 'undefined' || currentLang !== 'hi') return html;
+    if (typeof READINGS_I18N_HI === 'undefined') return html;
+    const pairs = READINGS_I18N_HI[sim.id];
+    if (!Array.isArray(pairs)) return html;
+    let out = html;
+    pairs.forEach(([en, hi]) => {
+        if (typeof en === 'string' && out.indexOf(en) !== -1) out = out.split(en).join(hi);
+    });
+    return out;
+}
+
 // Looks up a fixed (non-sim-specific) UI string from js/i18n_engine.js's
 // I18N_HI dictionary when Hindi is active — used for the handful of
 // hand-built HTML strings in this file/datalab-engine.js/explorer-engine.js
@@ -544,7 +571,7 @@ function renderSimChart(sim) {
     overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
-        readingsBody.innerHTML = whatChangedHTML + (result.readings || '');
+        readingsBody.innerHTML = whatChangedHTML + translateReadings(sim, result.readings || '');
         // Restart the highlight animation on every recompute so students
         // notice the readings actually changed.
         readingsBody.classList.remove('pulse');
@@ -560,7 +587,7 @@ function renderSimChart(sim) {
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
         if (formulaBody) {
-            formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${f}</div>`).join('');
+            formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${translateReadings(sim, f)}</div>`).join('');
         }
     }
 

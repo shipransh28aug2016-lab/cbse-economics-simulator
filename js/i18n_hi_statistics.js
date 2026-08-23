@@ -97,3 +97,43 @@ if (typeof SIM_I18N_HI !== 'undefined') {
         }
     });
 }
+
+// Dynamically-computed reading labels + insight sentences for the 3
+// dataLab-mode sims above (stats-data-collection is explorer 'scenario'
+// mode with no computed numbers — its insight text is fully static and
+// already covered by hi.explorer.scenarios.*.insight above) — see
+// js/sim-engine.js's translateReadings() doc comment.
+if (typeof READINGS_I18N_HI !== 'undefined') {
+    Object.assign(READINGS_I18N_HI, {
+        'stats-central-tendency': [
+            ['n (data points)', 'n (डेटा बिंदु)'],
+            ['Mean (x̄)', 'माध्य (x̄)'],
+            ['Median', 'माध्यिका'],
+            ['Mode', 'बहुलक'],
+            ['No mode (all values unique)', 'कोई बहुलक नहीं (सभी मान अद्वितीय)'],
+            ['Positively skewed (a few high values pull the mean above the median)', 'धनात्मक विषम (कुछ उच्च मान माध्य को माध्यिका से ऊपर खींचते हैं)'],
+            ['Negatively skewed (a few low values pull the mean below the median)', 'ऋणात्मक विषम (कुछ निम्न मान माध्य को माध्यिका से नीचे खींचते हैं)'],
+            ['Roughly symmetric (mean ≈ median)', 'लगभग सममित (माध्य ≈ माध्यिका)'],
+            ["With every value unique here, the mode doesn't summarise this dataset well — mean or median are more useful.", 'यहाँ हर मान अद्वितीय होने से, बहुलक इस डेटासेट को अच्छी तरह संक्षेप में नहीं बताता — माध्य या माध्यिका अधिक उपयोगी हैं।'],
+            [' students share the modal value of ', ' छात्र बहुलक मान '],
+            [' — the single most common score.', ' साझा करते हैं — एकमात्र सबसे सामान्य स्कोर।']
+        ],
+        'stats-data-organisation': [
+            ['n (observations)', 'n (अवलोकन)'],
+            ['Range', 'परिसर'],
+            ['Class Width', 'वर्ग चौड़ाई'],
+            ['Modal Class', 'बहुलक वर्ग'],
+            ['Most observations (', 'अधिकांश अवलोकन ('],
+            [' of ', ' में से '],
+            [') fall in the ', ') '],
+            [" class — the modal class. The Ogive's steepest section lines up with this same class, since that's where cumulative frequency climbs fastest.", ' वर्ग में आते हैं — बहुलक वर्ग। तोरण का सबसे तीव्र खंड इसी वर्ग से मेल खाता है, क्योंकि यहीं संचयी आवृत्ति सबसे तेज़ी से बढ़ती है।']
+        ],
+        'stats-data-presentation': [
+            ['Total', 'कुल'],
+            ['Largest Category', 'सबसे बड़ी श्रेणी'],
+            ['Smallest Category', 'सबसे छोटी श्रेणी'],
+            [' is the biggest slice at ', ' कुल का सबसे बड़ा हिस्सा है, '],
+            ['% of the total — the bar diagram makes its absolute size easy to compare against the others, while the pie diagram makes its <i>share</i> of the whole immediately visible.', '% — स्तंभ आरेख इसके पूर्ण आकार की दूसरों से तुलना करना आसान बनाता है, जबकि वृत्त आरेख कुल में इसके <i>हिस्से</i> को तुरंत दृश्यमान बनाता है।']
+        ]
+    });
+}

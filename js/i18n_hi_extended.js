@@ -203,3 +203,142 @@ if (typeof SIM_I18N_HI !== 'undefined') {
         }
     });
 }
+
+// Dynamically-computed reading labels + insight sentences for the 12 sims
+// above — see js/sim-engine.js's translateReadings() doc comment.
+if (typeof READINGS_I18N_HI !== 'undefined') {
+    Object.assign(READINGS_I18N_HI, {
+        'micro-consumer-equilibrium': [
+            ['Marginal Utility at Q', 'Q पर सीमांत उपयोगिता'],
+            ['MU per Rupee (MU/P)', 'प्रति रुपया MU (MU/P)'],
+            ['Total Utility', 'कुल उपयोगिता'],
+            ['MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.', 'MU अभी भी सकारात्मक है — एक और इकाई कुल उपयोगिता में जोड़ेगी, इसलिए एक तर्कसंगत उपभोक्ता उपभोग करता रहता है।'],
+            ['MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.', 'MU ऋणात्मक हो गई है — उपभोक्ता ने अधिकतम संतुष्टि के बिंदु से आगे अति-उपभोग कर लिया है।'],
+            ['MU = 0 — this is the single-good equilibrium (maximum Total Utility).', 'MU = 0 — यह एकल-वस्तु संतुलन है (अधिकतम कुल उपयोगिता)।'],
+            ['With multiple goods, the consumer instead compares MU/P across goods and buys more of whichever gives more satisfaction per rupee — at ₹', 'कई वस्तुओं के साथ, उपभोक्ता इसके बजाय वस्तुओं में MU/P की तुलना करता है और जो भी प्रति रुपया अधिक संतुष्टि देती है उसे अधिक खरीदता है — ₹'],
+            ['/unit, this good currently gives ', '/इकाई पर, यह वस्तु वर्तमान में देती है '],
+            [' utils per rupee.', ' यूटिल प्रति रुपया।']
+        ],
+        'micro-producer-costs': [
+            ['Total Product (TP)', 'कुल उत्पाद (TP)'],
+            ['Average Product (AP)', 'औसत उत्पाद (AP)'],
+            ['Marginal Product (MP)', 'सीमांत उत्पाद (MP)'],
+            ['Stage I: Increasing Returns', 'चरण I: बढ़ते प्रतिफल'],
+            ['Stage II: Diminishing Returns', 'चरण II: ह्रासमान प्रतिफल'],
+            ['Stage III: Negative Returns', 'चरण III: ऋणात्मक प्रतिफल'],
+            ['Stage', 'चरण'],
+            ['Each extra worker adds more than the average — MP is still pulling AP up.', 'हर अतिरिक्त कार्यकर्ता औसत से अधिक जोड़ता है — MP अभी भी AP को ऊपर खींच रहा है।'],
+            ['Each extra worker adds less than before (and less than the average) — this is the normal, rational stage of production.', 'हर अतिरिक्त कार्यकर्ता पहले से कम जोड़ता है (और औसत से कम) — यह उत्पादन का सामान्य, तर्कसंगत चरण है।'],
+            ['Too much labour is now crowded onto fixed factors — an extra worker actually reduces Total Product.', 'अब बहुत अधिक श्रम स्थिर कारकों पर भीड़भाड़ कर रहा है — एक अतिरिक्त कार्यकर्ता वास्तव में कुल उत्पाद को कम करता है।'],
+            ['Average Cost at Q', 'Q पर औसत लागत'],
+            ['Marginal Cost at Q', 'Q पर सीमांत लागत'],
+            ['AC is currently', 'AC वर्तमान में'],
+            ['Falling', 'घट रहा है'],
+            ['Rising', 'बढ़ रहा है'],
+            ["MC is below AC, so it is still pulling the average down — the firm hasn't reached its most efficient output yet.", 'MC, AC से नीचे है, इसलिए यह अभी भी औसत को नीचे खींच रहा है — फर्म अभी अपने सबसे कुशल उत्पादन तक नहीं पहुँची है।'],
+            ['MC is above AC, so it is pulling the average up — output has moved past the most efficient scale.', 'MC, AC से ऊपर है, इसलिए यह औसत को ऊपर खींच रहा है — उत्पादन सबसे कुशल पैमाने से आगे बढ़ गया है।']
+        ],
+        'micro-price-controls': [
+            ['Free-Market Equilibrium', 'मुक्त-बाजार संतुलन'],
+            [' units', ' इकाइयाँ'],
+            ['Control Type', 'नियंत्रण प्रकार'],
+            ['Price Ceiling', 'मूल्य सीमा'],
+            ['Price Floor', 'मूल्य तल'],
+            ['Shortage', 'कमी'],
+            ['Surplus', 'अधिशेष'],
+            ['Setting the price below equilibrium (e.g. rent control) benefits some buyers but leaves demand unmet — a classic shortage.', 'संतुलन से नीचे कीमत निर्धारित करना (जैसे किराया नियंत्रण) कुछ खरीदारों को लाभ पहुँचाता है लेकिन माँग को अधूरा छोड़ता है — एक क्लासिक कमी।'],
+            ['Setting the price above equilibrium (e.g. minimum wage, MSP) protects sellers but leaves excess supply unsold — a classic surplus.', 'संतुलन से ऊपर कीमत निर्धारित करना (जैसे न्यूनतम मज़दूरी, MSP) विक्रेताओं की रक्षा करता है लेकिन अतिरिक्त आपूर्ति को अनबिका छोड़ता है — एक क्लासिक अधिशेष।']
+        ],
+        'micro-market-structures': [
+            ['Market Structure (at N=', 'बाजार संरचना (N='],
+            ['Current Price / Qty', 'वर्तमान कीमत / मात्रा'],
+            ['Perfect-Competition Benchmark', 'पूर्ण-प्रतिस्पर्धा मानदंड'],
+            ['Monopolistic Competition', 'एकाधिकारात्मक प्रतिस्पर्धा'],
+            ['Near-Perfect Competition', 'निकट-पूर्ण प्रतिस्पर्धा'],
+            ['Oligopoly', 'अल्पाधिकार'],
+            ['Monopoly', 'एकाधिकार'],
+            ['As N rises, each firm has less market power and undercutting rivals matters more — price is pushed down toward marginal cost. At N=1 (monopoly) price is highest and output lowest; the gap closes steadily as more firms enter.', 'जैसे-जैसे N बढ़ता है, हर फर्म के पास कम बाजार शक्ति होती है और प्रतिद्वंद्वियों को कम कीमत देना अधिक मायने रखता है — कीमत सीमांत लागत की ओर नीचे धकेली जाती है। N=1 (एकाधिकार) पर कीमत सबसे अधिक और उत्पादन सबसे कम होता है; जैसे-जैसे अधिक फर्में प्रवेश करती हैं अंतर लगातार बंद होता जाता है।']
+        ],
+        'macro-money-creation': [
+            ['Money Multiplier (1/LRR)', 'मुद्रा गुणक (1/LRR)'],
+            ['Total Money Created', 'कुल निर्मित मुद्रा'],
+            ['A lower Legal Reserve Ratio means banks hold back less and lend out more of every deposit — so each rupee gets re-lent more times, and the money multiplier grows larger.', 'एक निम्न कानूनी आरक्षित अनुपात का अर्थ है बैंक कम रोकते हैं और हर जमा का अधिक हिस्सा उधार देते हैं — इसलिए हर रुपया अधिक बार पुनः उधार दिया जाता है, और मुद्रा गुणक बड़ा होता जाता है।']
+        ],
+        'macro-govt-budget': [
+            ['Total Receipts', 'कुल प्राप्तियाँ'],
+            ['Total Expenditure', 'कुल व्यय'],
+            ['Revenue Deficit', 'राजस्व घाटा'],
+            ['Fiscal Deficit (illustrative)', 'राजकोषीय घाटा (उदाहरणात्मक)'],
+            ['Primary Deficit', 'प्राथमिक घाटा'],
+            ["Primary deficit is zero or negative — this year's fiscal deficit is entirely (or more than) explained by interest owed on past borrowing, not fresh overspending.", 'प्राथमिक घाटा शून्य या ऋणात्मक है — इस वर्ष का राजकोषीय घाटा पूरी तरह (या उससे अधिक) पिछले उधार पर देय ब्याज से समझाया जाता है, नए अतिरिक्त-व्यय से नहीं।'],
+            ["A positive primary deficit means the government is borrowing for more than just interest on old debt — it reflects this year's own spending decisions.", 'एक सकारात्मक प्राथमिक घाटे का अर्थ है सरकार पुराने ऋण पर केवल ब्याज से अधिक के लिए उधार ले रही है — यह इस वर्ष के अपने व्यय निर्णयों को दर्शाता है।']
+        ],
+        'macro-forex': [
+            ['Current Account (X−M)', 'चालू खाता (X−M)'],
+            ['Capital Account (In−Out)', 'पूँजी खाता (अंतर्वाह−बहिर्वाह)'],
+            ['Equilibrium Exchange Rate', 'संतुलन विनिमय दर'],
+            ['Quantity Traded', 'व्यापारित मात्रा'],
+            ['Rupee Trend', 'रुपये की प्रवृत्ति'],
+            ['Depreciating', 'अवमूल्यन हो रहा'],
+            ['Appreciating', 'मूल्यवृद्धि हो रहा'],
+            ['Stable', 'स्थिर'],
+            ['Demand for dollars (imports + capital outflow) outweighs supply (exports + capital inflow) — more rupees are needed per dollar.', 'डॉलर की माँग (आयात + पूँजी बहिर्वाह) आपूर्ति (निर्यात + पूँजी अंतर्वाह) से अधिक है — प्रति डॉलर अधिक रुपयों की आवश्यकता है।'],
+            ['Supply of dollars (exports + capital inflow) outweighs demand (imports + capital outflow) — fewer rupees are needed per dollar.', 'डॉलर की आपूर्ति (निर्यात + पूँजी अंतर्वाह) माँग (आयात + पूँजी बहिर्वाह) से अधिक है — प्रति डॉलर कम रुपयों की आवश्यकता है।'],
+            ['Current Account and Capital Account pressures are balanced at the current rate.', 'वर्तमान दर पर चालू खाता और पूँजी खाता दबाव संतुलित हैं।']
+        ],
+        'macro-inflation-gap': [
+            ['Net AD Shift (ΔC+ΔI+ΔG+ΔNX)', 'निवल AD शिफ्ट (ΔC+ΔI+ΔG+ΔNX)'],
+            ['Equilibrium Income', 'संतुलन आय'],
+            ['Full Employment Income (Yfe)', 'पूर्ण रोजगार आय (Yfe)'],
+            ['Gap Type', 'अंतराल प्रकार'],
+            ['Gap Size', 'अंतराल आकार'],
+            ['Inflationary Gap', 'स्फीतिक अंतराल'],
+            ['Deflationary Gap', 'अवस्फीतिक अंतराल'],
+            ['No Gap', 'कोई अंतराल नहीं'],
+            ['Consumption (C)', 'उपभोग (C)'],
+            ['Investment (I)', 'निवेश (I)'],
+            ['Govt. Spending (G)', 'सरकारी व्यय (G)'],
+            ['Net Exports (X−M)', 'निवल निर्यात (X−M)'],
+            [' is driving this the most (Δ', ' इसे सबसे अधिक चला रहा है (Δ'],
+            ['Excess demand at full employment pushes prices up — contractionary policy (raise taxes, cut G, or raise interest rates) can help close the gap.', 'पूर्ण रोजगार पर अतिरिक्त माँग कीमतों को ऊपर धकेलती है — संकुचनकारी नीति (कर बढ़ाना, G घटाना, या ब्याज दरें बढ़ाना) अंतराल बंद करने में मदद कर सकती है।'],
+            ["Demand falls short of what's needed for full employment, leaving resources idle — expansionary policy (raise G, cut taxes) can help close the gap.", 'माँग पूर्ण रोजगार के लिए आवश्यक से कम रह जाती है, संसाधनों को निष्क्रिय छोड़ते हुए — विस्तारक नीति (G बढ़ाना, कर घटाना) अंतराल बंद करने में मदद कर सकती है।'],
+            ['The economy is at (or very near) full-employment equilibrium.', 'अर्थव्यवस्था पूर्ण-रोजगार संतुलन पर (या उसके बहुत करीब) है।']
+        ],
+        'stats-dispersion': [
+            ['Coefficient of Range', 'परिसर गुणांक'],
+            ['Range', 'परिसर'],
+            ['Quartile Deviation (QD)', 'चतुर्थक विचलन (QD)'],
+            ['Mean', 'माध्य'],
+            ['Standard Deviation', 'मानक विचलन'],
+            ['Coefficient of Variation', 'विचरण गुणांक'],
+            ["Range and QD only use the extreme/positional values, so they're quick but ignore most of the data. SD and CV use every value, so they're more reliable — CV is best for comparing the consistency of two datasets with different means.", 'परिसर और QD केवल चरम/स्थितीय मानों का उपयोग करते हैं, इसलिए वे तेज़ हैं लेकिन अधिकांश डेटा को अनदेखा करते हैं। SD और CV हर मान का उपयोग करते हैं, इसलिए वे अधिक विश्वसनीय हैं — अलग-अलग माध्य वाले दो डेटासेट की स्थिरता की तुलना के लिए CV सबसे अच्छा है।']
+        ],
+        'stats-index-numbers': [
+            ['ΣP₀ (Base Year Total)', 'ΣP₀ (आधार वर्ष कुल)'],
+            ['ΣP₁ (Current Year Total)', 'ΣP₁ (चालू वर्ष कुल)'],
+            ['Price Index (Base = 100)', 'मूल्य सूचकांक (आधार = 100)'],
+            ['Inflation Rate', 'मुद्रास्फीति दर'],
+            ['The basket costs ', 'टोकरी की कीमत आधार वर्ष की तुलना में '],
+            ['% more than in the base year — the same commodities that cost ₹', '% अधिक है — वही वस्तुएँ जिनकी कीमत ₹'],
+            [' now cost ₹', ' थी अब ₹'],
+            ['. That rise in the index is exactly what "inflation" measures.', ' हो गई है। सूचकांक में यह वृद्धि ठीक वही है जो "मुद्रास्फीति" मापती है।'],
+            ['% LESS than in the base year — a falling price index (deflation) for this basket.', '% कम है — इस टोकरी के लिए एक गिरता मूल्य सूचकांक (अवस्फीति)।'],
+            ['The index is exactly 100 — this basket costs the same as in the base year.', 'सूचकांक ठीक 100 है — यह टोकरी आधार वर्ष जितनी ही कीमत रखती है।']
+        ],
+        'india-human-capital': [
+            ['Projected Literacy (latest)', 'प्रक्षेपित साक्षरता (नवीनतम)'],
+            ['Projected Life Expectancy (latest)', 'प्रक्षेपित जीवन प्रत्याशा (नवीनतम)'],
+            [' yrs', ' वर्ष'],
+            ['Education and health spending compound independently over time — a country can be strong in one and weak in the other, which is exactly why NCERT treats them as two separate (not interchangeable) sources of human capital.', 'शिक्षा और स्वास्थ्य व्यय समय के साथ स्वतंत्र रूप से संचित होते हैं — एक देश एक में मजबूत और दूसरे में कमजोर हो सकता है, यही कारण है कि NCERT उन्हें मानव पूँजी के दो अलग (विनिमेय नहीं) स्रोतों के रूप में मानता है।']
+        ],
+        'india-employment-structure': [
+            ['Informal Sector', 'अनौपचारिक क्षेत्र'],
+            ['Formal Sector', 'औपचारिक क्षेत्र'],
+            ["India's workforce has historically been overwhelmingly informal. A rising formal share means more workers gaining job security, social security and legal protection — this shift has been slow and uneven, which is the central concern of this topic.", 'भारत का कार्यबल ऐतिहासिक रूप से भारी मात्रा में अनौपचारिक रहा है। एक बढ़ता औपचारिक हिस्सा अधिक कार्यकर्ताओं को नौकरी सुरक्षा, सामाजिक सुरक्षा और कानूनी सुरक्षा प्राप्त करते हुए दर्शाता है — यह बदलाव धीमा और असमान रहा है, जो इस विषय की केंद्रीय चिंता है।'],
+            ['Agriculture', 'कृषि'],
+            ['Industry', 'उद्योग'],
+            ['Services', 'सेवाएँ'],
+            ["As agriculture's employment share falls and industry/services rise, workers are moving to more productive sectors — a hallmark of structural transformation and rising per-capita income.", 'जैसे-जैसे कृषि का रोजगार हिस्सा घटता है और उद्योग/सेवाएँ बढ़ती हैं, कार्यकर्ता अधिक उत्पादक क्षेत्रों की ओर बढ़ रहे हैं — संरचनात्मक परिवर्तन और बढ़ती प्रति-व्यक्ति आय की एक पहचान।']
+        ]
+    });
+}

@@ -23,6 +23,10 @@
 //      matches something real on that sim, array lengths match, and every
 //      translated field actually contains Devanagari text (not an
 //      accidentally-untranslated English copy).
+//   7. Validates every sim's READINGS_I18N_HI dictionary (js/i18n_hi*.js)
+//      against what compute()/dataLab.calculate()/customRender() actually
+//      produce across a state sweep: every English pattern that appears in
+//      the swept output must be fully gone after translateReadings() runs.
 // Exits non-zero on any failure. See CLAUDE.md for why this replaces
 // a conventional test runner.
 // ══════════════════════════════════════════════════════════════
@@ -115,6 +119,8 @@ const fmt = context.fmt;
 const generateQuiz = context.generateQuiz;
 const QUIZ_BANK = vm.runInContext('QUIZ_BANK', context);
 const SIM_I18N_HI = vm.runInContext('SIM_I18N_HI', context);
+const READINGS_I18N_HI = vm.runInContext('READINGS_I18N_HI', context);
+const translateReadings = context.translateReadings;
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -548,6 +554,68 @@ SIMS.forEach(sim => {
     }
 });
 console.log(`\nHindi content coverage: ${i18nCoverage} / ${SIMS.length} sims have translated core content.`);
+
+// ── 7. Dynamic readings translation (READINGS_I18N_HI) ───────────
+// Exercises each sim's compute()/dataLab.calculate()/customRender() across
+// a sweep of states (reusing the same sweep as section 3's numeric check)
+// and, for every [English, Hindi] pair in that sim's READINGS_I18N_HI
+// dictionary that actually appears in the swept English output, asserts
+// translateReadings() removes every instance of it. Deliberately does NOT
+// require every dictionary pattern to appear in the sweep — some branches
+// (an exact floating-point tie, an extreme edge value) are only reachable
+// with hand-crafted inputs no generic sweep will hit; forcing that would
+// make this section flaky rather than meaningful. Coverage is reported,
+// not enforced. See js/sim-engine.js's translateReadings() doc comment.
+let readingsDictCoverage = 0, readingsPatternsChecked = 0;
+// translateReadings() only fires when currentLang === 'hi' — the sandbox
+// defaults to 'en' for every other section's checks, so switch it for the
+// duration of this one.
+context.currentLang = 'hi';
+Object.keys(READINGS_I18N_HI).forEach(simId => {
+    const sim = findSim(simId);
+    if (!ok(!!sim, `${simId}: READINGS_I18N_HI key matches a real sim`)) return;
+    const pairs = READINGS_I18N_HI[simId];
+    if (!ok(Array.isArray(pairs) && pairs.length > 0, `${simId}: READINGS_I18N_HI entry is a non-empty array`)) return;
+    readingsDictCoverage++;
+    pairs.forEach(([en, hi], i) => {
+        ok(typeof en === 'string' && en.length > 0, `${simId}: readings pair[${i}].en is a non-empty string`);
+        ok(typeof hi === 'string' && hi.length > 0, `${simId}: readings pair[${i}].hi is a non-empty string`);
+    });
+
+    const englishHTMLs = [];
+    if (sim.mode === 'datalab' && sim.dataLab) {
+        const clean = dataLabValidate(sim, sim.dataLab.defaultRows);
+        const r = sim.dataLab.calculate(clean);
+        (r.stats || []).forEach(s => { englishHTMLs.push(String(s.label)); englishHTMLs.push(String(s.value)); });
+        if (r.interpretation) englishHTMLs.push(r.interpretation);
+        (r.formulas || []).forEach(f => englishHTMLs.push(f));
+    } else if (typeof sim.compute === 'function') {
+        const base = collectDefaults(sim);
+        (sim.controls || []).forEach(control => {
+            sampleValues(control).forEach(v => {
+                const state = Object.assign({}, base, { [control.id]: v });
+                const r = sim.compute(state);
+                if (r.readings) englishHTMLs.push(r.readings);
+                (r.formulas || []).forEach(f => englishHTMLs.push(f));
+            });
+        });
+    } else if (typeof sim.customRender === 'function') {
+        const r = sim.customRender(stubEl(), collectDefaults(sim)) || {};
+        if (r.readings) englishHTMLs.push(r.readings);
+    }
+
+    englishHTMLs.forEach((html, i) => {
+        const translated = translateReadings(sim, html);
+        pairs.forEach(([en]) => {
+            if (html.indexOf(en) !== -1) {
+                readingsPatternsChecked++;
+                ok(translated.indexOf(en) === -1, `${simId}: swept output[${i}] no longer contains English readings pattern ${JSON.stringify(en)} after translateReadings()`);
+            }
+        });
+    });
+});
+context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
+console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {

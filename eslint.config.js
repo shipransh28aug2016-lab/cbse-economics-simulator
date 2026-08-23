@@ -29,7 +29,8 @@ const appGlobals = {
     quizNumericOptions: 'readonly', normalizeQuizQuestion: 'readonly', shuffleQuizOptions: 'readonly',
     selectQuizAnswer: 'readonly', showQuizResult: 'readonly', BLOOM_LABELS: 'readonly',
     I18N_HI: 'writable', SIM_I18N_HI: 'writable', mergeSimTranslations: 'readonly', translateStaticUI: 'readonly',
-    hiPath: 'readonly', tEngine: 'readonly', controlLabel: 'readonly', dataLabColLabel: 'readonly'
+    hiPath: 'readonly', tEngine: 'readonly', controlLabel: 'readonly', dataLabColLabel: 'readonly',
+    READINGS_I18N_HI: 'writable', translateReadings: 'readonly'
 };
 
 module.exports = [
