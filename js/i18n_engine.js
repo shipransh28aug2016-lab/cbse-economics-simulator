@@ -71,7 +71,52 @@ if (typeof I18N_HI === 'undefined') {
         // it can't be a one-shot data-i18n swap — kept here anyway so every
         // Hindi string in the app lives in one dictionary).
         'toolbar.collapseAll': '🗂️ सभी छोटा करें',
-        'toolbar.expandAll': '🗂️ सभी बड़ा करें'
+        'toolbar.expandAll': '🗂️ सभी बड़ा करें',
+
+        // Fixed strings hand-built by js/sim-engine.js, js/datalab-engine.js
+        // and js/explorer-engine.js — read via those files' tEngine() helper.
+        // Not sim content (so don't belong in a sim's `hi` companion object)
+        // and not simple textContent in static markup (so can't use
+        // index.html's data-i18n mechanism either).
+        'engine.whatChanged': 'बदलाव:',
+        'challenge.notYet': 'अभी नहीं — मान समायोजित करते रहें।',
+        'challenge.workItOut': 'इसे हल करें, फिर अपने तर्क की जाँच रीडिंग्स पैनल से करें।',
+        'challenge.solved': '✅ चुनौती पूरी — बढ़िया काम!',
+        'engine.noInputs': 'इस लैब के लिए कोई समायोज्य इनपुट नहीं — बाईं ओर चार्ट देखें।',
+        'engine.adjustVariables': '🎛️ चर समायोजित करें',
+        'engine.controlsHint': 'अपनी खुद की संख्याएँ आज़माएँ — स्लाइडर खींचें या सटीक मान टाइप करें और चार्ट व रीडिंग्स को तुरंत बदलते देखें। स्व-गति या कक्षा की "क्या-हो-तो" खोज के लिए बेहतरीन।',
+        'engine.reset': '↺ रीसेट',
+        'engine.exactValue': 'सटीक मान',
+        'engine.dataLabBadge': '📊 डेटा लैब',
+        'engine.explorerBadge': '🧭 अवधारणा एक्सप्लोरर',
+        'engine.enrichmentTag': '✨ संवर्धन — इस विषय के लिए 2026–27 इकाई सूची से परे',
+        'engine.rowAdded': 'एक पंक्ति जोड़ी गई — अब n =',
+        'engine.rowRemoved': 'एक पंक्ति हटाई गई — अब n =',
+        'engine.now': 'है।',
+        'engine.row': 'पंक्ति',
+        'engine.yourData': '📋 आपका डेटा — कोई भी सेल संपादित करें',
+        'engine.dataLabHint': 'नीचे तालिका में सीधे अपनी संख्याएँ टाइप करें — गणना, चार्ट और व्याख्या तुरंत अपडेट होंगे। केवल नमूने के बजाय अपना डेटासेट आज़माने के लिए पंक्तियाँ जोड़ें या हटाएँ।',
+        'engine.removeRow': 'पंक्ति हटाएँ',
+        'engine.addRow': '+ पंक्ति जोड़ें',
+        'engine.calcError': 'वर्तमान डेटा से गणना नहीं हो सकी — जाँचें कि हर सेल में एक वैध संख्या है।',
+        'engine.exploreTimeline': '🧭 समयरेखा देखें',
+        'engine.timelineHint': 'हर काल में क्रमशः आगे बढ़ें, या सीधे किसी एक पर जाएँ — दाईं ओर का पैनल बताता है कि वह काल आर्थिक रूप से क्यों महत्वपूर्ण था।',
+        'engine.previous': '← पिछला',
+        'engine.next': 'अगला →',
+        'engine.movedTo': 'यहाँ पहुँचे',
+        'engine.timelineDefaultInsight': 'काल कार्ड पढ़ें और नोट करें कि इसने उत्पादन के क्या/कैसे/किसके लिए वाले प्रश्न के उत्तर को कैसे बदला, या इसने भारत को उसके विकास पथ पर कैसे आगे बढ़ाया।',
+        'engine.classifyEach': '🧭 प्रत्येक कथन को वर्गीकृत करें',
+        'engine.cardsHint': "दाईं ओर हर कार्ड के लिए एक उत्तर चुनें — आपको तुरंत सही वर्गीकरण और एक संक्षिप्त व्याख्या दिखेगी।",
+        'engine.answered': 'उत्तर दिए गए',
+        'engine.correct': 'सही',
+        'engine.cardsInsightStart': 'हर कथन को वर्गीकृत करें — कोई एक "सही भावना" नहीं है, केवल यह कि क्या यह एक परीक्षण योग्य दावा (सकारात्मक) करता है या एक मूल्य निर्णय (आदर्शात्मक)।',
+        'engine.cardsInsightAllCorrect': "सभी सही — आप एक परीक्षण योग्य दावे को मूल्य निर्णय से विश्वसनीय रूप से अलग बता रहे हैं।",
+        'engine.cardsInsightSomeWrong': '❌ चिह्नित किसी भी कार्ड को फिर से पढ़ें — उसके नीचे की व्याख्या बताती है कि कथन एक श्रेणी से दूसरी में क्यों बदल जाता है।',
+        'engine.chooseScenario': '🧭 एक परिदृश्य चुनें',
+        'engine.scenarioHint': 'परिदृश्यों की तुलना साथ-साथ करने के लिए उनके बीच स्विच करें।',
+        'engine.switchedFrom': 'से बदला',
+        'engine.to': 'में',
+        'engine.scenarioDefaultInsight': 'इस परिदृश्य की तुलना सूची के अन्य परिदृश्यों से करें — पाठ्यक्रम दोनों पक्षों को तौलने की अपेक्षा करता है, केवल एक का वर्णन करने की नहीं।'
     };
 }
 if (typeof SIM_I18N_HI === 'undefined') {
