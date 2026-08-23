@@ -966,10 +966,67 @@ header, .sim-topbar {
 }
 
 .quiz-q-counter { font-size: 12px; color: var(--text3); margin-bottom: 6px; font-weight: 700; }
-.quiz-question { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.quiz-question { font-size: 16px; font-weight: 700; margin-bottom: 16px; line-height: 1.5; }
 .quiz-options { display: flex; flex-direction: column; gap: 10px; }
 
-.quiz-feedback { margin-top: 14px; font-size: 13px; font-weight: 600; }
+/* Bloom's Taxonomy level badge, shown at the head of every question —
+   see js/quiz-engine.js's BLOOM_LABELS. One accent color per level so
+   a student can see at a glance which cognitive skill a question is
+   testing (matches the CBSE question-paper cognitive-design split). */
+.quiz-bloom-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-right: 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.quiz-bloom-remember   { background: rgba(99, 102, 241, 0.16); color: #4338ca; }
+.quiz-bloom-understand { background: rgba(59, 130, 246, 0.16); color: #1d4ed8; }
+.quiz-bloom-apply      { background: rgba(16, 185, 129, 0.16); color: #047857; }
+.quiz-bloom-analyse    { background: rgba(245, 158, 11, 0.18); color: #b45309; }
+.quiz-bloom-evaluate   { background: rgba(244, 63, 94, 0.16); color: #be123c; }
+.quiz-bloom-create     { background: rgba(217, 70, 239, 0.16); color: #a21caf; }
+
+.quiz-option-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border1);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--text1);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.quiz-option-btn:hover:not(:disabled) { transform: translateX(2px); background: rgba(99, 102, 241, 0.08); border-color: var(--primary); }
+.quiz-option-btn:disabled { cursor: default; }
+.quiz-option-btn.correct { background: rgba(16, 185, 129, 0.18); border-color: #10b981; color: #047857; font-weight: 800; }
+.quiz-option-btn.incorrect { background: rgba(239, 68, 68, 0.16); border-color: #ef4444; color: #b91c1c; font-weight: 800; }
+
+.quiz-feedback { margin-top: 14px; font-size: 13px; font-weight: 600; line-height: 1.5; }
+
+.quiz-next-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: var(--micro-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13.5px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.quiz-next-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(99, 102, 241, 0.3); }
 
 .quiz-result { text-align: center; padding: 12px 0; }
 .result-emoji { font-size: 44px; }

@@ -14,6 +14,10 @@
 //      asserting no NaN/Infinity/thrown error ever reaches the chart.
 //   4. Spot-checks specific formula correctness on a representative,
 //      high-value subset (documented inline).
+//   5. Validates every sim's QUIZ_BANK entry: Bloom's-level tags, bilingual
+//      (en/hi) question/option/explanation text, and that generateQuiz()
+//      reliably produces >=10 well-formed questions across repeated
+//      (randomized) trials.
 // Exits non-zero on any failure. See CLAUDE.md for why this replaces
 // a conventional test runner.
 // ══════════════════════════════════════════════════════════════
@@ -33,7 +37,14 @@ const FILES = [
     'js/simulations_class11_micro.js',
     'js/simulations_statistics_datalab.js',
     'js/simulations_macro_datalab.js',
-    'js/simulations_ied_class12.js'
+    'js/simulations_ied_class12.js',
+    'js/quiz-engine.js',
+    'js/quiz-data.js',
+    'js/quiz-data-extended.js',
+    'js/quiz-data-class11-micro.js',
+    'js/quiz-data-statistics.js',
+    'js/quiz-data-macro-datalab.js',
+    'js/quiz-data-ied.js'
 ];
 
 function noop() {}
@@ -60,7 +71,16 @@ const sandbox = {
     },
     localStorage: { getItem: () => null, setItem: noop },
     Plotly: { react: () => Promise.resolve(), purge: noop },
-    Set, Map, Math, Array, Object, JSON, isFinite, isNaN, parseFloat, parseInt, String, Number
+    Set, Map, Math, Array, Object, JSON, isFinite, isNaN, parseFloat, parseInt, String, Number,
+    // Quiz engine's quizLocalize() looks these up at call-time — stub the
+    // same English-fallback localize() app.js provides in the browser.
+    currentLang: 'en',
+    localize(val) {
+        if (val === undefined || val === null) return '';
+        if (typeof val === 'string') return val;
+        if (typeof val === 'object') return val.en !== undefined ? val.en : '';
+        return String(val);
+    }
 };
 sandbox.globalThis = sandbox;
 const context = vm.createContext(sandbox);
@@ -80,6 +100,8 @@ const CURRICULUM_NODES = context.window.CURRICULUM_NODES;
 const validateCurriculum = context.window.validateCurriculum;
 const dataLabValidate = context.dataLabValidate;
 const fmt = context.fmt;
+const generateQuiz = context.generateQuiz;
+const QUIZ_BANK = vm.runInContext('QUIZ_BANK', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -350,6 +372,53 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
 })();
+
+// ── 5. Quiz bank coverage + structural validation ────────────────
+// Every sim must carry a QUIZ_BANK entry that generateQuiz() can turn
+// into >=10 well-formed questions, on repeated (randomized) trials —
+// mirrors the ad-hoc validation harness used while authoring the quiz
+// banks, now made a permanent part of the suite per CLAUDE.md's rule
+// that any numeric formula/feature this project claims tested must
+// actually be covered here.
+const BLOOM_LEVELS = new Set(['remember', 'understand', 'apply', 'analyse', 'evaluate', 'create']);
+let quizBankCoverage = 0;
+SIMS.forEach(sim => {
+    const bank = QUIZ_BANK[sim.id];
+    if (!ok(!!bank, `${sim.id}: has a QUIZ_BANK entry`)) return;
+    quizBankCoverage++;
+    ok(Array.isArray(bank.static) && bank.static.length > 0, `${sim.id}: quiz bank has static questions`);
+    (bank.static || []).forEach((q, i) => {
+        ok(BLOOM_LEVELS.has(q.level), `${sim.id}: static[${i}].level is a valid Bloom's level (got ${q.level})`);
+        ok(q.question && q.question.en, `${sim.id}: static[${i}] has an English question`);
+        ok(q.question && q.question.hi, `${sim.id}: static[${i}] has a Hindi question`);
+        ok(Array.isArray(q.options) && q.options.length >= 2, `${sim.id}: static[${i}] has >=2 options`);
+        ok(Number.isInteger(q.correctIndex) && q.correctIndex >= 0 && q.correctIndex < (q.options || []).length, `${sim.id}: static[${i}].correctIndex is valid`);
+        ok(q.explain && q.explain.en && q.explain.hi, `${sim.id}: static[${i}] has a bilingual explanation`);
+    });
+    (bank.applyTemplates || []).forEach((tpl, i) => {
+        ok(BLOOM_LEVELS.has(tpl.level), `${sim.id}: applyTemplates[${i}].level is a valid Bloom's level (got ${tpl.level})`);
+        ok(typeof tpl.build === 'function', `${sim.id}: applyTemplates[${i}] has a build() function`);
+    });
+
+    for (let trial = 0; trial < 5; trial++) {
+        let qs;
+        try {
+            qs = generateQuiz(sim, 10);
+        } catch (e) {
+            ok(false, `${sim.id}: generateQuiz() threw on trial ${trial} — ${e.message}`);
+            continue;
+        }
+        ok(qs.length >= 10, `${sim.id}: generateQuiz() produces >=10 questions on trial ${trial} (got ${qs.length})`);
+        qs.forEach((q, i) => {
+            ok(!!q.question && Array.isArray(q.options) && q.options.length >= 2, `${sim.id}: generated q${i} is well-formed (trial ${trial})`);
+            ok(Number.isInteger(q.correctIndex) && q.correctIndex >= 0 && q.correctIndex < q.options.length, `${sim.id}: generated q${i}.correctIndex is in range (trial ${trial})`);
+            const uniq = new Set(q.options);
+            ok(uniq.size === q.options.length, `${sim.id}: generated q${i} has no duplicate option text (trial ${trial})`);
+            ok(!!q.explain, `${sim.id}: generated q${i} has an explanation (trial ${trial})`);
+        });
+    }
+});
+console.log(`\nQuiz bank coverage: ${quizBankCoverage} / ${SIMS.length} sims have a quiz bank generating >=10 questions.`);
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {
