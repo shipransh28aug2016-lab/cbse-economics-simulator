@@ -18,6 +18,11 @@
 //      (en/hi) question/option/explanation text, and that generateQuiz()
 //      reliably produces >=10 well-formed questions across repeated
 //      (randomized) trials.
+//   6. Validates every sim's SIM_I18N_HI entry (js/i18n_hi*.js), when
+//      present: every translated control/dataLab-column/explorer key
+//      matches something real on that sim, array lengths match, and every
+//      translated field actually contains Devanagari text (not an
+//      accidentally-untranslated English copy).
 // Exits non-zero on any failure. See CLAUDE.md for why this replaces
 // a conventional test runner.
 // ══════════════════════════════════════════════════════════════
@@ -44,7 +49,14 @@ const FILES = [
     'js/quiz-data-class11-micro.js',
     'js/quiz-data-statistics.js',
     'js/quiz-data-macro-datalab.js',
-    'js/quiz-data-ied.js'
+    'js/quiz-data-ied.js',
+    'js/i18n_engine.js',
+    'js/i18n_hi.js',
+    'js/i18n_hi_extended.js',
+    'js/i18n_hi_class11_micro.js',
+    'js/i18n_hi_statistics.js',
+    'js/i18n_hi_macro_datalab.js',
+    'js/i18n_hi_ied.js'
 ];
 
 function noop() {}
@@ -102,6 +114,7 @@ const dataLabValidate = context.dataLabValidate;
 const fmt = context.fmt;
 const generateQuiz = context.generateQuiz;
 const QUIZ_BANK = vm.runInContext('QUIZ_BANK', context);
+const SIM_I18N_HI = vm.runInContext('SIM_I18N_HI', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -419,6 +432,122 @@ SIMS.forEach(sim => {
     }
 });
 console.log(`\nQuiz bank coverage: ${quizBankCoverage} / ${SIMS.length} sims have a quiz bank generating >=10 questions.`);
+
+// ── 6. Hindi (i18n) content validation ────────────────────────────
+// Every sim's SIM_I18N_HI['<id>'] entry (js/i18n_hi*.js), when present, is
+// checked structurally against its own SIMS shape — every translated
+// control/dataLab-column/explorer item corresponds to something real on
+// the sim (a stale key would silently never be read by hiPath()), array
+// lengths match (formulas/practice), and every leaf field that should
+// carry Hindi text actually contains at least one Devanagari character
+// (catching an accidentally-untranslated or copy-pasted-English string).
+// Pure-numeral fields (a timeline era's "1991" period label) and
+// kept-in-English acronyms (a dataLab column literally labelled "HDI")
+// legitimately contain no Devanagari, so this check only fires on fields
+// that are otherwise prose/labels — see the allowlist below.
+const DEVANAGARI_RE = /[ऀ-ॿ]/;
+const NO_DEVANAGARI_OK = new Set([
+    'ied-five-year-plans:explorer.eras.1.period',
+    'ied-five-year-plans:explorer.eras.2.period',
+    'ied-five-year-plans:explorer.eras.3.period',
+    'ied-five-year-plans:explorer.eras.5.period',
+    'ied-five-year-plans:explorer.eras.6.period',
+    'ied-comparison-neighbours:dataLab.columns.hdi'
+]);
+function hasHindi(simId, fieldPath, text) {
+    if (DEVANAGARI_RE.test(text)) return true;
+    return NO_DEVANAGARI_OK.has(`${simId}:${fieldPath}`);
+}
+let i18nCoverage = 0;
+SIMS.forEach(sim => {
+    const hi = SIM_I18N_HI[sim.id];
+    if (!hi) return; // not yet translated — not a failure, just unreported coverage
+    i18nCoverage++;
+
+    if (hi.title !== undefined) ok(hasHindi(sim.id, 'title', hi.title), `${sim.id}: hi.title contains Devanagari text`);
+    if (hi.desc !== undefined) ok(hasHindi(sim.id, 'desc', hi.desc), `${sim.id}: hi.desc contains Devanagari text`);
+    if (hi.concept !== undefined) ok(hasHindi(sim.id, 'concept', hi.concept), `${sim.id}: hi.concept contains Devanagari text`);
+    if (hi.enrichmentNote !== undefined) ok(hasHindi(sim.id, 'enrichmentNote', hi.enrichmentNote), `${sim.id}: hi.enrichmentNote contains Devanagari text`);
+    if (hi.formulas !== undefined) {
+        ok(Array.isArray(hi.formulas) && hi.formulas.length === (sim.formulas || []).length, `${sim.id}: hi.formulas length matches sim.formulas`);
+    }
+
+    if (hi.controls) {
+        const ids = new Set((sim.controls || []).map(c => c.id));
+        Object.keys(hi.controls).forEach(cid => {
+            ok(ids.has(cid), `${sim.id}: hi.controls.${cid} matches a real control id`);
+            const c = sim.controls.find(x => x.id === cid);
+            const hc = hi.controls[cid];
+            if (hc.label !== undefined) ok(hasHindi(sim.id, `controls.${cid}.label`, hc.label), `${sim.id}: controls.${cid}.label contains Devanagari text`);
+            if (hc.options && c) {
+                const optVals = new Set((c.options || []).map(o => String(o.value)));
+                Object.keys(hc.options).forEach(ov => {
+                    ok(optVals.has(ov), `${sim.id}: controls.${cid}.options.${ov} matches a real option value`);
+                    ok(hasHindi(sim.id, `controls.${cid}.options.${ov}`, hc.options[ov]), `${sim.id}: controls.${cid}.options.${ov} contains Devanagari text`);
+                });
+            }
+        });
+    }
+
+    if (hi.dataLab && hi.dataLab.columns) {
+        ok(sim.mode === 'datalab', `${sim.id}: hi.dataLab given only when sim.mode is 'datalab'`);
+        const colIds = new Set(((sim.dataLab && sim.dataLab.columns) || []).map(c => c.id));
+        Object.keys(hi.dataLab.columns).forEach(cid => {
+            ok(colIds.has(cid), `${sim.id}: hi.dataLab.columns.${cid} matches a real column id`);
+            ok(hasHindi(sim.id, `dataLab.columns.${cid}`, hi.dataLab.columns[cid]), `${sim.id}: dataLab.columns.${cid} contains Devanagari text`);
+        });
+    }
+
+    if (hi.explorer) {
+        ok(sim.mode === 'explorer', `${sim.id}: hi.explorer given only when sim.mode is 'explorer'`);
+        if (sim.mode === 'explorer') {
+            const type = sim.explorer.type;
+            if (type === 'timeline' && hi.explorer.eras) {
+                ok(Object.keys(hi.explorer.eras).length === sim.explorer.eras.length, `${sim.id}: every timeline era has an hi.explorer.eras entry`);
+                Object.keys(hi.explorer.eras).forEach(idx => {
+                    const e = hi.explorer.eras[idx];
+                    ['period', 'title', 'body', 'insight'].forEach(f => {
+                        if (e[f] !== undefined) ok(hasHindi(sim.id, `explorer.eras.${idx}.${f}`, e[f]), `${sim.id}: explorer.eras.${idx}.${f} contains Devanagari text`);
+                    });
+                });
+            }
+            if (type === 'cards' && hi.explorer.cards) {
+                ok(Object.keys(hi.explorer.cards).length === sim.explorer.cards.length, `${sim.id}: every card has an hi.explorer.cards entry`);
+                Object.keys(hi.explorer.cards).forEach(idx => {
+                    const c = hi.explorer.cards[idx];
+                    if (c.prompt !== undefined) ok(hasHindi(sim.id, `explorer.cards.${idx}.prompt`, c.prompt), `${sim.id}: explorer.cards.${idx}.prompt contains Devanagari text`);
+                    if (c.explain !== undefined) ok(hasHindi(sim.id, `explorer.cards.${idx}.explain`, c.explain), `${sim.id}: explorer.cards.${idx}.explain contains Devanagari text`);
+                    if (c.options) ok(c.options.length === sim.explorer.cards[idx].options.length, `${sim.id}: explorer.cards.${idx}.options length matches`);
+                });
+            }
+            if (type === 'scenario' && hi.explorer.scenarios) {
+                ok(Object.keys(hi.explorer.scenarios).length === sim.explorer.scenarios.length, `${sim.id}: every scenario has an hi.explorer.scenarios entry`);
+                const scenIds = new Set(sim.explorer.scenarios.map(s => s.id));
+                Object.keys(hi.explorer.scenarios).forEach(sid => {
+                    ok(scenIds.has(sid), `${sim.id}: hi.explorer.scenarios.${sid} matches a real scenario id`);
+                    const s = hi.explorer.scenarios[sid];
+                    ['label', 'summary', 'insight'].forEach(f => {
+                        if (s[f] !== undefined) ok(hasHindi(sim.id, `explorer.scenarios.${sid}.${f}`, s[f]), `${sim.id}: explorer.scenarios.${sid}.${f} contains Devanagari text`);
+                    });
+                });
+            }
+        }
+    }
+
+    if (hi.practice) {
+        ok(hi.practice.length === (sim.practice || []).length, `${sim.id}: hi.practice length matches sim.practice`);
+        hi.practice.forEach((p, i) => {
+            if (p.prompt !== undefined) ok(hasHindi(sim.id, `practice.${i}.prompt`, p.prompt), `${sim.id}: practice.${i}.prompt contains Devanagari text`);
+            if (p.hint !== undefined) ok(hasHindi(sim.id, `practice.${i}.hint`, p.hint), `${sim.id}: practice.${i}.hint contains Devanagari text`);
+        });
+    }
+
+    if (hi.challenge) {
+        ok(!!sim.challenge, `${sim.id}: hi.challenge given only when sim has a challenge`);
+        if (hi.challenge.prompt !== undefined) ok(hasHindi(sim.id, 'challenge.prompt', hi.challenge.prompt), `${sim.id}: challenge.prompt contains Devanagari text`);
+    }
+});
+console.log(`\nHindi content coverage: ${i18nCoverage} / ${SIMS.length} sims have translated core content.`);
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {
