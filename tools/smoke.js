@@ -11,6 +11,11 @@
 //     edit + add row, explorer nav) actually updates the UI
 //   - invalid input (typed garbage) never crashes the page or leaks
 //     a literal "NaN" into the readings panel
+//   - the quiz modal opens, generates >=10 real questions, can be
+//     answered through to a final score, and can be closed
+//   - toggling to Hindi translates static UI chrome, a sim's own
+//     content, and its live-computed readings — all without breaking
+//     the quiz or losing the toggle back to English
 //   - no horizontal overflow at a mobile viewport (390×844)
 // ══════════════════════════════════════════════════════════════
 const http = require('http');
@@ -231,6 +236,95 @@ function ok(cond, label) {
         const val = await numInput.inputValue();
         ok(val !== '' && !Number.isNaN(parseFloat(val)), `simulator numeric input snaps back to a valid, in-range number (got "${val}")`);
     }
+
+    // ── Quiz modal: open, answer through to a score, close ───────
+    await page.evaluate(() => window.openSim('micro-supply-demand'));
+    await page.waitForTimeout(80);
+    const beforeQuiz = errors.length;
+    await page.locator('#quiz-launch-btn').click();
+    await page.waitForTimeout(150);
+    ok(!(await page.locator('#quiz-overlay').evaluate(el => el.classList.contains('hidden'))), 'quiz: launch button opens the quiz overlay');
+    const quizHeading = (await page.locator('#qm-heading').textContent()) || '';
+    ok(quizHeading.length > 0, `quiz: heading shows the sim's title (got "${quizHeading}")`);
+    const counterText = (await page.locator('#quiz-q-counter').textContent()) || '';
+    const totalMatch = counterText.match(/(\d+)\s*$/);
+    const quizTotal = totalMatch ? parseInt(totalMatch[1], 10) : 0;
+    ok(quizTotal >= 10, `quiz: generated >=10 questions (counter reads "${counterText}")`);
+
+    // Answer every question by always clicking the first option, then
+    // whatever "Next"/"See Results" button appears — exercises the full
+    // question -> feedback -> advance loop through to the final score,
+    // regardless of which answers land correct vs incorrect.
+    for (let i = 0; i < quizTotal; i++) {
+        const opt = page.locator('.quiz-option-btn').first();
+        if (await opt.count()) { await opt.click(); await page.waitForTimeout(60); }
+        const nextBtn = page.locator('#quiz-next-btn');
+        if (await nextBtn.count() && !(await nextBtn.evaluate(el => el.classList.contains('hidden')))) {
+            await nextBtn.click();
+            await page.waitForTimeout(60);
+        }
+    }
+    ok(!(await page.locator('#quiz-result').evaluate(el => el.classList.contains('hidden'))), 'quiz: answering every question reaches the final result screen');
+    const resultScoreText = (await page.locator('#result-score').textContent()) || '';
+    ok(new RegExp(`/\\s*${quizTotal}`).test(resultScoreText), `quiz: result score is out of the same question count (got "${resultScoreText}")`);
+    await page.locator('#result-continue-btn').click();
+    await page.waitForTimeout(80);
+    ok(await page.locator('#quiz-overlay').evaluate(el => el.classList.contains('hidden')), 'quiz: "Continue" on the result screen closes the overlay');
+    ok(errors.length === beforeQuiz, `quiz: no console/page errors across open + answer + close${errors.length > beforeQuiz ? ' — ' + errors.slice(beforeQuiz).join('; ') : ''}`);
+
+    // A second sim, to catch a quiz-bank gap specific to one mode (this
+    // one is a Data Lab) rather than re-testing only the simulator above.
+    const beforeQuiz2 = errors.length;
+    await page.evaluate(() => window.openSim('stats-correlation'));
+    await page.waitForTimeout(80);
+    await page.locator('#quiz-launch-btn').click();
+    await page.waitForTimeout(150);
+    ok(!(await page.locator('#quiz-overlay').evaluate(el => el.classList.contains('hidden'))), 'quiz (Data Lab sim): launch button opens the quiz overlay');
+    const bloomBadge = await page.locator('.quiz-bloom-badge').count();
+    ok(bloomBadge > 0, "quiz (Data Lab sim): question shows a Bloom's-level badge");
+    await page.locator('#quiz-close-btn').click();
+    await page.waitForTimeout(80);
+    ok(await page.locator('#quiz-overlay').evaluate(el => el.classList.contains('hidden')), 'quiz (Data Lab sim): ✕ button also closes the overlay');
+    ok(errors.length === beforeQuiz2, `quiz (Data Lab sim): no console/page errors${errors.length > beforeQuiz2 ? ' — ' + errors.slice(beforeQuiz2).join('; ') : ''}`);
+
+    // ── Hindi (i18n) toggle ────────────────────────────────────────
+    const beforeI18n = errors.length;
+    const heroBadgeEn = (await page.locator('.hero-badge').textContent()) || '';
+    await page.locator('#lang-toggle').click();
+    await page.waitForTimeout(150);
+    const heroBadgeHi = (await page.locator('.hero-badge').textContent()) || '';
+    ok(heroBadgeHi !== heroBadgeEn && /[ऀ-ॿ]/.test(heroBadgeHi), `i18n: static UI text (hero badge) switches to Devanagari on toggle (got "${heroBadgeHi}")`);
+    const moduleTitleHi = (await page.locator('#module-stats .module-title').textContent()) || '';
+    ok(/[ऀ-ॿ]/.test(moduleTitleHi), `i18n: home module title is translated (got "${moduleTitleHi}")`);
+
+    await page.evaluate(() => window.openSim('micro-supply-demand'));
+    await page.waitForTimeout(100);
+    const simTitleHi = (await page.locator('#sim-title-nav').textContent()) || '';
+    ok(/[ऀ-ॿ]/.test(simTitleHi), `i18n: sim title translates (got "${simTitleHi}")`);
+    const controlLabelHi = (await page.locator('#controls-panel .control-label-row label').first().textContent()) || '';
+    ok(/[ऀ-ॿ]/.test(controlLabelHi), `i18n: control label translates (got "${controlLabelHi}")`);
+    const readingsHi = (await page.locator('#readings-body').innerText()) || '';
+    ok(/[ऀ-ॿ]/.test(readingsHi), 'i18n: live-computed readings panel translates (dynamic labels/insight)');
+    ok(!/\bNaN\b/.test(readingsHi), 'i18n: translated readings still contain no literal NaN');
+    const chevronStillThere = await page.locator('#concept-card .panel-chevron').count();
+    ok(chevronStillThere > 0, 'i18n: translating an info-card header label does not remove its sibling collapse chevron');
+
+    // Quiz still works correctly with Hindi active (own quizLocalize()
+    // path, distinct from translateReadings()/data-i18n).
+    await page.locator('#quiz-launch-btn').click();
+    await page.waitForTimeout(150);
+    const quizQuestionHi = (await page.locator('#quiz-question').textContent()) || '';
+    ok(/[ऀ-ॿ]/.test(quizQuestionHi), `i18n: quiz question text is in Hindi while Hindi is active (got "${quizQuestionHi}")`);
+    await page.locator('#quiz-close-btn').click();
+    await page.waitForTimeout(80);
+
+    // Toggle back to English and confirm exact restoration — the whole
+    // point of caching each element's original text on first translate.
+    await page.locator('#lang-toggle').click();
+    await page.waitForTimeout(150);
+    const heroBadgeBack = (await page.locator('.hero-badge').textContent()) || '';
+    ok(heroBadgeBack === heroBadgeEn, `i18n: toggling back to English restores the exact original text (got "${heroBadgeBack}", expected "${heroBadgeEn}")`);
+    ok(errors.length === beforeI18n, `i18n: no console/page errors across the whole toggle-to-Hindi-and-back sequence${errors.length > beforeI18n ? ' — ' + errors.slice(beforeI18n).join('; ') : ''}`);
 
     // ── Mobile viewport: no horizontal overflow ──────────────────
     await page.setViewportSize({ width: 390, height: 844 });
