@@ -14,6 +14,19 @@
 //      asserting no NaN/Infinity/thrown error ever reaches the chart.
 //   4. Spot-checks specific formula correctness on a representative,
 //      high-value subset (documented inline).
+//   5. Validates every sim's QUIZ_BANK entry: Bloom's-level tags, bilingual
+//      (en/hi) question/option/explanation text, and that generateQuiz()
+//      reliably produces >=10 well-formed questions across repeated
+//      (randomized) trials.
+//   6. Validates every sim's SIM_I18N_HI entry (js/i18n_hi*.js), when
+//      present: every translated control/dataLab-column/explorer key
+//      matches something real on that sim, array lengths match, and every
+//      translated field actually contains Devanagari text (not an
+//      accidentally-untranslated English copy).
+//   7. Validates every sim's READINGS_I18N_HI dictionary (js/i18n_hi*.js)
+//      against what compute()/dataLab.calculate()/customRender() actually
+//      produce across a state sweep: every English pattern that appears in
+//      the swept output must be fully gone after translateReadings() runs.
 // Exits non-zero on any failure. See CLAUDE.md for why this replaces
 // a conventional test runner.
 // ══════════════════════════════════════════════════════════════
@@ -33,7 +46,21 @@ const FILES = [
     'js/simulations_class11_micro.js',
     'js/simulations_statistics_datalab.js',
     'js/simulations_macro_datalab.js',
-    'js/simulations_ied_class12.js'
+    'js/simulations_ied_class12.js',
+    'js/quiz-engine.js',
+    'js/quiz-data.js',
+    'js/quiz-data-extended.js',
+    'js/quiz-data-class11-micro.js',
+    'js/quiz-data-statistics.js',
+    'js/quiz-data-macro-datalab.js',
+    'js/quiz-data-ied.js',
+    'js/i18n_engine.js',
+    'js/i18n_hi.js',
+    'js/i18n_hi_extended.js',
+    'js/i18n_hi_class11_micro.js',
+    'js/i18n_hi_statistics.js',
+    'js/i18n_hi_macro_datalab.js',
+    'js/i18n_hi_ied.js'
 ];
 
 function noop() {}
@@ -60,7 +87,16 @@ const sandbox = {
     },
     localStorage: { getItem: () => null, setItem: noop },
     Plotly: { react: () => Promise.resolve(), purge: noop },
-    Set, Map, Math, Array, Object, JSON, isFinite, isNaN, parseFloat, parseInt, String, Number
+    Set, Map, Math, Array, Object, JSON, isFinite, isNaN, parseFloat, parseInt, String, Number,
+    // Quiz engine's quizLocalize() looks these up at call-time — stub the
+    // same English-fallback localize() app.js provides in the browser.
+    currentLang: 'en',
+    localize(val) {
+        if (val === undefined || val === null) return '';
+        if (typeof val === 'string') return val;
+        if (typeof val === 'object') return val.en !== undefined ? val.en : '';
+        return String(val);
+    }
 };
 sandbox.globalThis = sandbox;
 const context = vm.createContext(sandbox);
@@ -80,6 +116,11 @@ const CURRICULUM_NODES = context.window.CURRICULUM_NODES;
 const validateCurriculum = context.window.validateCurriculum;
 const dataLabValidate = context.dataLabValidate;
 const fmt = context.fmt;
+const generateQuiz = context.generateQuiz;
+const QUIZ_BANK = vm.runInContext('QUIZ_BANK', context);
+const SIM_I18N_HI = vm.runInContext('SIM_I18N_HI', context);
+const READINGS_I18N_HI = vm.runInContext('READINGS_I18N_HI', context);
+const translateReadings = context.translateReadings;
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -350,6 +391,231 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
 })();
+
+// ── 5. Quiz bank coverage + structural validation ────────────────
+// Every sim must carry a QUIZ_BANK entry that generateQuiz() can turn
+// into >=10 well-formed questions, on repeated (randomized) trials —
+// mirrors the ad-hoc validation harness used while authoring the quiz
+// banks, now made a permanent part of the suite per CLAUDE.md's rule
+// that any numeric formula/feature this project claims tested must
+// actually be covered here.
+const BLOOM_LEVELS = new Set(['remember', 'understand', 'apply', 'analyse', 'evaluate', 'create']);
+let quizBankCoverage = 0;
+SIMS.forEach(sim => {
+    const bank = QUIZ_BANK[sim.id];
+    if (!ok(!!bank, `${sim.id}: has a QUIZ_BANK entry`)) return;
+    quizBankCoverage++;
+    ok(Array.isArray(bank.static) && bank.static.length > 0, `${sim.id}: quiz bank has static questions`);
+    (bank.static || []).forEach((q, i) => {
+        ok(BLOOM_LEVELS.has(q.level), `${sim.id}: static[${i}].level is a valid Bloom's level (got ${q.level})`);
+        ok(q.question && q.question.en, `${sim.id}: static[${i}] has an English question`);
+        ok(q.question && q.question.hi, `${sim.id}: static[${i}] has a Hindi question`);
+        ok(Array.isArray(q.options) && q.options.length >= 2, `${sim.id}: static[${i}] has >=2 options`);
+        ok(Number.isInteger(q.correctIndex) && q.correctIndex >= 0 && q.correctIndex < (q.options || []).length, `${sim.id}: static[${i}].correctIndex is valid`);
+        ok(q.explain && q.explain.en && q.explain.hi, `${sim.id}: static[${i}] has a bilingual explanation`);
+    });
+    (bank.applyTemplates || []).forEach((tpl, i) => {
+        ok(BLOOM_LEVELS.has(tpl.level), `${sim.id}: applyTemplates[${i}].level is a valid Bloom's level (got ${tpl.level})`);
+        ok(typeof tpl.build === 'function', `${sim.id}: applyTemplates[${i}] has a build() function`);
+    });
+
+    for (let trial = 0; trial < 5; trial++) {
+        let qs;
+        try {
+            qs = generateQuiz(sim, 10);
+        } catch (e) {
+            ok(false, `${sim.id}: generateQuiz() threw on trial ${trial} — ${e.message}`);
+            continue;
+        }
+        ok(qs.length >= 10, `${sim.id}: generateQuiz() produces >=10 questions on trial ${trial} (got ${qs.length})`);
+        qs.forEach((q, i) => {
+            ok(!!q.question && Array.isArray(q.options) && q.options.length >= 2, `${sim.id}: generated q${i} is well-formed (trial ${trial})`);
+            ok(Number.isInteger(q.correctIndex) && q.correctIndex >= 0 && q.correctIndex < q.options.length, `${sim.id}: generated q${i}.correctIndex is in range (trial ${trial})`);
+            const uniq = new Set(q.options);
+            ok(uniq.size === q.options.length, `${sim.id}: generated q${i} has no duplicate option text (trial ${trial})`);
+            ok(!!q.explain, `${sim.id}: generated q${i} has an explanation (trial ${trial})`);
+        });
+    }
+});
+console.log(`\nQuiz bank coverage: ${quizBankCoverage} / ${SIMS.length} sims have a quiz bank generating >=10 questions.`);
+
+// ── 6. Hindi (i18n) content validation ────────────────────────────
+// Every sim's SIM_I18N_HI['<id>'] entry (js/i18n_hi*.js), when present, is
+// checked structurally against its own SIMS shape — every translated
+// control/dataLab-column/explorer item corresponds to something real on
+// the sim (a stale key would silently never be read by hiPath()), array
+// lengths match (formulas/practice), and every leaf field that should
+// carry Hindi text actually contains at least one Devanagari character
+// (catching an accidentally-untranslated or copy-pasted-English string).
+// Pure-numeral fields (a timeline era's "1991" period label) and
+// kept-in-English acronyms (a dataLab column literally labelled "HDI")
+// legitimately contain no Devanagari, so this check only fires on fields
+// that are otherwise prose/labels — see the allowlist below.
+const DEVANAGARI_RE = /[ऀ-ॿ]/;
+const NO_DEVANAGARI_OK = new Set([
+    'ied-five-year-plans:explorer.eras.1.period',
+    'ied-five-year-plans:explorer.eras.2.period',
+    'ied-five-year-plans:explorer.eras.3.period',
+    'ied-five-year-plans:explorer.eras.5.period',
+    'ied-five-year-plans:explorer.eras.6.period',
+    'ied-comparison-neighbours:dataLab.columns.hdi'
+]);
+function hasHindi(simId, fieldPath, text) {
+    if (DEVANAGARI_RE.test(text)) return true;
+    return NO_DEVANAGARI_OK.has(`${simId}:${fieldPath}`);
+}
+let i18nCoverage = 0;
+SIMS.forEach(sim => {
+    const hi = SIM_I18N_HI[sim.id];
+    if (!hi) return; // not yet translated — not a failure, just unreported coverage
+    i18nCoverage++;
+
+    if (hi.title !== undefined) ok(hasHindi(sim.id, 'title', hi.title), `${sim.id}: hi.title contains Devanagari text`);
+    if (hi.desc !== undefined) ok(hasHindi(sim.id, 'desc', hi.desc), `${sim.id}: hi.desc contains Devanagari text`);
+    if (hi.concept !== undefined) ok(hasHindi(sim.id, 'concept', hi.concept), `${sim.id}: hi.concept contains Devanagari text`);
+    if (hi.enrichmentNote !== undefined) ok(hasHindi(sim.id, 'enrichmentNote', hi.enrichmentNote), `${sim.id}: hi.enrichmentNote contains Devanagari text`);
+    if (hi.formulas !== undefined) {
+        ok(Array.isArray(hi.formulas) && hi.formulas.length === (sim.formulas || []).length, `${sim.id}: hi.formulas length matches sim.formulas`);
+    }
+
+    if (hi.controls) {
+        const ids = new Set((sim.controls || []).map(c => c.id));
+        Object.keys(hi.controls).forEach(cid => {
+            ok(ids.has(cid), `${sim.id}: hi.controls.${cid} matches a real control id`);
+            const c = sim.controls.find(x => x.id === cid);
+            const hc = hi.controls[cid];
+            if (hc.label !== undefined) ok(hasHindi(sim.id, `controls.${cid}.label`, hc.label), `${sim.id}: controls.${cid}.label contains Devanagari text`);
+            if (hc.options && c) {
+                const optVals = new Set((c.options || []).map(o => String(o.value)));
+                Object.keys(hc.options).forEach(ov => {
+                    ok(optVals.has(ov), `${sim.id}: controls.${cid}.options.${ov} matches a real option value`);
+                    ok(hasHindi(sim.id, `controls.${cid}.options.${ov}`, hc.options[ov]), `${sim.id}: controls.${cid}.options.${ov} contains Devanagari text`);
+                });
+            }
+        });
+    }
+
+    if (hi.dataLab && hi.dataLab.columns) {
+        ok(sim.mode === 'datalab', `${sim.id}: hi.dataLab given only when sim.mode is 'datalab'`);
+        const colIds = new Set(((sim.dataLab && sim.dataLab.columns) || []).map(c => c.id));
+        Object.keys(hi.dataLab.columns).forEach(cid => {
+            ok(colIds.has(cid), `${sim.id}: hi.dataLab.columns.${cid} matches a real column id`);
+            ok(hasHindi(sim.id, `dataLab.columns.${cid}`, hi.dataLab.columns[cid]), `${sim.id}: dataLab.columns.${cid} contains Devanagari text`);
+        });
+    }
+
+    if (hi.explorer) {
+        ok(sim.mode === 'explorer', `${sim.id}: hi.explorer given only when sim.mode is 'explorer'`);
+        if (sim.mode === 'explorer') {
+            const type = sim.explorer.type;
+            if (type === 'timeline' && hi.explorer.eras) {
+                ok(Object.keys(hi.explorer.eras).length === sim.explorer.eras.length, `${sim.id}: every timeline era has an hi.explorer.eras entry`);
+                Object.keys(hi.explorer.eras).forEach(idx => {
+                    const e = hi.explorer.eras[idx];
+                    ['period', 'title', 'body', 'insight'].forEach(f => {
+                        if (e[f] !== undefined) ok(hasHindi(sim.id, `explorer.eras.${idx}.${f}`, e[f]), `${sim.id}: explorer.eras.${idx}.${f} contains Devanagari text`);
+                    });
+                });
+            }
+            if (type === 'cards' && hi.explorer.cards) {
+                ok(Object.keys(hi.explorer.cards).length === sim.explorer.cards.length, `${sim.id}: every card has an hi.explorer.cards entry`);
+                Object.keys(hi.explorer.cards).forEach(idx => {
+                    const c = hi.explorer.cards[idx];
+                    if (c.prompt !== undefined) ok(hasHindi(sim.id, `explorer.cards.${idx}.prompt`, c.prompt), `${sim.id}: explorer.cards.${idx}.prompt contains Devanagari text`);
+                    if (c.explain !== undefined) ok(hasHindi(sim.id, `explorer.cards.${idx}.explain`, c.explain), `${sim.id}: explorer.cards.${idx}.explain contains Devanagari text`);
+                    if (c.options) ok(c.options.length === sim.explorer.cards[idx].options.length, `${sim.id}: explorer.cards.${idx}.options length matches`);
+                });
+            }
+            if (type === 'scenario' && hi.explorer.scenarios) {
+                ok(Object.keys(hi.explorer.scenarios).length === sim.explorer.scenarios.length, `${sim.id}: every scenario has an hi.explorer.scenarios entry`);
+                const scenIds = new Set(sim.explorer.scenarios.map(s => s.id));
+                Object.keys(hi.explorer.scenarios).forEach(sid => {
+                    ok(scenIds.has(sid), `${sim.id}: hi.explorer.scenarios.${sid} matches a real scenario id`);
+                    const s = hi.explorer.scenarios[sid];
+                    ['label', 'summary', 'insight'].forEach(f => {
+                        if (s[f] !== undefined) ok(hasHindi(sim.id, `explorer.scenarios.${sid}.${f}`, s[f]), `${sim.id}: explorer.scenarios.${sid}.${f} contains Devanagari text`);
+                    });
+                });
+            }
+        }
+    }
+
+    if (hi.practice) {
+        ok(hi.practice.length === (sim.practice || []).length, `${sim.id}: hi.practice length matches sim.practice`);
+        hi.practice.forEach((p, i) => {
+            if (p.prompt !== undefined) ok(hasHindi(sim.id, `practice.${i}.prompt`, p.prompt), `${sim.id}: practice.${i}.prompt contains Devanagari text`);
+            if (p.hint !== undefined) ok(hasHindi(sim.id, `practice.${i}.hint`, p.hint), `${sim.id}: practice.${i}.hint contains Devanagari text`);
+        });
+    }
+
+    if (hi.challenge) {
+        ok(!!sim.challenge, `${sim.id}: hi.challenge given only when sim has a challenge`);
+        if (hi.challenge.prompt !== undefined) ok(hasHindi(sim.id, 'challenge.prompt', hi.challenge.prompt), `${sim.id}: challenge.prompt contains Devanagari text`);
+    }
+});
+console.log(`\nHindi content coverage: ${i18nCoverage} / ${SIMS.length} sims have translated core content.`);
+
+// ── 7. Dynamic readings translation (READINGS_I18N_HI) ───────────
+// Exercises each sim's compute()/dataLab.calculate()/customRender() across
+// a sweep of states (reusing the same sweep as section 3's numeric check)
+// and, for every [English, Hindi] pair in that sim's READINGS_I18N_HI
+// dictionary that actually appears in the swept English output, asserts
+// translateReadings() removes every instance of it. Deliberately does NOT
+// require every dictionary pattern to appear in the sweep — some branches
+// (an exact floating-point tie, an extreme edge value) are only reachable
+// with hand-crafted inputs no generic sweep will hit; forcing that would
+// make this section flaky rather than meaningful. Coverage is reported,
+// not enforced. See js/sim-engine.js's translateReadings() doc comment.
+let readingsDictCoverage = 0, readingsPatternsChecked = 0;
+// translateReadings() only fires when currentLang === 'hi' — the sandbox
+// defaults to 'en' for every other section's checks, so switch it for the
+// duration of this one.
+context.currentLang = 'hi';
+Object.keys(READINGS_I18N_HI).forEach(simId => {
+    const sim = findSim(simId);
+    if (!ok(!!sim, `${simId}: READINGS_I18N_HI key matches a real sim`)) return;
+    const pairs = READINGS_I18N_HI[simId];
+    if (!ok(Array.isArray(pairs) && pairs.length > 0, `${simId}: READINGS_I18N_HI entry is a non-empty array`)) return;
+    readingsDictCoverage++;
+    pairs.forEach(([en, hi], i) => {
+        ok(typeof en === 'string' && en.length > 0, `${simId}: readings pair[${i}].en is a non-empty string`);
+        ok(typeof hi === 'string' && hi.length > 0, `${simId}: readings pair[${i}].hi is a non-empty string`);
+    });
+
+    const englishHTMLs = [];
+    if (sim.mode === 'datalab' && sim.dataLab) {
+        const clean = dataLabValidate(sim, sim.dataLab.defaultRows);
+        const r = sim.dataLab.calculate(clean);
+        (r.stats || []).forEach(s => { englishHTMLs.push(String(s.label)); englishHTMLs.push(String(s.value)); });
+        if (r.interpretation) englishHTMLs.push(r.interpretation);
+        (r.formulas || []).forEach(f => englishHTMLs.push(f));
+    } else if (typeof sim.compute === 'function') {
+        const base = collectDefaults(sim);
+        (sim.controls || []).forEach(control => {
+            sampleValues(control).forEach(v => {
+                const state = Object.assign({}, base, { [control.id]: v });
+                const r = sim.compute(state);
+                if (r.readings) englishHTMLs.push(r.readings);
+                (r.formulas || []).forEach(f => englishHTMLs.push(f));
+            });
+        });
+    } else if (typeof sim.customRender === 'function') {
+        const r = sim.customRender(stubEl(), collectDefaults(sim)) || {};
+        if (r.readings) englishHTMLs.push(r.readings);
+    }
+
+    englishHTMLs.forEach((html, i) => {
+        const translated = translateReadings(sim, html);
+        pairs.forEach(([en]) => {
+            if (html.indexOf(en) !== -1) {
+                readingsPatternsChecked++;
+                ok(translated.indexOf(en) === -1, `${simId}: swept output[${i}] no longer contains English readings pattern ${JSON.stringify(en)} after translateReadings()`);
+            }
+        });
+    });
+});
+context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
+console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {

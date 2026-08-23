@@ -46,29 +46,43 @@ function explorerFade(overlay) {
 // ── Timeline (Five-Year Plans, LPG reforms, colonial-era economy, …) ──
 function renderTimelineExplorer(sim, panel, overlay) {
     const eras = sim.explorer.eras;
+    // A translated era, when the sim has a matching hi.explorer.eras[idx]
+    // entry (see js/i18n_hi.js) — falls back field-by-field to English.
+    function tEra(idx) {
+        const e = eras[idx];
+        const h = hiPath(sim, `explorer.eras.${idx}`) || {};
+        return {
+            period: h.period || e.period,
+            title: h.title || e.title,
+            body: h.body || e.body,
+            tags: h.tags || e.tags,
+            insight: h.insight || e.insight
+        };
+    }
 
     function draw() {
         const i = explorerState.timelineIndex;
-        const era = eras[i];
+        const era = tEra(i);
 
         panel.innerHTML = `
-            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>🧭 Explore the Timeline</span>
-                <button type="button" class="reset-btn" id="explorer-reset">↺ Reset</button>
+            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.exploreTimeline', '🧭 Explore the Timeline')}</span>
+                <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
                 <span class="panel-chevron" aria-hidden="true">⌄</span>
             </div>
-            <p class="controls-panel-hint">Step through each period, or jump straight to one — the panel on the right explains why that period mattered economically.</p>
+            <p class="controls-panel-hint">${tEngine('engine.timelineHint', 'Step through each period, or jump straight to one — the panel on the right explains why that period mattered economically.')}</p>
             <div class="explorer-timeline-nav" id="explorer-timeline-nav"></div>
             <div class="explorer-timeline-controls">
-                <button type="button" class="datalab-btn" id="explorer-prev" ${i === 0 ? 'disabled' : ''}>← Previous</button>
-                <button type="button" class="datalab-btn" id="explorer-next" ${i === eras.length - 1 ? 'disabled' : ''}>Next →</button>
+                <button type="button" class="datalab-btn" id="explorer-prev" ${i === 0 ? 'disabled' : ''}>${tEngine('engine.previous', '← Previous')}</button>
+                <button type="button" class="datalab-btn" id="explorer-next" ${i === eras.length - 1 ? 'disabled' : ''}>${tEngine('engine.next', 'Next →')}</button>
             </div>`;
 
         const navEl = document.getElementById('explorer-timeline-nav');
         eras.forEach((e, idx) => {
+            const te = tEra(idx);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'explorer-timeline-btn' + (idx === i ? ' active' : '');
-            btn.innerHTML = `<span class="explorer-timeline-period">${e.period}</span><span class="explorer-timeline-title">${e.title}</span>`;
+            btn.innerHTML = `<span class="explorer-timeline-period">${te.period}</span><span class="explorer-timeline-title">${te.title}</span>`;
             btn.addEventListener('click', () => { explorerState.timelineIndex = idx; draw(); });
             navEl.appendChild(btn);
         });
@@ -89,8 +103,8 @@ function renderTimelineExplorer(sim, panel, overlay) {
             </div>`;
         explorerFade(overlay);
 
-        const changed = i === 0 ? '' : `<div class="reading-row whatchanged-row">🔄 <span>What changed:</span> moved to "${era.title}" (${era.period}).</div>`;
-        explorerReadings(changed + `<div class="reading-row insight-row">💡 ${era.insight || 'Read the period card and note how it changed the answer to what/how/for whom to produce, or how it moved India along its development path.'}</div>`);
+        const changed = i === 0 ? '' : `<div class="reading-row whatchanged-row">🔄 <span>${tEngine('engine.whatChanged', 'What changed:')}</span> ${tEngine('engine.movedTo', 'moved to')} "${era.title}" (${era.period}).</div>`;
+        explorerReadings(changed + `<div class="reading-row insight-row">💡 ${era.insight || tEngine('engine.timelineDefaultInsight', 'Read the period card and note how it changed the answer to what/how/for whom to produce, or how it moved India along its development path.')}</div>`);
         if (typeof refreshChallenge === 'function') refreshChallenge(sim, { timelineIndex: i, eraTitle: era.title });
     }
     draw();
@@ -99,6 +113,17 @@ function renderTimelineExplorer(sim, panel, overlay) {
 // ── Cards (classification exercises: Positive vs Normative, etc.) ──
 function renderCardsExplorer(sim, panel, overlay) {
     const cards = sim.explorer.cards;
+    // A translated card, when the sim has a matching hi.explorer.cards[idx]
+    // entry (see js/i18n_hi.js) — falls back field-by-field to English.
+    function tCard(idx) {
+        const c = cards[idx];
+        const h = hiPath(sim, `explorer.cards.${idx}`) || {};
+        return {
+            prompt: h.prompt || c.prompt,
+            options: h.options || c.options,
+            explain: h.explain || c.explain
+        };
+    }
 
     function score() {
         const answered = Object.keys(explorerState.cardAnswers).length;
@@ -108,24 +133,25 @@ function renderCardsExplorer(sim, panel, overlay) {
 
     function draw() {
         panel.innerHTML = `
-            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>🧭 Classify Each Statement</span>
-                <button type="button" class="reset-btn" id="explorer-reset">↺ Reset</button>
+            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.classifyEach', '🧭 Classify Each Statement')}</span>
+                <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
                 <span class="panel-chevron" aria-hidden="true">⌄</span>
             </div>
-            <p class="controls-panel-hint">Pick an answer for each card on the right — you'll see the correct classification and a short explanation immediately.</p>`;
+            <p class="controls-panel-hint">${tEngine('engine.cardsHint', "Pick an answer for each card on the right — you'll see the correct classification and a short explanation immediately.")}</p>`;
         const cardsResetBtn = document.getElementById('explorer-reset');
         cardsResetBtn.addEventListener('click', (e) => e.stopPropagation());
         cardsResetBtn.addEventListener('click', () => { explorerState.cardAnswers = {}; draw(); });
         if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
 
         overlay.innerHTML = `<div class="explorer-cards-list">${cards.map((c, idx) => {
+            const tc = tCard(idx);
             const ans = explorerState.cardAnswers[idx];
             return `<div class="explorer-card">
-                <div class="explorer-card-prompt">${c.prompt}</div>
+                <div class="explorer-card-prompt">${tc.prompt}</div>
                 <div class="explorer-card-options" data-idx="${idx}">
-                    ${c.options.map((opt, oi) => `<button type="button" class="explorer-card-opt${ans ? (oi === c.correctIndex ? ' correct' : (oi === ans.chosen ? ' incorrect' : '')) : ''}" data-idx="${idx}" data-opt="${oi}" ${ans ? 'disabled' : ''}>${opt}</button>`).join('')}
+                    ${tc.options.map((opt, oi) => `<button type="button" class="explorer-card-opt${ans ? (oi === c.correctIndex ? ' correct' : (oi === ans.chosen ? ' incorrect' : '')) : ''}" data-idx="${idx}" data-opt="${oi}" ${ans ? 'disabled' : ''}>${opt}</button>`).join('')}
                 </div>
-                ${ans ? `<div class="explorer-card-explain">${ans.correct ? '✅' : '❌'} ${c.explain}</div>` : ''}
+                ${ans ? `<div class="explorer-card-explain">${ans.correct ? '✅' : '❌'} ${tc.explain}</div>` : ''}
             </div>`;
         }).join('')}</div>`;
         explorerFade(overlay);
@@ -140,9 +166,9 @@ function renderCardsExplorer(sim, panel, overlay) {
         });
 
         const s = score();
-        explorerReadings(`<div class="reading-row"><span>Answered</span><b>${s.answered} / ${s.total}</b></div>
-            <div class="reading-row"><span>Correct</span><b>${s.correct} / ${s.total}</b></div>
-            <div class="reading-row insight-row">💡 ${s.answered === 0 ? 'Classify each statement — there is no single "right feeling", only whether it makes a testable claim (positive) or a value judgement (normative).' : s.correct === s.total ? 'All correct — you\'re reliably telling a testable claim apart from a value judgement.' : 'Re-read any card marked ❌ — the explanation under it says exactly what tips a statement from one category to the other.'}</div>`);
+        explorerReadings(`<div class="reading-row"><span>${tEngine('engine.answered', 'Answered')}</span><b>${s.answered} / ${s.total}</b></div>
+            <div class="reading-row"><span>${tEngine('engine.correct', 'Correct')}</span><b>${s.correct} / ${s.total}</b></div>
+            <div class="reading-row insight-row">💡 ${s.answered === 0 ? tEngine('engine.cardsInsightStart', 'Classify each statement — there is no single "right feeling", only whether it makes a testable claim (positive) or a value judgement (normative).') : s.correct === s.total ? tEngine('engine.cardsInsightAllCorrect', "All correct — you're reliably telling a testable claim apart from a value judgement.") : tEngine('engine.cardsInsightSomeWrong', 'Re-read any card marked ❌ — the explanation under it says exactly what tips a statement from one category to the other.')}</div>`);
         if (typeof refreshChallenge === 'function') refreshChallenge(sim, s);
     }
     draw();
@@ -152,23 +178,38 @@ function renderCardsExplorer(sim, panel, overlay) {
 //    rural credit, LPG-era policy comparisons, …) ──
 function renderScenarioExplorer(sim, panel, overlay) {
     const scenarios = sim.explorer.scenarios;
+    // A translated scenario, when the sim has a matching
+    // hi.explorer.scenarios.<id> entry (see js/i18n_hi.js, keyed by scenario
+    // id rather than index since scenarios are looked up by id) — falls
+    // back field-by-field to English.
+    function tScenario(s) {
+        const h = hiPath(sim, `explorer.scenarios.${s.id}`) || {};
+        return {
+            id: s.id,
+            label: h.label || s.label,
+            summary: h.summary || s.summary,
+            sections: h.sections || s.sections,
+            insight: h.insight || s.insight
+        };
+    }
 
     function draw() {
-        const current = scenarios.find(s => s.id === explorerState.scenarioId) || scenarios[0];
+        const currentRaw = scenarios.find(s => s.id === explorerState.scenarioId) || scenarios[0];
+        const current = tScenario(currentRaw);
 
         panel.innerHTML = `
-            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>🧭 Choose a Scenario</span>
-                <button type="button" class="reset-btn" id="explorer-reset">↺ Reset</button>
+            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.chooseScenario', '🧭 Choose a Scenario')}</span>
+                <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
                 <span class="panel-chevron" aria-hidden="true">⌄</span>
             </div>
-            <p class="controls-panel-hint">Switch between scenarios to compare them side by side.</p>
+            <p class="controls-panel-hint">${tEngine('engine.scenarioHint', 'Switch between scenarios to compare them side by side.')}</p>
             <div class="control-segmented control-segmented--stacked" id="explorer-scenario-group" role="group"></div>`;
         const group = document.getElementById('explorer-scenario-group');
         scenarios.forEach(s => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'segmented-btn' + (s.id === current.id ? ' active' : '');
-            btn.textContent = s.label;
+            btn.textContent = tScenario(s).label;
             btn.addEventListener('click', () => { explorerState.scenarioId = s.id; draw(); });
             group.appendChild(btn);
         });
@@ -190,10 +231,10 @@ function renderScenarioExplorer(sim, panel, overlay) {
 
         const prevLabel = explorerState.__prevScenarioLabel;
         const changed = (prevLabel && prevLabel !== current.label)
-            ? `<div class="reading-row whatchanged-row">🔄 <span>What changed:</span> switched from "${prevLabel}" to "${current.label}".</div>`
+            ? `<div class="reading-row whatchanged-row">🔄 <span>${tEngine('engine.whatChanged', 'What changed:')}</span> ${tEngine('engine.switchedFrom', 'switched from')} "${prevLabel}" ${tEngine('engine.to', 'to')} "${current.label}".</div>`
             : '';
         explorerState.__prevScenarioLabel = current.label;
-        explorerReadings(changed + `<div class="reading-row insight-row">💡 ${current.insight || 'Compare this scenario against the others in the list — the syllabus expects you to weigh both sides, not just describe one.'}</div>`);
+        explorerReadings(changed + `<div class="reading-row insight-row">💡 ${current.insight || tEngine('engine.scenarioDefaultInsight', 'Compare this scenario against the others in the list — the syllabus expects you to weigh both sides, not just describe one.')}</div>`);
         if (typeof refreshChallenge === 'function') refreshChallenge(sim, { scenarioId: current.id, scenarioLabel: current.label });
     }
     draw();

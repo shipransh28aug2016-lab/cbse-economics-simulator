@@ -50,15 +50,22 @@ function dataLabValidate(sim, rows) {
     });
 }
 
+// A dataLab column's label, translated when the sim has a matching
+// `hi.dataLab.columns.<id>` entry (see js/i18n_hi.js), else its English label.
+function dataLabColLabel(sim, c) {
+    return hiPath(sim, `dataLab.columns.${c.id}`) || c.label;
+}
+
 function describeRowChange(sim, prevRows, nextRows) {
     if (!prevRows) return '';
-    if (prevRows.length < nextRows.length) return `<div class="reading-row whatchanged-row">🔄 <span>What changed:</span> a row was added — n = ${nextRows.length} now.</div>`;
-    if (prevRows.length > nextRows.length) return `<div class="reading-row whatchanged-row">🔄 <span>What changed:</span> a row was removed — n = ${nextRows.length} now.</div>`;
+    const whatChanged = tEngine('engine.whatChanged', 'What changed:');
+    if (prevRows.length < nextRows.length) return `<div class="reading-row whatchanged-row">🔄 <span>${whatChanged}</span> ${tEngine('engine.rowAdded', 'a row was added — n =')} ${nextRows.length} ${tEngine('engine.now', 'now.')}</div>`;
+    if (prevRows.length > nextRows.length) return `<div class="reading-row whatchanged-row">🔄 <span>${whatChanged}</span> ${tEngine('engine.rowRemoved', 'a row was removed — n =')} ${nextRows.length} ${tEngine('engine.now', 'now.')}</div>`;
     const cols = sim.dataLab.columns;
     for (let i = 0; i < nextRows.length && i < prevRows.length; i++) {
         for (const c of cols) {
             if (String(prevRows[i][c.id]) !== String(nextRows[i][c.id])) {
-                return `<div class="reading-row whatchanged-row">🔄 <span>What changed:</span> row ${i + 1} — <b>${c.label}</b>: ${prevRows[i][c.id]} → ${nextRows[i][c.id]}</div>`;
+                return `<div class="reading-row whatchanged-row">🔄 <span>${whatChanged}</span> ${tEngine('engine.row', 'row')} ${i + 1} — <b>${dataLabColLabel(sim, c)}</b>: ${prevRows[i][c.id]} → ${nextRows[i][c.id]}</div>`;
             }
         }
     }
@@ -72,30 +79,31 @@ function renderDataLabTable(sim, container) {
     const canRemove = dataLabRows.length > minRows;
     const canAdd = dataLabRows.length < maxRows;
 
-    let html = `<div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>📋 Your Data — edit any cell</span>
-            <button type="button" class="reset-btn" id="datalab-reset">↺ Reset</button>
+    let html = `<div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.yourData', '📋 Your Data — edit any cell')}</span>
+            <button type="button" class="reset-btn" id="datalab-reset">${tEngine('engine.reset', '↺ Reset')}</button>
             <span class="panel-chevron" aria-hidden="true">⌄</span>
         </div>
-        <p class="controls-panel-hint">Type your own numbers directly into the table below — the calculation, chart and interpretation update instantly. Add or remove rows to try a dataset of your own, not just the sample.</p>
+        <p class="controls-panel-hint">${tEngine('engine.dataLabHint', 'Type your own numbers directly into the table below — the calculation, chart and interpretation update instantly. Add or remove rows to try a dataset of your own, not just the sample.')}</p>
         <div class="datalab-table-wrap"><table class="datalab-table"><thead><tr>`;
-    cols.forEach(c => { html += `<th>${c.label}${c.unit ? ` (${c.unit})` : ''}</th>`; });
+    cols.forEach(c => { const label = dataLabColLabel(sim, c); html += `<th>${label}${c.unit ? ` (${c.unit})` : ''}</th>`; });
     html += `<th class="datalab-row-action-col"></th></tr></thead><tbody>`;
     dataLabRows.forEach((row, i) => {
         html += '<tr>';
         cols.forEach(c => {
             const val = row[c.id] === undefined ? '' : row[c.id];
+            const label = dataLabColLabel(sim, c);
             if (c.type === 'text') {
-                html += `<td><input type="text" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${String(val).replace(/"/g, '&quot;')}" aria-label="${c.label}, row ${i + 1}"></td>`;
+                html += `<td><input type="text" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${String(val).replace(/"/g, '&quot;')}" aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`;
             } else {
-                html += `<td><input type="number" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${val}" step="${c.step || 1}"${typeof c.min === 'number' ? ` min="${c.min}"` : ''}${typeof c.max === 'number' ? ` max="${c.max}"` : ''} aria-label="${c.label}, row ${i + 1}"></td>`;
+                html += `<td><input type="number" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${val}" step="${c.step || 1}"${typeof c.min === 'number' ? ` min="${c.min}"` : ''}${typeof c.max === 'number' ? ` max="${c.max}"` : ''} aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`;
             }
         });
-        html += `<td>${canRemove ? `<button type="button" class="datalab-row-remove" data-row="${i}" title="Remove row" aria-label="Remove row ${i + 1}">✕</button>` : ''}</td>`;
+        html += `<td>${canRemove ? `<button type="button" class="datalab-row-remove" data-row="${i}" title="${tEngine('engine.removeRow', 'Remove row')}" aria-label="${tEngine('engine.removeRow', 'Remove row')} ${i + 1}">✕</button>` : ''}</td>`;
         html += '</tr>';
     });
     html += `</tbody></table></div>
         <div class="datalab-toolbar">
-            <button type="button" class="datalab-btn" id="datalab-add-row" ${canAdd ? '' : 'disabled'}>+ Add Row</button>
+            <button type="button" class="datalab-btn" id="datalab-add-row" ${canAdd ? '' : 'disabled'}>${tEngine('engine.addRow', '+ Add Row')}</button>
             <span class="datalab-row-count">n = ${dataLabRows.length}</span>
         </div>`;
     container.innerHTML = html;
@@ -152,7 +160,7 @@ function recomputeDataLab(sim, rebuildTable) {
     try {
         result = sim.dataLab.calculate(cleanRows) || {};
     } catch {
-        result = { stats: [], interpretation: 'Could not compute with the current data — check that every cell has a valid number.' };
+        result = { stats: [], interpretation: tEngine('engine.calcError', 'Could not compute with the current data — check that every cell has a valid number.') };
     }
 
     const whatChangedHTML = describeRowChange(sim, dataLabPrevRows, cleanRows);
@@ -169,8 +177,9 @@ function recomputeDataLab(sim, rebuildTable) {
     overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
-        const statsHTML = (result.stats || []).map(s => `<div class="reading-row"><span>${s.label}</span><b>${s.value}</b></div>`).join('');
-        readingsBody.innerHTML = whatChangedHTML + statsHTML + (result.interpretation ? `<div class="reading-row insight-row">💡 ${result.interpretation}</div>` : '');
+        const statsHTML = (result.stats || []).map(s => `<div class="reading-row"><span>${translateReadings(sim, s.label)}</span><b>${translateReadings(sim, String(s.value))}</b></div>`).join('');
+        const interpretation = result.interpretation ? translateReadings(sim, result.interpretation) : '';
+        readingsBody.innerHTML = whatChangedHTML + statsHTML + (interpretation ? `<div class="reading-row insight-row">💡 ${interpretation}</div>` : '');
         readingsBody.classList.remove('pulse');
         void readingsBody.offsetWidth;
         readingsBody.classList.add('pulse');
@@ -178,7 +187,7 @@ function recomputeDataLab(sim, rebuildTable) {
 
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
-        if (formulaBody) formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${f}</div>`).join('');
+        if (formulaBody) formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${translateReadings(sim, f)}</div>`).join('');
     }
 
     if (typeof refreshChallenge === 'function') refreshChallenge(sim, result.metrics);

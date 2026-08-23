@@ -47,7 +47,7 @@
       <span id="nav-xp">0 XP</span>
     </div>
     <div class="level-chip" id="nav-level">Lv 1</div>
-    <button class="icon-btn" id="profile-nav-btn" onclick="showScreen('profile')" title="My Profile">👤</button>
+    <button class="icon-btn" id="profile-nav-btn" onclick="showScreen('profile')" title="My Profile" data-i18n-title="nav.profileTitle">👤</button>
   </div>
 </nav>
 
@@ -67,17 +67,17 @@
     </svg>
     <div class="hero-inner">
       <div class="hero-left">
-        <span class="hero-badge">🎓 CBSE XI–XII</span>
-        <h1 class="hero-title">Economics <span class="grad-text">comes alive</span> in your hands</h1>
+        <span class="hero-badge" data-i18n="hero.badge">🎓 CBSE XI–XII</span>
+        <h1 class="hero-title" data-i18n-html="hero.title">Economics <span class="grad-text">comes alive</span> in your hands</h1>
       </div>
-      <div class="hero-stats-strip" title="34 Simulations, Data Labs & Explorers · Class XI &amp; XII · 4 Parts · 72+ Quiz Questions">
-        <span><b>34</b> Labs</span>
+      <div class="hero-stats-strip" title="34 Simulations, Data Labs & Explorers · Class XI &amp; XII · 4 Parts · 72+ Quiz Questions" data-i18n-title="hero.statsTitle">
+        <span><b>34</b> <span data-i18n="hero.labs">Labs</span></span>
         <span class="hstat-dot">·</span>
-        <span><b>2</b> Classes</span>
+        <span><b>2</b> <span data-i18n="hero.classes">Classes</span></span>
         <span class="hstat-dot">·</span>
-        <span><b>4</b> Parts</span>
+        <span><b>4</b> <span data-i18n="hero.parts">Parts</span></span>
         <span class="hstat-dot">·</span>
-        <span><b>72+</b> Quiz Qs</span>
+        <span><b>72+</b> <span data-i18n="hero.quizQs">Quiz Qs</span></span>
       </div>
     </div>
   </section>
@@ -100,8 +100,8 @@
 
     <div class="class-block">
       <div class="class-block-header">
-        <h2 class="class-title">Class XI <span class="class-title-sub">— Subject Code 030</span></h2>
-        <p class="class-title-parts">Part A: Statistics for Economics · Part B: Introductory Microeconomics</p>
+        <h2 class="class-title" data-i18n-html="class.xi.title">Class XI <span class="class-title-sub">— Subject Code 030</span></h2>
+        <p class="class-title-parts" data-i18n="class.xi.parts">Part A: Statistics for Economics · Part B: Introductory Microeconomics</p>
       </div>
 
       <!-- MODULE: STATISTICS -->
@@ -109,8 +109,8 @@
         <div class="module-header collapsible-header" data-panel-key="module-stats" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge stats-badge">σ</div>
           <div>
-            <h2 class="module-title">Statistics for Economics</h2>
-            <p class="module-sub">Class XI · Part A · Units 1–3 · 7 Labs</p>
+            <h2 class="module-title" data-i18n="module.stats.title">Statistics for Economics</h2>
+            <p class="module-sub" data-i18n="module.stats.sub">Class XI · Part A · Units 1–3 · 7 Labs</p>
           </div>
           <div class="module-progress-wrap">
             <svg class="ring-svg" viewBox="0 0 36 36">
@@ -129,8 +129,8 @@
         <div class="module-header collapsible-header" data-panel-key="module-micro" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge micro-badge">μ</div>
           <div>
-            <h2 class="module-title">Introductory Microeconomics</h2>
-            <p class="module-sub">Class XI · Part B · Units 4–7 · 11 Labs</p>
+            <h2 class="module-title" data-i18n="module.micro.title">Introductory Microeconomics</h2>
+            <p class="module-sub" data-i18n="module.micro.sub">Class XI · Part B · Units 4–7 · 11 Labs</p>
           </div>
           <div class="module-progress-wrap">
             <svg class="ring-svg" viewBox="0 0 36 36">
@@ -147,8 +147,8 @@
 
     <div class="class-block">
       <div class="class-block-header">
-        <h2 class="class-title">Class XII <span class="class-title-sub">— Subject Code 030</span></h2>
-        <p class="class-title-parts">Part A: Introductory Macroeconomics · Part B: Indian Economic Development</p>
+        <h2 class="class-title" data-i18n-html="class.xii.title">Class XII <span class="class-title-sub">— Subject Code 030</span></h2>
+        <p class="class-title-parts" data-i18n="class.xii.parts">Part A: Introductory Macroeconomics · Part B: Indian Economic Development</p>
       </div>
 
       <!-- MODULE: MACROECONOMICS -->
@@ -156,8 +156,8 @@
         <div class="module-header collapsible-header" data-panel-key="module-macro" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge macro-badge">M</div>
           <div>
-            <h2 class="module-title">Introductory Macroeconomics</h2>
-            <p class="module-sub">Class XII · Part A · Units 1–5 · 9 Labs</p>
+            <h2 class="module-title" data-i18n="module.macro.title">Introductory Macroeconomics</h2>
+            <p class="module-sub" data-i18n="module.macro.sub">Class XII · Part A · Units 1–5 · 9 Labs</p>
           </div>
           <div class="module-progress-wrap">
             <svg class="ring-svg" viewBox="0 0 36 36">
@@ -176,8 +176,8 @@
         <div class="module-header collapsible-header" data-panel-key="module-india" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge india-badge">🇮🇳</div>
           <div>
-            <h2 class="module-title">Indian Economic Development</h2>
-            <p class="module-sub">Class XII · Part B · Units 6–8 · 7 Labs</p>
+            <h2 class="module-title" data-i18n="module.india.title">Indian Economic Development</h2>
+            <p class="module-sub" data-i18n="module.india.sub">Class XII · Part B · Units 6–8 · 7 Labs</p>
           </div>
           <div class="module-progress-wrap">
             <svg class="ring-svg" viewBox="0 0 36 36">
@@ -196,9 +196,9 @@
 
   <!-- RECENT ACHIEVEMENTS -->
   <section class="achievements-section">
-    <h2 class="section-title">🏆 Recent Achievements</h2>
+    <h2 class="section-title" data-i18n="achievements.title">🏆 Recent Achievements</h2>
     <div class="badges-row" id="recent-badges">
-      <p class="empty-hint">Complete your first simulation to earn a badge!</p>
+      <p class="empty-hint" data-i18n="achievements.emptyHint">Complete your first simulation to earn a badge!</p>
     </div>
   </section>
 
@@ -216,7 +216,7 @@
 <div id="screen-sim" class="screen">
 
   <div class="sim-topbar">
-    <button class="back-btn" id="sim-back">← Back</button>
+    <button class="back-btn" id="sim-back" data-i18n="common.back">← Back</button>
     <div class="sim-topbar-mid">
       <span class="sim-module-tag" id="sim-module-tag">Microeconomics</span>
       <span class="sim-title-nav" id="sim-title-nav">Supply & Demand</span>
@@ -244,26 +244,26 @@
         <button type="button" class="panel-toolbar-btn" id="sim-collapse-toggle">🗂️ Collapse All</button>
       </div>
       <div class="info-card collapsed" id="concept-card">
-        <div class="info-card-header collapsible-header" data-panel-key="concept" role="button" tabindex="0" aria-expanded="false">📚 Concept<span class="panel-chevron" aria-hidden="true">⌄</span></div>
+        <div class="info-card-header collapsible-header" data-panel-key="concept" role="button" tabindex="0" aria-expanded="false"><span data-i18n="card.concept">📚 Concept</span><span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="concept-body"></div>
       </div>
       <div class="info-card collapsed" id="formulas-card">
-        <div class="info-card-header collapsible-header" data-panel-key="formulas" role="button" tabindex="0" aria-expanded="false">📐 Key Formulas<span class="panel-chevron" aria-hidden="true">⌄</span></div>
+        <div class="info-card-header collapsible-header" data-panel-key="formulas" role="button" tabindex="0" aria-expanded="false"><span data-i18n="card.formulas">📐 Key Formulas</span><span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body formula-body" id="formula-body"></div>
       </div>
       <div class="info-card readings-card" id="readings-card">
-        <div class="info-card-header collapsible-header" data-panel-key="readings" role="button" tabindex="0" aria-expanded="true">📊 Live Readings<span class="panel-chevron" aria-hidden="true">⌄</span></div>
+        <div class="info-card-header collapsible-header" data-panel-key="readings" role="button" tabindex="0" aria-expanded="true"><span data-i18n="card.readings">📊 Live Readings</span><span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="readings-body" id="readings-body"></div>
       </div>
       <div class="info-card hidden collapsed" id="practice-card">
-        <div class="info-card-header collapsible-header" data-panel-key="practice" role="button" tabindex="0" aria-expanded="false">🧩 Guided Practice<span class="panel-chevron" aria-hidden="true">⌄</span></div>
+        <div class="info-card-header collapsible-header" data-panel-key="practice" role="button" tabindex="0" aria-expanded="false"><span data-i18n="card.practice">🧩 Guided Practice</span><span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="practice-body"></div>
       </div>
       <div class="info-card hidden collapsed" id="challenge-card">
-        <div class="info-card-header collapsible-header" data-panel-key="challenge" role="button" tabindex="0" aria-expanded="false">🎯 Challenge<span class="panel-chevron" aria-hidden="true">⌄</span></div>
+        <div class="info-card-header collapsible-header" data-panel-key="challenge" role="button" tabindex="0" aria-expanded="false"><span data-i18n="card.challenge">🎯 Challenge</span><span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="challenge-body"></div>
       </div>
-      <button class="quiz-launch-btn" id="quiz-launch-btn">🎯 Take the Quiz  →</button>
+      <button class="quiz-launch-btn" id="quiz-launch-btn" data-i18n="sim.takeQuiz">🎯 Take the Quiz  →</button>
       <div style="text-align: center; color: var(--text3); font-size: 11px; margin-top: 16px; margin-bottom: 8px; letter-spacing: 0.5px;">
         &copy; PP creations by Paras Pranav
       </div>
@@ -277,26 +277,26 @@
 ══════════════════════════════════════════════ -->
 <div id="screen-profile" class="screen">
   <div class="sim-topbar">
-    <button class="back-btn" onclick="showScreen('home')">← Back</button>
-    <div class="sim-topbar-mid"><span class="sim-title-nav">My Profile</span></div>
+    <button class="back-btn" onclick="showScreen('home')" data-i18n="common.back">← Back</button>
+    <div class="sim-topbar-mid"><span class="sim-title-nav" data-i18n="profile.title">My Profile</span></div>
     <div></div>
   </div>
   <div class="profile-wrap">
     <div class="profile-hero-card">
       <div class="p-avatar" id="p-avatar">🎓</div>
-      <div class="p-name" id="p-name">Economist</div>
-      <div class="p-level" id="p-level-text">Level 1 — Novice</div>
+      <div class="p-name" id="p-name" data-i18n="profile.nameDefault">Economist</div>
+      <div class="p-level" id="p-level-text" data-i18n="profile.levelText">Level 1 — Novice</div>
       <div class="xp-progress-bar"><div class="xp-fill" id="xp-fill"></div></div>
-      <div class="xp-label" id="xp-label">0 / 500 XP to next level</div>
+      <div class="xp-label" id="xp-label" data-i18n="profile.xpLabel">0 / 500 XP to next level</div>
     </div>
     <div class="profile-stats-grid">
-      <div class="pstat"><span class="pstat-n" id="ps-totalxp">0</span><span class="pstat-l">Total XP</span></div>
-      <div class="pstat"><span class="pstat-n" id="ps-sims">0</span><span class="pstat-l">Labs Done</span></div>
-      <div class="pstat"><span class="pstat-n" id="ps-quizzes">0</span><span class="pstat-l">Quizzes Passed</span></div>
-      <div class="pstat"><span class="pstat-n" id="ps-badges">0</span><span class="pstat-l">Badges</span></div>
+      <div class="pstat"><span class="pstat-n" id="ps-totalxp">0</span><span class="pstat-l" data-i18n="profile.totalXp">Total XP</span></div>
+      <div class="pstat"><span class="pstat-n" id="ps-sims">0</span><span class="pstat-l" data-i18n="profile.labsDone">Labs Done</span></div>
+      <div class="pstat"><span class="pstat-n" id="ps-quizzes">0</span><span class="pstat-l" data-i18n="profile.quizzesPassed">Quizzes Passed</span></div>
+      <div class="pstat"><span class="pstat-n" id="ps-badges">0</span><span class="pstat-l" data-i18n="profile.badges">Badges</span></div>
     </div>
     <div class="all-badges-section">
-      <h3 class="section-title">All Achievements</h3>
+      <h3 class="section-title" data-i18n="profile.allAchievements">All Achievements</h3>
       <div class="all-badges-grid" id="all-badges-grid"></div>
     </div>
   </div>
@@ -322,10 +322,13 @@
     <div class="quiz-progress-bar-outer">
       <div class="quiz-progress-bar-inner" id="quiz-pbar"></div>
     </div>
-    <div class="quiz-q-counter" id="quiz-q-counter">Q 1 of 4</div>
-    <div class="quiz-question" id="quiz-question">Loading…</div>
-    <div class="quiz-options" id="quiz-options"></div>
-    <div class="quiz-feedback hidden" id="quiz-feedback"></div>
+    <div id="quiz-question-area">
+      <div class="quiz-q-counter" id="quiz-q-counter">Q 1 of 10</div>
+      <div class="quiz-question" id="quiz-question">Loading…</div>
+      <div class="quiz-options" id="quiz-options"></div>
+      <div class="quiz-feedback hidden" id="quiz-feedback"></div>
+      <button type="button" class="quiz-next-btn hidden" id="quiz-next-btn">Next Question →</button>
+    </div>
     <div class="quiz-result hidden" id="quiz-result">
       <div class="result-emoji" id="result-emoji">🎉</div>
       <div class="result-score" id="result-score">3 / 4</div>
@@ -347,8 +350,6 @@
   </div>
 </div>
 
-<script src="js/i18n_hi.js"></script>
-<script src="js/i18n_engine.js"></script>
 <script src="js/curriculum-data.js?v=1"></script>
 <script src="js/panel-collapse.js?v=1"></script>
 <script src="js/plotly.min.js?v=2"></script>
@@ -361,6 +362,20 @@
 <script src="js/simulations_statistics_datalab.js?v=1"></script>
 <script src="js/simulations_macro_datalab.js?v=1"></script>
 <script src="js/simulations_ied_class12.js?v=1"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/quiz-engine.js?v=1"></script>
+<script src="js/quiz-data.js?v=1"></script>
+<script src="js/quiz-data-extended.js?v=1"></script>
+<script src="js/quiz-data-class11-micro.js?v=1"></script>
+<script src="js/quiz-data-statistics.js?v=1"></script>
+<script src="js/quiz-data-macro-datalab.js?v=1"></script>
+<script src="js/quiz-data-ied.js?v=1"></script>
+<script src="js/i18n_engine.js?v=1"></script>
+<script src="js/i18n_hi.js?v=1"></script>
+<script src="js/i18n_hi_extended.js?v=1"></script>
+<script src="js/i18n_hi_class11_micro.js?v=1"></script>
+<script src="js/i18n_hi_statistics.js?v=1"></script>
+<script src="js/i18n_hi_macro_datalab.js?v=1"></script>
+<script src="js/i18n_hi_ied.js?v=1"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

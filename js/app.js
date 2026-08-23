@@ -14,12 +14,38 @@ function showScreen(screenId) {
     }
 }
 
-// Language toggle for the 🌐 nav button. Full sentence-level translation
-// depends on the i18n engine/data files (js/i18n_engine.js, js/i18n_hi.js),
-// which currently ship as stubs. This keeps the toggle functional (no
-// crash) and updates the parts of the UI that don't need a translation
-// dictionary: the button label itself and the document's language tag.
+// Language toggle for the 🌐 nav button, backed by a real i18n engine
+// (js/i18n_engine.js) and dictionary (js/i18n_hi.js) — see CLAUDE.md.
 let currentLang = localStorage.getItem('econsim-lang') || 'en';
+
+// The sim currently open on the Simulation screen (null on the home/
+// profile screens). Needed so the Quiz button and a language-toggle
+// re-render both know what to act on without re-deriving it from the DOM.
+let currentSim = null;
+
+// Resolves a value that may be a plain string (English-only, never
+// translated) or a `{en, hi}` pair (see js/i18n_hi.js) to the text for
+// the current language, falling back to English — so a missing Hindi
+// entry degrades to readable English instead of blank/undefined text.
+function localize(val, fallback) {
+    if (val === undefined || val === null) return fallback !== undefined ? fallback : '';
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object') {
+        if (currentLang === 'hi' && val.hi) return val.hi;
+        return val.en !== undefined ? val.en : (fallback !== undefined ? fallback : '');
+    }
+    return String(val);
+}
+
+// Resolves one field of a sim (title/desc/concept/...) to the current
+// language via that sim's optional `hi` companion object (see
+// js/i18n_hi.js's SIM_I18N_HI, merged onto SIMS by mergeSimTranslations()
+// in js/i18n_engine.js). Falls back to the sim's own (English) field.
+function simField(sim, field) {
+    if (!sim) return '';
+    if (currentLang === 'hi' && sim.hi && sim.hi[field] !== undefined) return sim.hi[field];
+    return sim[field];
+}
 
 function applyLanguage(lang) {
     currentLang = lang;
@@ -32,8 +58,28 @@ function applyLanguage(lang) {
     }
 
     if (typeof window.i18nApply === 'function') {
-        // Hook for a fuller i18n engine, if/when one is implemented.
         window.i18nApply(lang);
+    }
+
+    // The two "Collapse All" master-switch buttons compute their own
+    // label from current state (see js/panel-collapse.js's
+    // wireCollapseAllToggle) rather than static markup, so translateStaticUI()
+    // above can't reach them — re-derive their label directly here instead
+    // of waiting for the next click inside their panel group.
+    document.querySelectorAll('.panel-toolbar-btn').forEach(btn => {
+        if (typeof btn._refreshCollapseLabel === 'function') btn._refreshCollapseLabel();
+    });
+
+    // Re-render whatever's currently on screen so labels switch live,
+    // with no reload and no lost slider/table/quiz state beyond what a
+    // normal re-render already resets.
+    if (typeof rebuildHomeGrids === 'function') rebuildHomeGrids();
+    if (currentSim && typeof renderSim === 'function') {
+        openSim(currentSim.id); // re-runs the title/tag/renderSim wiring below
+    }
+    const quizOverlay = document.getElementById('quiz-overlay');
+    if (typeof quizState !== 'undefined' && quizState && quizState.sim && quizOverlay && !quizOverlay.classList.contains('hidden')) {
+        if (typeof renderQuizQuestion === 'function') renderQuizQuestion();
     }
 }
 
@@ -44,12 +90,14 @@ function toggleLanguage() {
 function openSim(simId) {
     const sim = typeof SIMS !== 'undefined' ? SIMS.find(s => s.id === simId) : null;
     if (sim) {
+        currentSim = sim;
         showScreen('sim');
         const titleElIndex = document.getElementById('sim-title-nav');
         const titleElSys = document.getElementById('sim-title');
+        const title = simField(sim, 'title');
 
-        if (titleElIndex) titleElIndex.innerText = sim.title;
-        if (titleElSys) titleElSys.innerText = sim.title;
+        if (titleElIndex) titleElIndex.innerText = title;
+        if (titleElSys) titleElSys.innerText = title;
 
         const tagEl = document.getElementById('sim-module-tag');
         if (tagEl) {
@@ -62,10 +110,11 @@ function openSim(simId) {
     }
 }
 
-function initApp() {
-    applyLanguage(currentLang);
-
-    // Populate grids in index.html
+// Populates (or, on a language switch, re-populates) the home-screen
+// module grids from SIMS. Split out from initApp() so applyLanguage()
+// can call it again to swap every card's title/description without a
+// full page reload.
+function rebuildHomeGrids() {
     const grids = {
         'micro': document.getElementById('grid-micro'),
         'macro': document.getElementById('grid-macro'),
@@ -74,8 +123,12 @@ function initApp() {
         'all': document.getElementById('sim-grid') // for system_test.html
     };
 
+    Object.values(grids).forEach(g => { if (g) g.innerHTML = ''; });
+
     if (typeof SIMS !== 'undefined') {
         SIMS.forEach(sim => {
+            const title = simField(sim, 'title');
+            const desc = simField(sim, 'desc');
             // Note: each grid needs its own card element with its own click
             // handler attached directly. cloneNode(true) does NOT copy
             // JS-assigned event handlers (like .onclick), so cards created
@@ -83,19 +136,49 @@ function initApp() {
             if (grids[sim.module]) {
                 const card = document.createElement('div');
                 card.className = `sim-card sim-card--${sim.module}`;
-                card.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
+                card.innerHTML = `<h3>${title}</h3><p>${desc}</p>`;
                 card.onclick = () => openSim(sim.id);
                 grids[sim.module].appendChild(card);
             }
             if (grids['all']) {
                 const sysCard = document.createElement('div');
                 sysCard.className = `sim-card sim-card--${sim.module}`;
-                sysCard.innerHTML = `<h3>${sim.title}</h3><p>${sim.desc}</p>`;
+                sysCard.innerHTML = `<h3>${title}</h3><p>${desc}</p>`;
                 sysCard.onclick = () => openSim(sim.id);
                 grids['all'].appendChild(sysCard);
             }
         });
     }
+}
+
+// Wires the Quiz modal: launching it for the currently open sim,
+// closing it (✕ button, backdrop click, or the result screen's
+// Continue button), answering a question, and stepping to the next
+// one. See js/quiz-engine.js for question generation/scoring.
+function wireQuizModal() {
+    const launchBtn = document.getElementById('quiz-launch-btn');
+    if (launchBtn) launchBtn.addEventListener('click', () => {
+        if (currentSim && typeof openQuiz === 'function') openQuiz(currentSim);
+    });
+
+    const closeBtn = document.getElementById('quiz-close-btn');
+    const overlay = document.getElementById('quiz-overlay');
+    const closeQuiz = () => { if (overlay) overlay.classList.add('hidden'); };
+    if (closeBtn) closeBtn.addEventListener('click', closeQuiz);
+    if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeQuiz(); });
+
+    const continueBtn = document.getElementById('result-continue-btn');
+    if (continueBtn) continueBtn.addEventListener('click', closeQuiz);
+
+    const nextBtn = document.getElementById('quiz-next-btn');
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+        if (typeof advanceQuiz === 'function') advanceQuiz();
+    });
+}
+
+function initApp() {
+    applyLanguage(currentLang); // builds the home grids (via rebuildHomeGrids) in the active language
+    wireQuizModal();
 
     // Every module block (home) and info card (sim screen) is
     // collapsible — wire up the click/keyboard toggles and the two
@@ -111,6 +194,7 @@ function initApp() {
     const backBtnIndex = document.getElementById('sim-back');
     if (backBtnIndex) {
         backBtnIndex.addEventListener('click', () => {
+            currentSim = null;
             showScreen('home');
         });
     }

@@ -85,11 +85,22 @@ function wireCollapseAllToggle(buttonEl, panelSelector) {
             .map(panel => ({ panel, header: panel.querySelector('.collapsible-header[data-panel-key]') }))
             .filter(p => p.header);
     }
+    // The label is state-dependent (computed from current collapse state),
+    // so it can't be a one-shot data-i18n swap like the rest of the static
+    // UI (js/i18n_engine.js) — it looks up currentLang/I18N_HI itself, at
+    // call time, and re-derives the right string in whichever language is
+    // active whenever it's recomputed.
     function refreshLabel() {
         const all = panels();
         const collapsedCount = all.filter(p => p.panel.classList.contains('collapsed')).length;
         const allCollapsed = all.length > 0 && collapsedCount === all.length;
-        buttonEl.textContent = allCollapsed ? '🗂️ Expand All' : '🗂️ Collapse All';
+        const isHi = typeof currentLang !== 'undefined' && currentLang === 'hi';
+        const dict = (typeof I18N_HI !== 'undefined') ? I18N_HI : {};
+        if (allCollapsed) {
+            buttonEl.textContent = (isHi && dict['toolbar.expandAll']) || '🗂️ Expand All';
+        } else {
+            buttonEl.textContent = (isHi && dict['toolbar.collapseAll']) || '🗂️ Collapse All';
+        }
     }
     buttonEl.addEventListener('click', () => {
         const all = panels();
@@ -104,4 +115,8 @@ function wireCollapseAllToggle(buttonEl, panelSelector) {
     document.addEventListener('click', (e) => {
         if (e.target.closest(panelSelector)) refreshLabel();
     });
+    // Exposed so js/app.js's applyLanguage() can re-derive this button's
+    // label immediately on a language switch, without waiting for the
+    // next click inside panelSelector.
+    buttonEl._refreshCollapseLabel = refreshLabel;
 }

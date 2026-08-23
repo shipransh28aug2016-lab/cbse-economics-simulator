@@ -185,6 +185,67 @@ function styledAxisTitle(axis) {
     return axis;
 }
 
+// Resolves a nested path (e.g. 'controls.income.label' or 'practice.0.hint')
+// against a sim's `hi` companion object (see js/i18n_hi.js / js/i18n_engine.js's
+// mergeSimTranslations()), returning `undefined` if the current language
+// isn't Hindi, the sim has no translations, or that particular path wasn't
+// translated — callers always follow this with `|| englishValue` so a
+// partially-translated sim degrades field-by-field to English rather than
+// going blank. Shared by sim-engine.js, datalab-engine.js and
+// explorer-engine.js (all three render from a sim's nested content).
+function hiPath(sim, path) {
+    if (!sim || !sim.hi) return undefined;
+    if (typeof currentLang === 'undefined' || currentLang !== 'hi') return undefined;
+    let node = sim.hi;
+    const parts = path.split('.');
+    for (let i = 0; i < parts.length; i++) {
+        if (node === null || typeof node !== 'object') return undefined;
+        node = node[parts[i]];
+    }
+    return node === undefined || node === null ? undefined : node;
+}
+
+// Best-effort translation of a sim's DYNAMICALLY COMPUTED readings/
+// interpretation HTML (built inside compute()/dataLab.calculate()/
+// customRender() from live numbers, so it can't be pre-translated as
+// static content the way sim.hi's other fields are — see js/i18n_hi.js's
+// header comment). Looks up an ordered list of [English, Hindi] literal
+// substring pairs for this sim from READINGS_I18N_HI (declared by
+// js/i18n_engine.js, populated per-sim-group by js/i18n_hi*.js, mirroring
+// the QUIZ_BANK/SIM_I18N_HI population pattern) and applies them in order
+// against the already-rendered English HTML — translating every reading
+// LABEL and every static sentence fragment while leaving embedded numbers,
+// ₹ amounts and other live-computed values untouched (a plain string
+// substring replace never touches the digits/markup around it). Falls
+// through to the original English HTML untouched when Hindi isn't active,
+// this sim has no entry, or (defensively) something in the dictionary
+// doesn't match — never blocks rendering.
+function translateReadings(sim, html) {
+    if (!html || typeof currentLang === 'undefined' || currentLang !== 'hi') return html;
+    if (typeof READINGS_I18N_HI === 'undefined') return html;
+    const pairs = READINGS_I18N_HI[sim.id];
+    if (!Array.isArray(pairs)) return html;
+    let out = html;
+    pairs.forEach(([en, hi]) => {
+        if (typeof en === 'string' && out.indexOf(en) !== -1) out = out.split(en).join(hi);
+    });
+    return out;
+}
+
+// Looks up a fixed (non-sim-specific) UI string from js/i18n_engine.js's
+// I18N_HI dictionary when Hindi is active — used for the handful of
+// hand-built HTML strings in this file/datalab-engine.js/explorer-engine.js
+// that aren't simple textContent (so can't use index.html's data-i18n
+// mechanism) but also aren't sim content (so don't belong in a sim's `hi`
+// companion object either) — e.g. the controls panel's own header/hint/
+// Reset button, and the auto-checked challenge's status line.
+function tEngine(key, fallback) {
+    if (typeof currentLang !== 'undefined' && currentLang === 'hi' && typeof I18N_HI !== 'undefined' && I18N_HI[key]) {
+        return I18N_HI[key];
+    }
+    return fallback;
+}
+
 let simEngineState = {};
 let prevSimEngineState = {};
 let suppressNextWhatChanged = true;
@@ -202,11 +263,18 @@ function controlMeta(sim, key) {
     return sim.controls.find(c => c.id === key) || null;
 }
 
-function displayValue(ctl, raw) {
+// A control's label, translated when its sim has a matching
+// `hi.controls.<id>.label` entry (see js/i18n_hi.js), else its English label.
+function controlLabel(sim, c) {
+    return hiPath(sim, `controls.${c.id}.label`) || c.label;
+}
+
+function displayValue(sim, ctl, raw) {
     if (!ctl) return String(raw);
     if (ctl.type === 'select') {
         const opt = (ctl.options || []).find(o => String(o.value) === String(raw));
-        return opt ? opt.label : String(raw);
+        if (!opt) return String(raw);
+        return hiPath(sim, `controls.${ctl.id}.options.${opt.value}`) || opt.label;
     }
     return typeof raw === 'number' ? fmt(raw, Number.isInteger(raw) ? 0 : 2) : String(raw);
 }
@@ -223,10 +291,10 @@ function describeWhatChanged(sim, prev, next) {
         const after = next[c.id];
         if (before === undefined || after === undefined) return;
         if (String(before) === String(after)) return;
-        changes.push(`<b>${c.label}</b>: ${displayValue(c, before)} → ${displayValue(c, after)}`);
+        changes.push(`<b>${controlLabel(sim, c)}</b>: ${displayValue(sim, c, before)} → ${displayValue(sim, c, after)}`);
     });
     if (!changes.length) return '';
-    return `<div class="reading-row whatchanged-row">🔄 <span>What changed:</span> ${changes.join(', ')}</div>`;
+    return `<div class="reading-row whatchanged-row">🔄 <span>${tEngine('engine.whatChanged', 'What changed:')}</span> ${changes.join(', ')}</div>`;
 }
 
 // ── Practice checklist + auto-checked Challenge (generic, optional) ──
@@ -242,11 +310,13 @@ function renderPractice(sim) {
         return;
     }
     card.classList.remove('hidden');
-    body.innerHTML = sim.practice.map(p => {
+    body.innerHTML = sim.practice.map((p, i) => {
         const item = typeof p === 'string' ? { prompt: p } : p;
+        const prompt = hiPath(sim, `practice.${i}.prompt`) || item.prompt;
+        const hint = hiPath(sim, `practice.${i}.hint`) || item.hint;
         return `<details class="practice-item">
-            <summary>${item.prompt}</summary>
-            ${item.hint ? `<div class="practice-hint">💡 ${item.hint}</div>` : ''}
+            <summary>${prompt}</summary>
+            ${hint ? `<div class="practice-hint">💡 ${hint}</div>` : ''}
         </details>`;
     }).join('');
 }
@@ -260,7 +330,11 @@ function renderChallengeShell(sim) {
         return;
     }
     card.classList.remove('hidden');
-    body.innerHTML = `<p class="challenge-prompt">${sim.challenge.prompt}</p><div class="challenge-status" id="challenge-status">${sim.challenge.check ? 'Not yet — keep adjusting the inputs.' : 'Work it out, then check your reasoning against the readings panel.'}</div>`;
+    const prompt = hiPath(sim, 'challenge.prompt') || sim.challenge.prompt;
+    const initialStatus = sim.challenge.check
+        ? tEngine('challenge.notYet', 'Not yet — keep adjusting the inputs.')
+        : tEngine('challenge.workItOut', 'Work it out, then check your reasoning against the readings panel.');
+    body.innerHTML = `<p class="challenge-prompt">${prompt}</p><div class="challenge-status" id="challenge-status">${initialStatus}</div>`;
 }
 
 function refreshChallenge(sim, metrics) {
@@ -275,7 +349,9 @@ function refreshChallenge(sim, metrics) {
         // momentarily-inconsistent state) just reads as "not solved yet".
         solved = false;
     }
-    statusEl.textContent = solved ? '✅ Challenge complete — nice work!' : 'Not yet — keep adjusting the inputs.';
+    statusEl.textContent = solved
+        ? tEngine('challenge.solved', '✅ Challenge complete — nice work!')
+        : tEngine('challenge.notYet', 'Not yet — keep adjusting the inputs.');
     statusEl.classList.toggle('challenge-solved', solved);
 }
 
@@ -285,7 +361,7 @@ function buildControls(sim) {
     panel.innerHTML = '';
 
     if (!sim.controls || !sim.controls.length) {
-        panel.innerHTML = '<p class="empty-hint">No adjustable inputs for this lab — explore the chart on the left.</p>';
+        panel.innerHTML = `<p class="empty-hint">${tEngine('engine.noInputs', 'No adjustable inputs for this lab — explore the chart on the left.')}</p>`;
         return;
     }
 
@@ -294,16 +370,16 @@ function buildControls(sim) {
     header.dataset.panelKey = 'controls';
     header.setAttribute('role', 'button');
     header.setAttribute('tabindex', '0');
-    header.innerHTML = `<span>🎛️ Adjust the Variables</span>`;
+    header.innerHTML = `<span>${tEngine('engine.adjustVariables', '🎛️ Adjust the Variables')}</span>`;
 
     const hint = document.createElement('p');
     hint.className = 'controls-panel-hint';
-    hint.textContent = 'Try your own numbers — drag a slider or type an exact value and watch the chart and readings update instantly. Great for self-paced or classroom what-if exploration.';
+    hint.textContent = tEngine('engine.controlsHint', 'Try your own numbers — drag a slider or type an exact value and watch the chart and readings update instantly. Great for self-paced or classroom what-if exploration.');
 
     const resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'reset-btn';
-    resetBtn.innerHTML = '↺ Reset';
+    resetBtn.innerHTML = tEngine('engine.reset', '↺ Reset');
     // Reset sits inside the same header that toggles collapse (a bigger,
     // more ergonomic click target than a chevron alone) — stop the click
     // from bubbling up and also toggling the panel collapsed/expanded.
@@ -355,11 +431,12 @@ function buildControls(sim) {
             // (e.g. "which elasticity?" or "which view?") rather than a
             // continuous slider — some variables in the syllabus are a
             // choice of mode, not a number.
+            const label = controlLabel(sim, c);
             row.innerHTML = `
                 <div class="control-label-row">
-                    <label>${c.label}</label>
+                    <label>${label}</label>
                 </div>
-                <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${c.label}"></div>
+                <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${label}"></div>
             `;
             panel.appendChild(row);
             const group = row.querySelector('.control-segmented');
@@ -367,7 +444,7 @@ function buildControls(sim) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'segmented-btn';
-                btn.textContent = opt.label;
+                btn.textContent = hiPath(sim, `controls.${c.id}.options.${opt.value}`) || opt.label;
                 btn.setAttribute('aria-pressed', String(opt.value === c.value));
                 if (opt.value === c.value) btn.classList.add('active');
                 btn.addEventListener('click', () => {
@@ -386,14 +463,16 @@ function buildControls(sim) {
             return;
         }
 
+        const label = controlLabel(sim, c);
+        const unit = hiPath(sim, `controls.${c.id}.unit`) || c.unit;
         row.innerHTML = `
             <div class="control-label-row">
-                <label for="ctl-${c.id}">${c.label}</label>
-                ${c.unit ? `<span class="control-unit">${c.unit}</span>` : ''}
+                <label for="ctl-${c.id}">${label}</label>
+                ${unit ? `<span class="control-unit">${unit}</span>` : ''}
             </div>
             <div class="control-input-group">
                 <input type="range" id="ctl-${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}">
-                <input type="number" id="ctl-${c.id}-num" class="control-number" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}" aria-label="${c.label} (exact value)">
+                <input type="number" id="ctl-${c.id}-num" class="control-number" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}" aria-label="${label} (${tEngine('engine.exactValue', 'exact value')})">
             </div>
         `;
         panel.appendChild(row);
@@ -492,7 +571,7 @@ function renderSimChart(sim) {
     overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
-        readingsBody.innerHTML = whatChangedHTML + (result.readings || '');
+        readingsBody.innerHTML = whatChangedHTML + translateReadings(sim, result.readings || '');
         // Restart the highlight animation on every recompute so students
         // notice the readings actually changed.
         readingsBody.classList.remove('pulse');
@@ -508,7 +587,7 @@ function renderSimChart(sim) {
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
         if (formulaBody) {
-            formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${f}</div>`).join('');
+            formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${translateReadings(sim, f)}</div>`).join('');
         }
     }
 
@@ -540,15 +619,18 @@ function renderSim(sim) {
         const tagText = (typeof chapterTagText === 'function' && chapterTagText(sim)) || sim.chapter || '';
         const chapterTag = tagText ? `<div class="chapter-tag">📘 ${tagText}</div>` : '';
         const modeBadge = sim.mode && sim.mode !== 'simulator'
-            ? `<div class="mode-badge mode-badge--${sim.mode}">${sim.mode === 'datalab' ? '📊 Data Lab' : '🧭 Concept Explorer'}</div>`
+            ? `<div class="mode-badge mode-badge--${sim.mode}">${sim.mode === 'datalab' ? tEngine('engine.dataLabBadge', '📊 Data Lab') : tEngine('engine.explorerBadge', '🧭 Concept Explorer')}</div>`
             : '';
+        const enrichmentNote = hiPath(sim, 'enrichmentNote') || sim.enrichmentNote || '';
         const enrichmentTag = sim.enrichment
-            ? `<div class="enrichment-tag" title="${(sim.enrichmentNote || '').replace(/"/g, '&quot;')}">✨ Enrichment — beyond the 2026–27 unit list for this topic</div>`
+            ? `<div class="enrichment-tag" title="${enrichmentNote.replace(/"/g, '&quot;')}">${tEngine('engine.enrichmentTag', '✨ Enrichment — beyond the 2026–27 unit list for this topic')}</div>`
             : '';
-        conceptBody.innerHTML = chapterTag + modeBadge + enrichmentTag + (sim.concept || '');
+        const concept = hiPath(sim, 'concept') || sim.concept || '';
+        conceptBody.innerHTML = chapterTag + modeBadge + enrichmentTag + concept;
     }
     if (formulaBody) {
-        formulaBody.innerHTML = (sim.formulas || [])
+        const formulas = hiPath(sim, 'formulas') || sim.formulas || [];
+        formulaBody.innerHTML = formulas
             .map(f => `<div class="formula-line">${f}</div>`)
             .join('');
     }

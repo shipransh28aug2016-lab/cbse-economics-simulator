@@ -21,7 +21,16 @@ const appGlobals = {
     loadPanelCollapsed: 'readonly', savePanelCollapsed: 'readonly', setPanelCollapsed: 'readonly',
     SIMS: 'writable',
     showScreen: 'readonly', openSim: 'readonly', applyLanguage: 'readonly',
-    toggleLanguage: 'readonly', initApp: 'readonly', currentLang: 'writable'
+    toggleLanguage: 'readonly', initApp: 'readonly', currentLang: 'writable',
+    currentSim: 'writable', localize: 'readonly', simField: 'readonly', rebuildHomeGrids: 'readonly',
+    QUIZ_BANK: 'writable', quizState: 'writable', generateQuiz: 'readonly', openQuiz: 'readonly',
+    renderQuizQuestion: 'readonly', advanceQuiz: 'readonly', bloomLabel: 'readonly',
+    quizShuffle: 'readonly', quizRandomState: 'readonly', quizLocalize: 'readonly',
+    quizNumericOptions: 'readonly', normalizeQuizQuestion: 'readonly', shuffleQuizOptions: 'readonly',
+    selectQuizAnswer: 'readonly', showQuizResult: 'readonly', BLOOM_LABELS: 'readonly',
+    I18N_HI: 'writable', SIM_I18N_HI: 'writable', mergeSimTranslations: 'readonly', translateStaticUI: 'readonly',
+    hiPath: 'readonly', tEngine: 'readonly', controlLabel: 'readonly', dataLabColLabel: 'readonly',
+    READINGS_I18N_HI: 'writable', translateReadings: 'readonly'
 };
 
 module.exports = [
