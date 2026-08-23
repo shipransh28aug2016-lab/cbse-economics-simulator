@@ -61,6 +61,15 @@ function applyLanguage(lang) {
         window.i18nApply(lang);
     }
 
+    // The two "Collapse All" master-switch buttons compute their own
+    // label from current state (see js/panel-collapse.js's
+    // wireCollapseAllToggle) rather than static markup, so translateStaticUI()
+    // above can't reach them — re-derive their label directly here instead
+    // of waiting for the next click inside their panel group.
+    document.querySelectorAll('.panel-toolbar-btn').forEach(btn => {
+        if (typeof btn._refreshCollapseLabel === 'function') btn._refreshCollapseLabel();
+    });
+
     // Re-render whatever's currently on screen so labels switch live,
     // with no reload and no lost slider/table/quiz state beyond what a
     // normal re-render already resets.
