@@ -369,6 +369,24 @@ const SIMS = [
             const ae0 = ys.map(y => a + c * y + autonomous1);
             const ae1 = ys.map(y => a + c * y + autonomous2);
             const dySpending = k * (dI + dG), dyTax = kt * dT;
+
+            // Make the multiplier a mechanism, not just a formula: the
+            // actual round-by-round income generation (initial injection ->
+            // one person's extra income becomes the next round's extra
+            // spending at rate MPC -> ... ), summed to show it converges
+            // to k*(dI+dG) rather than asserting the total outright.
+            const injection = dI + dG;
+            const rounds = [];
+            let roundIncome = injection, cumulative = 0;
+            for (let i = 0; i < 6 && injection > 0; i++) {
+                cumulative += roundIncome;
+                rounds.push({ round: i + 1, income: roundIncome, cumulative });
+                roundIncome *= c;
+            }
+            const roundsHTML = rounds.length
+                ? `<div class="reading-row"><span>Spending Rounds (Δ Income, Δ Cumulative)</span><b>${rounds.map(r => `R${r.round}: ₹${fmt(r.income)}B → ₹${fmt(r.cumulative)}B`).join(' · ')}${rounds.length === 6 ? ' · …' : ''}</b></div>`
+                : '';
+
             return {
                 traces: [
                     { x: ys, y: ys, mode: 'lines', name: '45° Line (Y=AE)', line: { color: '#9ca3af', dash: 'dot', width: 2 } },
@@ -378,13 +396,14 @@ const SIMS = [
                     { x: [Y1], y: [Y1], mode: 'markers', name: 'New Equilibrium', marker: { color: '#ef4444', size: 9 } }
                 ],
                 layout: { xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Aggregate Expenditure (AE)', range: [0, 400] } },
-                metrics: { k, kt, dySpending, dyTax, Y1 },
+                metrics: { k, kt, dySpending, dyTax, Y1, rounds },
                 readings: `<div class="reading-row"><span>Investment Multiplier (k)</span><b>${fmt(k)}</b></div>
                            <div class="reading-row"><span>Tax Multiplier (kt, contrast)</span><b>${fmt(kt)}</b></div>
                            <div class="reading-row"><span>ΔY from Spending (I+G)</span><b>₹${fmt(dySpending)}B</b></div>
                            <div class="reading-row"><span>ΔY from Tax</span><b>₹${fmt(dyTax)}B</b></div>
                            <div class="reading-row"><span>New Equilibrium Y</span><b>₹${fmt(Y1)}B</b></div>
-                           <div class="reading-row insight-row">💡 A higher MPC means each round of spending recycles further — a bigger multiplier. The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.</div>`
+                           ${roundsHTML}
+                           <div class="reading-row insight-row">💡 A higher MPC means each round of spending recycles further — a bigger multiplier. ${rounds.length ? `Trace it: the first ₹${fmt(injection)}B of new spending becomes someone's income, who re-spends ${fmt(c * 100, 0)}% of it (₹${fmt(rounds[1] ? rounds[1].income : 0)}B) as the next round's income, and so on — the cumulative total above is visibly converging toward k×(ΔI+ΔG) = ₹${fmt(dySpending)}B, it isn't just asserted.` : 'Set ΔI or ΔG above zero to see the round-by-round trace.'} The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.</div>`
             };
         },
         practice: [

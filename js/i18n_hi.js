@@ -205,7 +205,10 @@ if (typeof READINGS_I18N_HI !== 'undefined') {
             ['ΔY from Spending (I+G)', 'व्यय से ΔY (I+G)'],
             ['ΔY from Tax', 'कर से ΔY'],
             ['New Equilibrium Y', 'नया संतुलन Y'],
-            ['A higher MPC means each round of spending recycles further — a bigger multiplier. The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.', 'एक उच्च MPC का अर्थ है व्यय का हर दौर आगे और पुनर्चक्रित होता है — एक बड़ा गुणक। कर गुणक हमेशा व्यय गुणक से परिमाण में छोटा होता है (ठीक एक इकाई से: k − |kt| = 1), क्योंकि एक कर परिवर्तन केवल प्रयोज्य आय के माध्यम से अप्रत्यक्ष रूप से व्यय को प्रभावित करता है।']
+            ['Spending Rounds (Δ Income, Δ Cumulative)', 'व्यय के दौर (Δ आय, Δ संचयी)'],
+            ['A higher MPC means each round of spending recycles further — a bigger multiplier. ', 'एक उच्च MPC का अर्थ है व्यय का हर दौर आगे और पुनर्चक्रित होता है — एक बड़ा गुणक। '],
+            ['Set ΔI or ΔG above zero to see the round-by-round trace.', 'दौर-दर-दौर पथ देखने के लिए ΔI या ΔG को शून्य से ऊपर सेट करें।'],
+            [' The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.', ' कर गुणक हमेशा व्यय गुणक से परिमाण में छोटा होता है (ठीक एक इकाई से: k − |kt| = 1), क्योंकि एक कर परिवर्तन केवल प्रयोज्य आय के माध्यम से अप्रत्यक्ष रूप से व्यय को प्रभावित करता है।']
         ],
         'stats-correlation': [
             ['n (data points)', 'n (डेटा बिंदु)'],

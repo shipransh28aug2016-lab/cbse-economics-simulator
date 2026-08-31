@@ -79,10 +79,23 @@ Class XII — Part A: Introductory Macroeconomics (Units 1–5)
   *display grouping*, independent of the `sim.class`/`sim.part`/`sim.unit` curriculum
   metadata, which is what the coverage matrix actually checks).
 - `css/styles.css` — glassmorphism design system; one accent gradient per module.
-- `js/plotly.min.js` — real Plotly.js v2.35.2 (not a stub). `js/i18n_engine.js` and
-  `js/i18n_hi.js` **are** stubs (`console.log('stub loaded')`) — the Hindi toggle only
-  swaps a button label, not sentence content. Quiz/XP/Badges/Profile are UI-complete but
-  their content banks are placeholders — do not represent them as curriculum-mapped.
+- `js/plotly.min.js` — real Plotly.js v2.35.2 (not a stub). `js/i18n_engine.js` +
+  `js/i18n_hi*.js` are a **real Hindi i18n layer** (this superseded an earlier
+  stub) — `I18N_HI` translates static app chrome, `SIM_I18N_HI` translates every
+  sim's content fields (title/desc/concept/formulas/controls/practice/challenge/
+  dataLab/explorer) keyed by `sim.id`, and per-sim `READINGS_I18N_HI` pattern
+  dictionaries translate the *dynamically generated* readings HTML each
+  `compute()` returns — `tools/test-curriculum.js` verifies real coverage numbers
+  for both (currently 34/34 sims for content, 28/34 for dynamic readings) rather
+  than trusting the claim. `js/quiz-engine.js` + `js/quiz-data*.js` are likewise a
+  real, working Bloom's-Taxonomy-tagged quiz bank (≥10 generated questions per
+  sim, also test-verified) — not a placeholder. **XP, Badges and the Profile
+  screen remain UI-complete placeholders**: their DOM elements
+  (`#nav-xp`, `#xp-popup`, `#all-badges-grid`, the `#screen-profile` stat tiles)
+  exist in `index.html` but no JS file ever writes to them — there is no
+  progress-tracking logic backing them. Don't represent XP/Badges/Profile as
+  functional, and don't assume this list is exhaustive — re-check against the
+  actual code before relying on it, the way this correction had to.
 
 ## No build system — how "typecheck/lint/test/build" actually run here
 
