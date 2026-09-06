@@ -40,6 +40,11 @@
   --india-a: #f43f5e;
   --india-b: #d946ef;
   --india-grad: linear-gradient(135deg, var(--india-a), var(--india-b));
+
+  /* Typography / motion tokens */
+  --font-display: 'Sora', 'Inter', sans-serif;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 * {
@@ -53,6 +58,16 @@ body {
   background-color: var(--bg);
   color: var(--text1);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3,
+.hero-title, .module-title, .sim-card h3, .sim-title-nav,
+.info-card-header span, .controls-panel-header span,
+.explorer-timeline-card-title, .explorer-scenario-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 /* ── Colorful animated mesh backdrop ─────────────────────────── */
@@ -131,6 +146,7 @@ footer {
 
 button { cursor: pointer; font-family: inherit; }
 input { font-family: inherit; }
+button:not(:disabled):active { transform: scale(0.96); }
 
 a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid var(--primary);
@@ -242,7 +258,24 @@ header, .sim-topbar {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), background 0.3s var(--ease-out);
+  animation: card-in 0.5s var(--ease-out) both;
+}
+
+/* Cards already exist in the DOM before load (no JS build delay), so
+   stagger by DOM position within each module's flex row — cheap and
+   avoids per-card inline style/JS bookkeeping. */
+.sim-card:nth-child(1) { animation-delay: 0.02s; }
+.sim-card:nth-child(2) { animation-delay: 0.06s; }
+.sim-card:nth-child(3) { animation-delay: 0.10s; }
+.sim-card:nth-child(4) { animation-delay: 0.14s; }
+.sim-card:nth-child(5) { animation-delay: 0.18s; }
+.sim-card:nth-child(6) { animation-delay: 0.22s; }
+.sim-card:nth-child(n+7) { animation-delay: 0.24s; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .sim-card::before {
@@ -258,11 +291,28 @@ header, .sim-topbar {
 .sim-card--stats::before { background: var(--stats-grad); }
 .sim-card--india::before { background: var(--india-grad); }
 
+/* Diagonal light sweep on hover — a cheap, GPU-friendly "shine" that
+   reads as polish without any extra markup: a gradient-filled ::after
+   slides across on the transform it already pays for on hover. */
+.sim-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%);
+  transform: translateX(-120%);
+  transition: transform 0.6s var(--ease-out);
+  pointer-events: none;
+}
+
+.sim-card:hover::after, .sim-card:focus-visible::after { transform: translateX(120%); }
+
 .sim-card:hover, .sim-card:focus-visible {
-  transform: translateY(-4px) scale(1.015);
+  transform: translateY(-6px) scale(1.02);
   background: var(--glass-bg-strong);
   box-shadow: 0 16px 40px rgba(76, 29, 149, 0.22), 0 4px 12px rgba(76, 29, 149, 0.12);
 }
+
+.sim-card:active { transform: translateY(-2px) scale(0.99); }
 
 .sim-card h3 {
   margin: 0 0 8px 0;
@@ -844,9 +894,9 @@ header, .sim-topbar {
 }
 
 .hero-title {
-  font-size: 19px;
+  font-size: clamp(17px, 2.4vw, 24px);
   margin: 0;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: -0.3px;
   line-height: 1.25;
 }
@@ -1446,12 +1496,29 @@ header, .sim-topbar {
 .explorer-scenario-heading { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary-2); margin-bottom: 6px; }
 .explorer-scenario-list { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--text2); }
 
+/* Live score ring for the Cards explorer — updates on every answer,
+   reusing the same ring geometry as the Profile screen's XP rings. */
+.explorer-score-ring { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 8px 4px; }
+.explorer-score-ring svg { flex-shrink: 0; }
+.explorer-score-ring .ring-fg { stroke: #10b981; }
+.explorer-score-ring-label { font-size: 13px; font-weight: 700; color: var(--text2); }
+.explorer-score-ring-label b { font-size: 16px; color: var(--text1); }
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .sim-body { flex-direction: column; padding: 14px; }
   .sim-right { min-width: 0; }
-  .hero-title { font-size: 17px; }
   .canvas-shell { min-height: 300px; }
+}
+
+/* Tablet: cards still grid but the module header's idle float and the
+   sim-card hover-lift are the two most likely places a coarse pointer
+   fat-fingers a neighbour, so widen tap targets slightly and drop the
+   float animation (a touch screen has no hover to sync it against). */
+@media (max-width: 768px) {
+  .module-header { animation: none; }
+  .sim-card { min-width: 46%; flex: 1 1 46%; }
+  .datalab-btn, .reset-btn, .icon-btn { min-height: 40px; }
 }
 
 @media (max-width: 560px) {
@@ -1465,6 +1532,9 @@ header, .sim-topbar {
   .sim-topbar { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
   .control-input-group { flex-wrap: wrap; }
   .control-number { width: 100%; }
+  .sim-card { min-width: 100%; flex: 1 1 100%; }
+  .sim-title-nav { font-size: 15px; }
+  .sim-card:hover, .sim-card:focus-visible { transform: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════

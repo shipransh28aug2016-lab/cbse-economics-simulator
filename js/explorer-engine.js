@@ -143,7 +143,17 @@ function renderCardsExplorer(sim, panel, overlay) {
         cardsResetBtn.addEventListener('click', () => { explorerState.cardAnswers = {}; draw(); });
         if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
 
-        overlay.innerHTML = `<div class="explorer-cards-list">${cards.map((c, idx) => {
+        const liveScore = score();
+        const scorePct = liveScore.answered === 0 ? 0 : liveScore.correct / liveScore.answered;
+        const ringCirc = 100.5; // 2*pi*16, matches r=16 below
+        overlay.innerHTML = `<div class="explorer-score-ring" title="${liveScore.correct} / ${liveScore.total} correct so far" role="img" aria-label="${liveScore.correct} of ${liveScore.total} correct">
+            <svg viewBox="0 0 36 36" width="52" height="52">
+                <circle class="ring-bg" cx="18" cy="18" r="16"></circle>
+                <circle class="ring-fg" cx="18" cy="18" r="16" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringCirc - ringCirc * scorePct}" transform="rotate(-90 18 18)"></circle>
+            </svg>
+            <div class="explorer-score-ring-label"><b>${liveScore.correct}</b>/${liveScore.total}</div>
+        </div>
+        <div class="explorer-cards-list">${cards.map((c, idx) => {
             const tc = tCard(idx);
             const ans = explorerState.cardAnswers[idx];
             return `<div class="explorer-card">

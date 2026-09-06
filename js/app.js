@@ -176,9 +176,35 @@ function wireQuizModal() {
     });
 }
 
+// Animates each hero-stats-strip number counting up from 0 to its real,
+// static value once on load — a genuine value already in the markup,
+// not fabricated data, so this is purely a motion touch. Respects
+// prefers-reduced-motion by snapping straight to the final value.
+function animateHeroStats() {
+    const nums = document.querySelectorAll('.hero-stats-strip b');
+    if (!nums.length) return;
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    nums.forEach(el => {
+        const text = el.textContent.trim();
+        const target = parseInt(text, 10);
+        const suffix = text.replace(/^[0-9]+/, ''); // e.g. "72+" -> "+"
+        if (isNaN(target) || reduceMotion) return;
+        const duration = 900;
+        const start = performance.now();
+        function tick(now) {
+            const p = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased) + (p >= 1 ? suffix : '');
+            if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    });
+}
+
 function initApp() {
     applyLanguage(currentLang); // builds the home grids (via rebuildHomeGrids) in the active language
     wireQuizModal();
+    animateHeroStats();
 
     // Every module block (home) and info card (sim screen) is
     // collapsible — wire up the click/keyboard toggles and the two
