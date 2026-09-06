@@ -55,7 +55,14 @@ function quizShuffle(arr) {
 // drive apply-templates through compute() at a fresh input each time.
 function quizRandomState(sim) {
     const state = {};
-    (sim.controls || []).forEach(c => {
+    // A Graph Lab declares its inputs as `graphLab.vars` rather than
+    // `controls` (they render as the chip strip under the diagram, not as
+    // the slider column) — same {min,max,step} shape, so the same random
+    // walk works once we read from the right list.
+    const inputs = (sim.mode === 'graphlab' && sim.graphLab)
+        ? (sim.graphLab.vars || [])
+        : (sim.controls || []);
+    inputs.forEach(c => {
         if (c.type === 'select') {
             state[c.id] = c.options[Math.floor(Math.random() * c.options.length)].value;
         } else {
@@ -139,7 +146,11 @@ function generateQuiz(sim, count) {
             if (pool.length >= count + 4) return;
             try {
                 let built = null;
-                if (sim.mode === 'datalab' && sim.dataLab) {
+                if (sim.mode === 'graphlab' && sim.graphLab) {
+                    const state = quizRandomState(sim);
+                    const result = sim.graphLab.model(state, { prev: state, base: state });
+                    built = tpl.build(state, (result && result.metrics) || {});
+                } else if (sim.mode === 'datalab' && sim.dataLab) {
                     const rows = sim.dataLab.defaultRows;
                     const result = sim.dataLab.calculate(rows);
                     built = tpl.build(rows, (result && result.metrics) || {});

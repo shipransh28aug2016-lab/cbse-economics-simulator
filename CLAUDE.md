@@ -54,7 +54,12 @@ Class XII — Part A: Introductory Macroeconomics (Units 1–5)
     `sim.dataLab.calculate(rows)` → table/stats/chart/interpretation.
   - `mode: 'explorer'` — routed to `js/explorer-engine.js`: timeline / comparison /
     scenario content, no numeric computation.
-  All three modes share: Reset, a generic "🔄 What changed" diff line (computed from the
+  - `mode: 'graphlab'` — routed to `js/graph-lab-engine.js`: a hand-built SVG
+    diagram drawn in the CBSE/Sandeep-Garg textbook idiom (arrow-headed axes with
+    an `O` origin, curves labelled DD/SS/D₁D₁ at their far end, dotted OP/OQ
+    projections from the equilibrium point, and named shift/movement arrows), whose
+    curves and points the student **drags directly**. See "Graph Labs" below.
+  All four modes share: Reset, a generic "🔄 What changed" diff line (computed from the
   previous vs. current control state — no per-sim code needed), and an optional
   `practice` checklist + auto-checked `challenge`.
 - `js/panel-collapse.js` — every panel (home screen module blocks; the sim screen's
@@ -72,17 +77,61 @@ Class XII — Part A: Introductory Macroeconomics (Units 1–5)
   without hiding the parts a student needs first.
 - `js/simulations.js`, `js/simulations_extended.js`, `js/simulations_class11_micro.js`,
   `js/simulations_statistics_datalab.js`, `js/simulations_macro_datalab.js`,
-  `js/simulations_ied_class12.js` — all push onto the single global `SIMS` array. Every
+  `js/simulations_ied_class12.js`, `js/simulations_graphlab.js`,
+  `js/simulations_graphlab_macro.js` — all push onto the single global `SIMS` array. Every
   entry's data contract is documented at the top of `js/simulations.js`.
+
 - `js/app.js` — screen routing (`showScreen`, `openSim`) and populates the home-screen
   grids from `SIMS` (keyed by `sim.module`: `micro`/`macro`/`stats`/`india` — this is a
   *display grouping*, independent of the `sim.class`/`sim.part`/`sim.unit` curriculum
   metadata, which is what the coverage matrix actually checks).
 - `css/styles.css` — glassmorphism design system; one accent gradient per module.
-- `js/plotly.min.js` — real Plotly.js v2.35.2 (not a stub). `js/i18n_engine.js` and
-  `js/i18n_hi.js` **are** stubs (`console.log('stub loaded')`) — the Hindi toggle only
-  swaps a button label, not sentence content. Quiz/XP/Badges/Profile are UI-complete but
-  their content banks are placeholders — do not represent them as curriculum-mapped.
+- `js/plotly.min.js` — real Plotly.js v2.35.2 (not a stub).
+- `js/i18n_engine.js` + `js/i18n_hi*.js` — real Hindi support, not stubs (they were
+  stubs when this file was first written; that note is no longer true). `I18N_HI` holds
+  static chrome strings, `SIM_I18N_HI` holds per-sim content keyed by `sim.id`, and
+  `READINGS_I18N_HI` translates the strings that `compute()`/`calculate()`/`model()`
+  build live from numbers, by literal substring replacement after rendering.
+  `tools/test-curriculum.js` asserts every translated key matches something real on its
+  sim and actually contains Devanagari.
+- `js/quiz-engine.js` + `js/quiz-data*.js` — real, curriculum-tagged question banks:
+  hand-authored `static` questions plus `applyTemplates` whose correct answer is
+  *computed* from the sim's own output rather than authored, so it cannot drift.
+  Every sim has one, and the test harness fails the build if a bank cannot generate
+  ≥10 well-formed questions. XP/Badges/Profile remain UI-only — those are still
+  placeholders and should not be described as curriculum-mapped.
+
+## Graph Labs (`mode: 'graphlab'`) — why they exist and how they work
+
+Several things the syllabus names explicitly are distinctions about **motion**, and a
+static chart cannot teach them. `js/curriculum-data.js` states the objective for
+`XI-B-U5-DEMAND` as *"Distinguish a movement along the demand curve from a shift in it"* —
+so a Graph Lab is a diagram the student physically moves:
+
+- **Drag a point along a curve** ⇒ own price changed ⇒ **movement** ⇒ *Expansion /
+  Contraction*.
+- **Drag the whole curve sideways** ⇒ a non-price determinant changed ⇒ **shift** ⇒
+  *Increase / Decrease*.
+- A **verdict banner** under the diagram names, in exam wording (English + Hindi), exactly
+  which of those just happened — including "both at once", which the exam expects to be
+  named as two separate events.
+
+The full `graphLab` data contract is documented at the top of `js/graph-lab-engine.js`.
+Three points that are load-bearing rather than stylistic:
+
+1. **The variable strip renders BELOW the diagram, inside the same stage** — a compact
+   horizontal chip grid, not the tall stacked slider column in `#controls-panel` that the
+   other modes use. That column pushed the diagram off-screen, so cause and effect could
+   never be watched together. `#controls-panel` carries only optional
+   `graphLab.scenarios` presets, and is hidden outright when a lab declares none.
+2. **Every drag goes through one generic rule.** A `handle` declares `{bind, axis, k,
+   invert}`; dragging it by Δ data units writes `vars[bind] = start + Δ/k`, clamped and
+   step-snapped. There is no per-sim drag code, and `tools/smoke.js` performs a real
+   pointer drag on every Graph Lab and asserts the rendered output actually changed.
+3. **Chip group headings are per-lab** (`graphLab.groupLabels`). The default headings name
+   the movement-vs-shift distinction, which only the demand/supply/market labs actually
+   mean — every other lab must say what *its* two groups of variables really are, or the
+   headings become confidently wrong.
 
 ## No build system — how "typecheck/lint/test/build" actually run here
 
@@ -113,7 +162,9 @@ verification to the end of a session.
 1. Never remove or repurpose an existing `sim.id` — cards may be referenced by saved
    progress. Extend entries; don't replace them.
 2. Every sim must carry `class`, `part`, `unit`, `syllabusId(s)`, and `mode`. These drive
-   the generated coverage matrix — an entry without them is invisible to it.
+   the generated coverage matrix — an entry without them is invisible to it. It also needs
+   a `QUIZ_BANK` entry (`js/quiz-data*.js`) and a `SIM_I18N_HI` entry (`js/i18n_hi*.js`);
+   `tools/test-curriculum.js` fails the build without both.
 3. If a sim's content is not explicitly named in `curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md`
    for the unit it sits under (even if it's standard NCERT content from a prior
    syllabus), set `enrichment: true` and say why in `enrichmentNote`. Do not silently
@@ -123,4 +174,6 @@ verification to the end of a session.
    duplicating logic per simulation.
 5. Any numeric formula you add belongs in `tools/test-curriculum.js` too — an
    uncovered `compute()` is exactly the kind of "claims tested, isn't" gap this project
-   is trying to avoid.
+   is trying to avoid. A Graph Lab's `graphLab.model()` is swept across every variable's
+   **full** declared domain (not just min/mid/max), because a drag calls it once per
+   pixel and an NaN two-thirds of the way through a drag is one a student would hit.

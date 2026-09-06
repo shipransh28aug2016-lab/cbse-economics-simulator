@@ -17,6 +17,10 @@ const appGlobals = {
     refreshChallenge: 'readonly', renderPractice: 'readonly', renderChallengeShell: 'readonly',
     describeWhatChanged: 'readonly',
     renderDataLab: 'readonly', renderExplorer: 'readonly',
+    // js/graph-lab-engine.js (mode: 'graphlab') + the Graph Lab sim files.
+    renderGraphLab: 'readonly', glShowGhost: 'writable', glState: 'writable',
+    glSetVar: 'readonly', glVar: 'readonly', glRender: 'readonly',
+    glLineSeg: 'readonly', GL_TERMS: 'readonly', glMoveShiftVerdict: 'readonly',
     initPanelCollapse: 'readonly', initStaticPanelCollapse: 'readonly', wireCollapseAllToggle: 'readonly',
     loadPanelCollapsed: 'readonly', savePanelCollapsed: 'readonly', setPanelCollapsed: 'readonly',
     SIMS: 'writable',

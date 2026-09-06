@@ -618,8 +618,13 @@ function renderSim(sim) {
     if (conceptBody) {
         const tagText = (typeof chapterTagText === 'function' && chapterTagText(sim)) || sim.chapter || '';
         const chapterTag = tagText ? `<div class="chapter-tag">📘 ${tagText}</div>` : '';
+        const modeLabel = sim.mode === 'datalab'
+            ? tEngine('engine.dataLabBadge', '📊 Data Lab')
+            : sim.mode === 'graphlab'
+                ? tEngine('engine.graphLabBadge', '📈 Graph Lab')
+                : tEngine('engine.explorerBadge', '🧭 Concept Explorer');
         const modeBadge = sim.mode && sim.mode !== 'simulator'
-            ? `<div class="mode-badge mode-badge--${sim.mode}">${sim.mode === 'datalab' ? tEngine('engine.dataLabBadge', '📊 Data Lab') : tEngine('engine.explorerBadge', '🧭 Concept Explorer')}</div>`
+            ? `<div class="mode-badge mode-badge--${sim.mode}">${modeLabel}</div>`
             : '';
         const enrichmentNote = hiPath(sim, 'enrichmentNote') || sim.enrichmentNote || '';
         const enrichmentTag = sim.enrichment
@@ -638,21 +643,35 @@ function renderSim(sim) {
     // underneath isn't used by any simulation, so keep it out of the way.
     if (canvas) canvas.style.display = 'none';
 
+    // A Graph Lab stacks three bands (diagram + verdict + variable strip)
+    // inside the same stage a Plotly chart alone occupies, so the stage
+    // needs to be taller for it — and only for it.
+    const simScreen = document.getElementById('screen-sim');
+    if (simScreen) simScreen.classList.toggle('screen-sim-graphlab', sim.mode === 'graphlab');
+
     simEngineState = {};
     prevSimEngineState = {};
     suppressNextWhatChanged = true;
     renderPractice(sim);
     renderChallengeShell(sim);
 
-    if (sim.mode === 'datalab' && typeof renderDataLab === 'function') {
+    if (sim.mode === 'graphlab' && typeof renderGraphLab === 'function') {
+        // Graph Labs render their own SVG diagram and put their variable
+        // strip directly under it (see js/graph-lab-engine.js) — they only
+        // use #controls-panel for optional scenario presets, so unlike the
+        // other modes it is cleared by the Graph Lab engine itself.
+        renderGraphLab(sim);
+    } else if (sim.mode === 'datalab' && typeof renderDataLab === 'function') {
         const panel = document.getElementById('controls-panel');
-        if (panel) panel.innerHTML = '';
+        if (panel) { panel.innerHTML = ''; panel.classList.remove('hidden'); }
         renderDataLab(sim, overlay);
     } else if (sim.mode === 'explorer' && typeof renderExplorer === 'function') {
         const panel = document.getElementById('controls-panel');
-        if (panel) panel.innerHTML = '';
+        if (panel) { panel.innerHTML = ''; panel.classList.remove('hidden'); }
         renderExplorer(sim, overlay);
     } else {
+        const panel = document.getElementById('controls-panel');
+        if (panel) panel.classList.remove('hidden');
         buildControls(sim);
         renderSimChart(sim);
     }
