@@ -81,6 +81,26 @@ Class XII — Part A: Introductory Macroeconomics (Units 1–5)
   `js/simulations_graphlab_macro.js` — all push onto the single global `SIMS` array. Every
   entry's data contract is documented at the top of `js/simulations.js`.
 
+- `js/app.js` — screen routing (`showScreen`, `openSim`) and populates the home-screen
+  grids from `SIMS` (keyed by `sim.module`: `micro`/`macro`/`stats`/`india` — this is a
+  *display grouping*, independent of the `sim.class`/`sim.part`/`sim.unit` curriculum
+  metadata, which is what the coverage matrix actually checks).
+- `css/styles.css` — glassmorphism design system; one accent gradient per module.
+- `js/plotly.min.js` — real Plotly.js v2.35.2 (not a stub).
+- `js/i18n_engine.js` + `js/i18n_hi*.js` — real Hindi support, not stubs (they were
+  stubs when this file was first written; that note is no longer true). `I18N_HI` holds
+  static chrome strings, `SIM_I18N_HI` holds per-sim content keyed by `sim.id`, and
+  `READINGS_I18N_HI` translates the strings that `compute()`/`calculate()`/`model()`
+  build live from numbers, by literal substring replacement after rendering.
+  `tools/test-curriculum.js` asserts every translated key matches something real on its
+  sim and actually contains Devanagari.
+- `js/quiz-engine.js` + `js/quiz-data*.js` — real, curriculum-tagged question banks:
+  hand-authored `static` questions plus `applyTemplates` whose correct answer is
+  *computed* from the sim's own output rather than authored, so it cannot drift.
+  Every sim has one, and the test harness fails the build if a bank cannot generate
+  ≥10 well-formed questions. XP/Badges/Profile remain UI-only — those are still
+  placeholders and should not be described as curriculum-mapped.
+
 ## Graph Labs (`mode: 'graphlab'`) — why they exist and how they work
 
 Several things the syllabus names explicitly are distinctions about **motion**, and a
@@ -112,15 +132,6 @@ Three points that are load-bearing rather than stylistic:
    the movement-vs-shift distinction, which only the demand/supply/market labs actually
    mean — every other lab must say what *its* two groups of variables really are, or the
    headings become confidently wrong.
-- `js/app.js` — screen routing (`showScreen`, `openSim`) and populates the home-screen
-  grids from `SIMS` (keyed by `sim.module`: `micro`/`macro`/`stats`/`india` — this is a
-  *display grouping*, independent of the `sim.class`/`sim.part`/`sim.unit` curriculum
-  metadata, which is what the coverage matrix actually checks).
-- `css/styles.css` — glassmorphism design system; one accent gradient per module.
-- `js/plotly.min.js` — real Plotly.js v2.35.2 (not a stub). `js/i18n_engine.js` and
-  `js/i18n_hi.js` **are** stubs (`console.log('stub loaded')`) — the Hindi toggle only
-  swaps a button label, not sentence content. Quiz/XP/Badges/Profile are UI-complete but
-  their content banks are placeholders — do not represent them as curriculum-mapped.
 
 ## No build system — how "typecheck/lint/test/build" actually run here
 
