@@ -10,7 +10,8 @@ const ROOT = path.join(__dirname, '..');
 const FILES = [
     'js/curriculum-data.js', 'js/panel-collapse.js', 'js/sim-engine.js', 'js/datalab-engine.js', 'js/explorer-engine.js',
     'js/simulations.js', 'js/simulations_extended.js', 'js/simulations_class11_micro.js',
-    'js/simulations_statistics_datalab.js', 'js/simulations_macro_datalab.js', 'js/simulations_ied_class12.js'
+    'js/simulations_statistics_datalab.js', 'js/simulations_macro_datalab.js', 'js/simulations_ied_class12.js',
+    'js/graph-lab-engine.js', 'js/simulations_graphlab.js', 'js/simulations_graphlab_macro.js'
 ];
 function noop() {}
 function stubEl() { return { style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop }, addEventListener: noop, appendChild: noop, setAttribute: noop, querySelectorAll: () => [], querySelector: () => null, offsetWidth: 100 }; }
@@ -28,8 +29,8 @@ const validateCurriculum = context.window.validateCurriculum;
 const PART_TITLES = context.window.PART_TITLES;
 
 const report = validateCurriculum(SIMS);
-const MODE_LABEL = { simulator: 'Simulator', datalab: 'Data Lab', explorer: 'Concept Explorer' };
-const MODE_ICON = { simulator: '🧮', datalab: '📊', explorer: '🧭' };
+const MODE_LABEL = { simulator: 'Simulator', datalab: 'Data Lab', explorer: 'Concept Explorer', graphlab: 'Graph Lab' };
+const MODE_ICON = { simulator: '🧮', datalab: '📊', explorer: '🧭', graphlab: '📈' };
 
 function rowsForClassPart(cls, part) {
     return CURRICULUM_NODES.filter(n => n.class === cls && n.part === part)

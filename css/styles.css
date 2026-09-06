@@ -1195,6 +1195,7 @@ header, .sim-topbar {
 
 .mode-badge--datalab { color: #0e7490; background: rgba(6, 182, 212, 0.14); border: 1px solid rgba(6, 182, 212, 0.28); }
 .mode-badge--explorer { color: #b45309; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.28); }
+.mode-badge--graphlab { color: #6d28d9; background: rgba(139, 92, 246, 0.14); border: 1px solid rgba(139, 92, 246, 0.30); }
 
 .enrichment-tag {
   display: block;
@@ -1464,4 +1465,351 @@ header, .sim-topbar {
   .sim-topbar { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
   .control-input-group { flex-wrap: wrap; }
   .control-number { width: 100%; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GRAPH LAB (mode: 'graphlab') — see js/graph-lab-engine.js.
+
+   Three stacked bands inside the graph shell, in this order:
+     1. the SVG diagram, drawn in the textbook's own visual language;
+     2. the verdict banner, which NAMES what the student just did
+        (expansion vs increase, movement vs shift);
+     3. the variable strip — one compact chip per variable, laid out
+        horizontally right under the graph.
+
+   Band 3 is the point of the layout. The stacked slider column used by
+   the other modes pushed the diagram off-screen on a laptop and made a
+   phone unusable; a horizontal chip row keeps every variable and the
+   diagram it drives visible together, which is the only way a student
+   can watch cause and effect at the same time.
+   ══════════════════════════════════════════════════════════════ */
+
+.gl-shell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* The diagram takes its natural aspect at the panel's full width — the
+   stage below is sized to fit it PLUS the verdict and the variable strip,
+   so the whole cause-and-effect loop is visible at once without the
+   diagram being shrunk to make room. The max-height is only a safety net
+   for very short windows; when it bites, preserveAspectRatio letterboxes
+   the diagram rather than distorting it. */
+.gl-canvas-wrap {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 6px 8px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 62vh;
+  display: flex;
+}
+
+.gl-svg {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  display: block;
+  touch-action: none;         /* a drag on the diagram must not scroll the page */
+}
+
+.gl-svg.gl-dragging { cursor: grabbing; }
+
+/* ── the diagram itself ─────────────────────────────────────── */
+.gl-plot-bg { fill: rgba(255, 255, 255, 0.5); }
+.gl-axis { stroke: #1e1b3a; stroke-width: 2; }
+.gl-origin { font: 800 13px 'Inter', sans-serif; fill: #1e1b3a; }
+.gl-axis-title { font: 700 13px 'Inter', sans-serif; fill: #1e1b3a; }
+.gl-curve { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.gl-curve-label { font: 800 14px 'Inter', sans-serif; }
+
+/* The dotted OP / OQ projections — the single most recognisable
+   feature of a CBSE economics diagram, and what students are marked on
+   reproducing. */
+.gl-drop { stroke-width: 1.4; stroke-dasharray: 4 4; opacity: 0.85; }
+.gl-tick { font: 700 11px 'JetBrains Mono', monospace; }
+.gl-point { stroke: #fff; stroke-width: 2; }
+.gl-point-label { font: 800 12px 'Inter', sans-serif; }
+.gl-point-sub { font: 600 10.5px 'Inter', sans-serif; opacity: 0.85; }
+
+.gl-arrowline { fill: none; stroke-width: 2.4; }
+.gl-arrow-chip { fill: #fff; fill-opacity: 0.94; stroke-width: 1.2; }
+.gl-arrow-text { font: 800 10px 'Inter', sans-serif; }
+
+/* ── the drag handles ───────────────────────────────────────── */
+.gl-handle { cursor: grab; touch-action: none; }
+.gl-handle--active { cursor: grabbing; }
+.gl-handle-hit { fill: transparent; }          /* oversized finger target */
+.gl-handle-halo {
+  fill: #fff;
+  fill-opacity: 0.9;
+  stroke-width: 2;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, r 0.15s ease;
+}
+.gl-handle-dot { stroke: #fff; stroke-width: 2; }
+.gl-handle-grip { stroke: #fff; stroke-width: 1.5; fill: none; stroke-linecap: round; }
+.gl-handle:hover .gl-handle-halo,
+.gl-handle:focus .gl-handle-halo,
+.gl-handle--active .gl-handle-halo { opacity: 1; }
+.gl-handle:focus { outline: none; }
+.gl-handle:focus .gl-handle-dot { stroke: #1e1b3a; stroke-width: 2.5; }
+
+/* A slow pulse on the halo so a first-time student can SEE that the
+   dots are grabbable without being told. */
+@keyframes gl-handle-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.9; }
+}
+.gl-handle-halo { animation: gl-handle-pulse 2.6s ease-in-out infinite; }
+.gl-handle--active .gl-handle-halo { animation: none; }
+
+/* ── the verdict banner ─────────────────────────────────────── */
+.gl-verdict {
+  border: 1.5px solid var(--gl-tone, #64748b);
+  border-left-width: 5px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.78);
+  flex: 0 0 auto;
+}
+
+.gl-verdict-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gl-verdict-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text1);
+  line-height: 1.45;
+}
+
+.gl-verdict-chip {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 20px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+.gl-verdict-detail {
+  margin-top: 7px;
+  font-size: 12.2px;
+  line-height: 1.62;
+  color: var(--text2);
+}
+
+.gl-verdict-detail b { color: var(--text1); }
+.gl-hi { font-weight: 700; opacity: 0.85; }
+
+.gl-error {
+  padding: 24px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+/* ── the variable strip (band 3) ────────────────────────────── */
+.gl-var-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.gl-var-group {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 8px 11px 11px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* Own-price vs non-price is colour-coded on the container itself, so a
+   student can see WHICH KIND of change they are about to make — and
+   therefore whether to expect a movement or a shift — before they move
+   anything at all. */
+.gl-var-group--price  { border-left: 4px solid #2563eb; }
+.gl-var-group--other  { border-left: 4px solid #dc2626; }
+
+.gl-var-group-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+
+.gl-var-group--price .gl-var-group-label { color: #2563eb; }
+.gl-var-group--other .gl-var-group-label { color: #dc2626; }
+
+.gl-var-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 8px 14px;
+}
+
+.gl-chip { min-width: 0; }
+
+.gl-chip-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.gl-chip-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gl-chip-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-2);
+  white-space: nowrap;
+}
+
+.gl-chip-val em { font-style: normal; font-size: 10px; opacity: 0.7; margin-left: 2px; }
+
+/* The track is the scrub target: press and drag anywhere on it. Padded
+   vertically via a transparent ::before so a finger has ~22px to land
+   on while the visible bar stays a thin 6px. */
+.gl-chip-track {
+  position: relative;
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(120, 113, 160, 0.22);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.gl-chip-track::before {
+  content: '';
+  position: absolute;
+  inset: -9px 0;
+}
+
+.gl-chip-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--micro-a), var(--micro-b));
+  pointer-events: none;
+}
+
+.gl-var-group--other .gl-chip-fill { background: linear-gradient(90deg, #f87171, #dc2626); }
+
+.gl-chip-knob {
+  position: absolute;
+  top: 50%;
+  width: 15px;
+  height: 15px;
+  margin-left: -7.5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid var(--primary-2);
+  transform: translateY(-50%);
+  box-shadow: 0 2px 5px rgba(30, 27, 58, 0.25);
+  cursor: grab;
+}
+
+.gl-var-group--other .gl-chip-knob { border-color: #dc2626; }
+.gl-chip-knob:focus { outline: 2px solid var(--primary-2); outline-offset: 2px; }
+
+.gl-strip-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+  padding-bottom: 4px;
+}
+
+.gl-strip-hint {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.5;
+}
+
+.gl-strip-actions { display: flex; gap: 8px; }
+
+.gl-ghost-btn,
+.gl-reset-btn {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+.gl-ghost-btn--on { color: var(--primary-2); border-color: var(--primary-2); }
+.gl-reset-btn { color: var(--primary-2); }
+.gl-ghost-btn:hover, .gl-reset-btn:hover { transform: translateY(-1px); }
+
+/* ── scenario presets (rendered into #controls-panel) ───────── */
+.gl-scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.gl-scenario-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gl-scenario-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(139, 92, 246, 0.2);
+}
+
+.gl-scenario-label { font-size: 12px; font-weight: 700; color: var(--text1); }
+.gl-scenario-note  { font-size: 10.5px; color: var(--primary-2); font-weight: 600; }
+
+/* A Graph Lab with no scenario presets hides the panel entirely rather
+   than leaving an empty glass card under the diagram. */
+.controls-panel.hidden { display: none; }
+
+/* The Graph Lab needs a taller stage than a Plotly chart does — the
+   diagram, the verdict and the variable strip all live inside it. */
+.screen-sim-graphlab .canvas-shell { min-height: 800px; padding: 4px; }
+.screen-sim-graphlab #sim-dom-overlay { inset: 4px; }
+
+@media (max-width: 900px) {
+  .gl-var-chips { grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); }
+  .gl-verdict-title { font-size: 12.5px; }
+  .gl-verdict-detail { font-size: 11.5px; }
+  .screen-sim-graphlab .canvas-shell { min-height: 720px; }
+  .gl-canvas-wrap { max-height: 44vh; }
 }

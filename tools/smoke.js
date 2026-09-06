@@ -8,7 +8,8 @@
 //   - every sim opens and renders real content
 //   - every sim's Reset control works
 //   - a representative interaction per mode (slider, data-lab cell
-//     edit + add row, explorer nav) actually updates the UI
+//     edit + add row, explorer nav, graph-lab handle drag + chip scrub)
+//     actually updates the UI
 //   - invalid input (typed garbage) never crashes the page or leaks
 //     a literal "NaN" into the readings panel
 //   - the quiz modal opens, generates >=10 real questions, can be
@@ -194,7 +195,71 @@ function ok(cond, label) {
         const scenarioBtn = page.locator('#explorer-scenario-group .segmented-btn').nth(1);
         if (await scenarioBtn.count()) { await scenarioBtn.click(); await page.waitForTimeout(40); }
 
-        const resetBtn = page.locator('.reset-btn').first();
+        // Graph Labs are the one mode whose whole point is DRAGGING, so a
+        // smoke pass that only clicked buttons would leave their core
+        // interaction completely untested. Perform a real pointer drag on
+        // the first handle and assert the bound variable actually moved.
+        const glHandle = page.locator('#sim-dom-overlay .gl-handle').first();
+        if (await glHandle.count()) {
+            ok(await page.locator('#sim-dom-overlay .gl-verdict').count() > 0, `${id}: graph lab renders a verdict banner naming what changed`);
+            ok(await page.locator('#sim-dom-overlay .gl-chip').count() > 0, `${id}: graph lab renders its variable strip below the diagram`);
+            ok(await page.locator('#sim-dom-overlay .gl-svg .gl-axis').count() >= 2, `${id}: graph lab draws both labelled axes`);
+
+            // Assert on RENDERED output, not internals: a top-level `let` in
+            // a classic script never lands on `window`, and the point of the
+            // check is that the student sees the change anyway.
+            const readValues = async () =>
+                (await page.locator('#gl-var-strip').innerText()) + '||' + (await page.locator('.gl-verdict-title').innerText());
+            const beforeDrag = await readValues();
+            // boundingBox() is viewport-relative, so a handle left off-screen
+            // by the previous sim's scroll position would send the synthetic
+            // mouse somewhere else entirely. Centre it first — scrolling it
+            // merely "into view" parks it flush against the top edge, and the
+            // drag would then travel to a negative y that never reaches the
+            // page at all.
+            await glHandle.evaluate(el => el.scrollIntoView({ block: 'center', inline: 'center' }));
+            await page.waitForTimeout(40);
+            const box = await glHandle.boundingBox();
+            const vp = page.viewportSize() || { width: 1280, height: 720 };
+            if (box) {
+                const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+                // Drag toward whichever side has room, so the whole gesture
+                // stays inside the viewport whatever the handle's position.
+                const dx = cx + 45 < vp.width - 8 ? 45 : -45;
+                const dy = cy - 45 > 8 ? -45 : 45;
+                await page.mouse.move(cx, cy);
+                await page.mouse.down();
+                await page.mouse.move(cx + dx, cy + dy, { steps: 8 });
+                await page.mouse.up();
+                await page.waitForTimeout(60);
+                const afterDrag = await readValues();
+                ok(beforeDrag !== afterDrag, `${id}: dragging a graph handle actually changes the bound variable`);
+                const dragReadings = await page.locator('#readings-body').innerText().catch(() => '');
+                ok(!/\bNaN\b|Infinity|undefined/.test(dragReadings), `${id}: readings stay clean after a drag`);
+            }
+
+            // Scrubbing a chip must drive the same state the handle does.
+            const track = page.locator('#sim-dom-overlay .gl-chip-track').first();
+            await track.evaluate(el => el.scrollIntoView({ block: 'center' }));
+            await page.waitForTimeout(40);
+            const tb = await track.boundingBox();
+            if (tb) {
+                const before = await readValues();
+                await page.mouse.move(tb.x + tb.width * 0.15, tb.y + tb.height / 2);
+                await page.mouse.down();
+                await page.mouse.move(tb.x + tb.width * 0.85, tb.y + tb.height / 2, { steps: 6 });
+                await page.mouse.up();
+                await page.waitForTimeout(60);
+                ok(before !== (await readValues()), `${id}: scrubbing a variable chip changes the bound variable`);
+            }
+
+            const ghostBtn = page.locator('#gl-ghost-btn');
+            if (await ghostBtn.count()) { await ghostBtn.click(); await page.waitForTimeout(40); await ghostBtn.click(); await page.waitForTimeout(40); }
+            const glScenario = page.locator('#controls-panel .gl-scenario-btn').first();
+            if (await glScenario.count()) { await glScenario.click(); await page.waitForTimeout(60); }
+        }
+
+        const resetBtn = page.locator('.reset-btn, .gl-reset-btn').first();
         if (await resetBtn.count()) { await resetBtn.click(); await page.waitForTimeout(40); }
 
         ok(errors.length === before, `${id}: no console/page errors during open + interact + reset${errors.length > before ? ' — ' + errors.slice(before).join('; ') : ''}`);

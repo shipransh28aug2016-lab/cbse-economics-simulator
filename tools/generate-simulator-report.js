@@ -11,7 +11,8 @@ const ROOT = path.join(__dirname, '..');
 const FILES = [
     'js/curriculum-data.js', 'js/panel-collapse.js', 'js/sim-engine.js', 'js/datalab-engine.js', 'js/explorer-engine.js',
     'js/simulations.js', 'js/simulations_extended.js', 'js/simulations_class11_micro.js',
-    'js/simulations_statistics_datalab.js', 'js/simulations_macro_datalab.js', 'js/simulations_ied_class12.js'
+    'js/simulations_statistics_datalab.js', 'js/simulations_macro_datalab.js', 'js/simulations_ied_class12.js',
+    'js/graph-lab-engine.js', 'js/simulations_graphlab.js', 'js/simulations_graphlab_macro.js'
 ];
 function noop() {}
 function stubEl() { return { style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop }, addEventListener: noop, appendChild: noop, setAttribute: noop, querySelectorAll: () => [], querySelector: () => null, offsetWidth: 100 }; }
@@ -30,6 +31,13 @@ function inputsFor(sim) {
     if (mode === 'simulator') {
         if (!sim.controls) return '*(none — customRender sliders below)*';
         return sim.controls.map(c => c.type === 'select' ? `${c.label} (choice)` : `${c.label} [${c.min}–${c.max}]`).join('; ');
+    }
+    if (mode === 'graphlab') {
+        const own = sim.graphLab.vars.filter(v => v.group === 'price').map(v => v.label);
+        const other = sim.graphLab.vars.filter(v => v.group !== 'price').map(v => v.label);
+        return `Draggable diagram — grab a curve or a point directly, or scrub the chip strip below it. `
+            + (own.length ? `Movement group: ${own.join('; ')}. ` : '')
+            + (other.length ? `Shift group: ${other.join('; ')}.` : '');
     }
     if (mode === 'datalab') {
         return `Editable table — columns: ${sim.dataLab.columns.map(c => c.label).join(', ')} (${sim.dataLab.minRows || 2}–${sim.dataLab.maxRows || 30} rows)`;
@@ -53,6 +61,15 @@ function outputsFor(sim) {
             const metrics = r && r.metrics ? Object.keys(r.metrics) : [];
             return metrics.length ? metrics.join(', ') : 'Live Readings panel';
         } catch (e) { return 'Live Readings panel'; }
+    }
+    if (mode === 'graphlab') {
+        try {
+            const state = {};
+            sim.graphLab.vars.forEach(v => { state[v.id] = v.value; });
+            const m = sim.graphLab.model(state, { prev: state, base: state });
+            const rows = Array.isArray(m.readings) ? m.readings.map(r => r.label) : [];
+            return rows.join(', ') + ' — plus a verdict banner naming movement vs shift';
+        } catch (e) { return 'Live readings + verdict banner'; }
     }
     if (mode === 'datalab') {
         try {

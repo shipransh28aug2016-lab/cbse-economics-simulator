@@ -41,12 +41,15 @@ const FILES = [
     'js/sim-engine.js',
     'js/datalab-engine.js',
     'js/explorer-engine.js',
+    'js/graph-lab-engine.js',
     'js/simulations.js',
     'js/simulations_extended.js',
     'js/simulations_class11_micro.js',
     'js/simulations_statistics_datalab.js',
     'js/simulations_macro_datalab.js',
     'js/simulations_ied_class12.js',
+    'js/simulations_graphlab.js',
+    'js/simulations_graphlab_macro.js',
     'js/quiz-engine.js',
     'js/quiz-data.js',
     'js/quiz-data-extended.js',
@@ -54,13 +57,15 @@ const FILES = [
     'js/quiz-data-statistics.js',
     'js/quiz-data-macro-datalab.js',
     'js/quiz-data-ied.js',
+    'js/quiz-data-graphlab.js',
     'js/i18n_engine.js',
     'js/i18n_hi.js',
     'js/i18n_hi_extended.js',
     'js/i18n_hi_class11_micro.js',
     'js/i18n_hi_statistics.js',
     'js/i18n_hi_macro_datalab.js',
-    'js/i18n_hi_ied.js'
+    'js/i18n_hi_ied.js',
+    'js/i18n_hi_graphlab.js'
 ];
 
 function noop() {}
@@ -162,7 +167,7 @@ SIMS.forEach(sim => {
     simIds.add(sim.id);
     ok(['XI', 'XII'].includes(sim.class), `${sim.id}: class is XI or XII (got ${sim.class})`);
     ok(['A', 'B'].includes(sim.part), `${sim.id}: part is A or B (got ${sim.part})`);
-    ok(['simulator', 'datalab', 'explorer'].includes(sim.mode || 'simulator'), `${sim.id}: mode is simulator/datalab/explorer`);
+    ok(['simulator', 'datalab', 'explorer', 'graphlab'].includes(sim.mode || 'simulator'), `${sim.id}: mode is simulator/datalab/explorer/graphlab`);
     ok(['micro', 'macro', 'stats', 'india'].includes(sim.module), `${sim.id}: module is a known grid key`);
 
     const mode = sim.mode || 'simulator';
@@ -184,6 +189,11 @@ SIMS.forEach(sim => {
     } else if (mode === 'explorer') {
         ok(sim.explorer && ['timeline', 'cards', 'scenario'].includes(sim.explorer.type), `${sim.id}: explorer.type is valid`);
         checkExplorer(sim);
+    } else if (mode === 'graphlab') {
+        ok(sim.graphLab && typeof sim.graphLab.model === 'function', `${sim.id}: has graphLab.model()`);
+        ok(sim.graphLab && Array.isArray(sim.graphLab.vars) && sim.graphLab.vars.length > 0, `${sim.id}: has graphLab.vars`);
+        ok(sim.graphLab && sim.graphLab.x && sim.graphLab.y, `${sim.id}: declares both axes`);
+        sweepGraphLab(sim);
     }
 
     if (sim.enrichment) ok(typeof sim.enrichmentNote === 'string' && sim.enrichmentNote.length > 20, `${sim.id}: enrichment:true has a real enrichmentNote`);
@@ -234,6 +244,110 @@ function sweepSimulator(sim) {
         });
     });
     ok(ranAny, `${sim.id}: sweep executed at least one compute() call`);
+}
+
+// Graph Labs are driven by drag, so their model() is called far more often
+// and with far more intermediate values than a slider-driven compute() —
+// every pixel of a drag is one call. Sweeping the FULL declared domain of
+// every variable (not just min/mid/max) is therefore the honest test: an
+// NaN that only appears two-thirds of the way through a drag is exactly the
+// kind of bug the student would hit and the coarse sweep would miss.
+function sweepGraphLab(sim) {
+    const cfg = sim.graphLab;
+    const base = {};
+    cfg.vars.forEach(v => { base[v.id] = v.value; });
+
+    // Every handle must bind to a variable that actually exists, and every
+    // curve/point/handle coordinate must be finite — an undefined bind or a
+    // NaN coordinate silently produces an invisible or unmovable diagram.
+    const varIds = new Set(cfg.vars.map(v => v.id));
+    cfg.vars.forEach(v => {
+        ok(typeof v.min === 'number' && typeof v.max === 'number' && v.max > v.min, `${sim.id}: var ${v.id} has a valid min<max range`);
+        ok(typeof v.step === 'number' && v.step > 0, `${sim.id}: var ${v.id} has a positive step`);
+        ok(v.value >= v.min && v.value <= v.max, `${sim.id}: var ${v.id} default sits inside its range`);
+    });
+
+    let calls = 0;
+    cfg.vars.forEach(sweepVar => {
+        // Walk the whole domain in <=24 steps, always including both ends.
+        const n = Math.min(24, Math.max(3, Math.round((sweepVar.max - sweepVar.min) / sweepVar.step)));
+        for (let i = 0; i <= n; i++) {
+            const val = sweepVar.min + ((sweepVar.max - sweepVar.min) * i) / n;
+            const state = Object.assign({}, base, { [sweepVar.id]: val });
+            let m;
+            try {
+                m = cfg.model(state, { prev: base, base });
+            } catch (e) {
+                ok(false, `${sim.id}: graphLab.model() threw with ${sweepVar.id}=${val} — ${e.message}`);
+                return;
+            }
+            calls++;
+            ok(m && typeof m === 'object', `${sim.id}: model() returns an object (${sweepVar.id}=${val})`);
+
+            (m.curves || []).forEach((c, ci) => {
+                ok(Array.isArray(c.pts), `${sim.id}: curve[${ci}] has a pts array (${sweepVar.id}=${val})`);
+                const bad = (c.pts || []).some(pt => !Array.isArray(pt) || pt.length < 2 || !isFinite(pt[0]) || !isFinite(pt[1]));
+                ok(!bad, `${sim.id}: curve[${ci}] "${c.id}" has no NaN/Infinity points (${sweepVar.id}=${val})`);
+            });
+            (m.points || []).forEach((pt, pi) => {
+                ok(isFinite(pt.x) && isFinite(pt.y), `${sim.id}: point[${pi}] "${pt.id}" is finite (${sweepVar.id}=${val})`);
+            });
+            (m.arrows || []).forEach((a, ai) => {
+                const finite = Array.isArray(a.from) && Array.isArray(a.to) && [a.from[0], a.from[1], a.to[0], a.to[1]].every(isFinite);
+                ok(finite, `${sim.id}: arrow[${ai}] endpoints are finite (${sweepVar.id}=${val})`);
+            });
+            (m.handles || []).forEach((h, hi) => {
+                ok(varIds.has(h.bind), `${sim.id}: handle[${hi}] "${h.id}" binds to a declared var (got "${h.bind}")`);
+                ok(h.axis === 'x' || h.axis === 'y', `${sim.id}: handle[${hi}] "${h.id}" declares axis x or y`);
+                ok(isFinite(h.x) && isFinite(h.y), `${sim.id}: handle[${hi}] "${h.id}" is at a finite position (${sweepVar.id}=${val})`);
+                // k is the data-units-per-variable-unit factor the drag divides
+                // by; a zero or non-finite k makes the handle unmovable or
+                // sends the variable to Infinity on the first pixel of a drag.
+                if (h.k !== undefined) ok(isFinite(h.k) && h.k !== 0, `${sim.id}: handle[${hi}] "${h.id}" has a usable k (got ${h.k})`);
+            });
+
+            // Every Graph Lab must NAME what just happened — a diagram with no
+            // verdict is the exact failure this mode exists to fix.
+            ok(m.verdict && typeof m.verdict.title === 'string' && m.verdict.title.length > 0,
+                `${sim.id}: model() returns a verdict with a title (${sweepVar.id}=${val})`);
+            ok(['movement', 'shift', 'both', 'none'].includes(m.verdict.kind),
+                `${sim.id}: verdict.kind is a known kind (got "${m.verdict && m.verdict.kind}")`);
+
+            const readingsOK = Array.isArray(m.readings)
+                ? m.readings.every(r => r && typeof r.label === 'string' && r.value !== undefined)
+                : typeof m.readings === 'string';
+            ok(readingsOK, `${sim.id}: readings are {label,value} rows or an HTML string (${sweepVar.id}=${val})`);
+            if (Array.isArray(m.readings)) {
+                const nan = m.readings.some(r => typeof r.value === 'string' && /NaN|Infinity|undefined/.test(r.value));
+                ok(!nan, `${sim.id}: no reading renders NaN/Infinity/undefined (${sweepVar.id}=${val})`);
+            }
+
+            if (m.metrics) {
+                Object.entries(m.metrics).forEach(([k, v2]) => {
+                    if (typeof v2 === 'number') ok(isFinite(v2) || v2 === Infinity, `${sim.id}: metrics.${k} is not NaN (${sweepVar.id}=${val})`);
+                });
+                if (sim.challenge && typeof sim.challenge.check === 'function') {
+                    try { sim.challenge.check(state, m.metrics); } catch (e) { ok(false, `${sim.id}: challenge.check() threw — ${e.message}`); }
+                }
+            }
+        }
+    });
+
+    // Every declared scenario must be reachable AND actually change something
+    // — a preset that sets a variable outside its own slider range would
+    // leave the chip and the diagram disagreeing.
+    (cfg.scenarios || []).forEach((sc, si) => {
+        Object.entries(sc.set || {}).forEach(([k, v2]) => {
+            const decl = cfg.vars.find(x => x.id === k);
+            ok(!!decl, `${sim.id}: scenario[${si}] "${sc.label}" sets a declared var (${k})`);
+            if (decl) ok(v2 >= decl.min && v2 <= decl.max, `${sim.id}: scenario[${si}] "${sc.label}" sets ${k}=${v2} inside [${decl.min}, ${decl.max}]`);
+        });
+        const state = Object.assign({}, base, sc.set || {});
+        try { cfg.model(state, { prev: base, base }); }
+        catch (e) { ok(false, `${sim.id}: scenario[${si}] "${sc.label}" threw — ${e.message}`); }
+    });
+
+    ok(calls > 0, `${sim.id}: graph-lab sweep executed at least one model() call`);
 }
 
 function sweepDataLab(sim) {
@@ -502,6 +616,41 @@ SIMS.forEach(sim => {
             ok(colIds.has(cid), `${sim.id}: hi.dataLab.columns.${cid} matches a real column id`);
             ok(hasHindi(sim.id, `dataLab.columns.${cid}`, hi.dataLab.columns[cid]), `${sim.id}: dataLab.columns.${cid} contains Devanagari text`);
         });
+    }
+
+    if (hi.graphLab) {
+        ok(sim.mode === 'graphlab', `${sim.id}: hi.graphLab given only when sim.mode is 'graphlab'`);
+        const gl = sim.graphLab || {};
+        if (hi.graphLab.vars) {
+            const varIds = new Set((gl.vars || []).map(v => v.id));
+            Object.keys(hi.graphLab.vars).forEach(vid => {
+                ok(varIds.has(vid), `${sim.id}: hi.graphLab.vars.${vid} matches a real graphLab var id`);
+                const hv = hi.graphLab.vars[vid];
+                if (hv.label !== undefined) ok(hasHindi(sim.id, `graphLab.vars.${vid}.label`, hv.label), `${sim.id}: graphLab.vars.${vid}.label contains Devanagari text`);
+            });
+            // Every var shows as a chip under the diagram, so a missing
+            // translation leaves a visibly half-English control strip.
+            ok(Object.keys(hi.graphLab.vars).length === (gl.vars || []).length, `${sim.id}: every graphLab var has a Hindi label`);
+        }
+        if (hi.graphLab.groupLabels) {
+            ok(!!gl.groupLabels, `${sim.id}: hi.graphLab.groupLabels given only when the sim declares its own group labels`);
+            ['price', 'other'].forEach(k => {
+                if (hi.graphLab.groupLabels[k] !== undefined) {
+                    ok(hasHindi(sim.id, `graphLab.groupLabels.${k}`, hi.graphLab.groupLabels[k]), `${sim.id}: graphLab.groupLabels.${k} contains Devanagari text`);
+                }
+            });
+        }
+        if (hi.graphLab.scenarios) {
+            const n = (gl.scenarios || []).length;
+            Object.keys(hi.graphLab.scenarios).forEach(idx => {
+                ok(Number(idx) >= 0 && Number(idx) < n, `${sim.id}: hi.graphLab.scenarios.${idx} indexes a real scenario`);
+                const sc = hi.graphLab.scenarios[idx];
+                ['label', 'note'].forEach(f => {
+                    if (sc[f] !== undefined) ok(hasHindi(sim.id, `graphLab.scenarios.${idx}.${f}`, sc[f]), `${sim.id}: graphLab.scenarios.${idx}.${f} contains Devanagari text`);
+                });
+            });
+            ok(Object.keys(hi.graphLab.scenarios).length === n, `${sim.id}: every graphLab scenario has a Hindi entry`);
+        }
     }
 
     if (hi.explorer) {

@@ -26,20 +26,20 @@
 | Unit | Topic | Learning Objective | Mode | Sim(s) |
 |---|---|---|---|---|
 | 4: Introduction | Micro vs Macro; Positive vs Normative Economics | Classify an economic statement as positive or normative, and a question as micro or macro. | Concept Explorer | 🧭 `micro-positive-normative` |
-| 4: Introduction | Central Problems of an Economy: What, How, For Whom to Produce | Explain why every economy must answer what/how/for whom to produce. | Simulator | 🧮 `micro-ppf` |
-| 4: Introduction | Production Possibility Frontier (PPF) & Opportunity Cost | Read a PPF, identify efficient/inefficient/unattainable points, and compute opportunity cost along it. | Simulator | 🧮 `micro-ppf` |
+| 4: Introduction | Central Problems of an Economy: What, How, For Whom to Produce | Explain why every economy must answer what/how/for whom to produce. | Simulator, Graph Lab | 🧮 `micro-ppf`<br>📈 `gl-ppc-drag` |
+| 4: Introduction | Production Possibility Frontier (PPF) & Opportunity Cost | Read a PPF, identify efficient/inefficient/unattainable points, and compute opportunity cost along it. | Simulator, Graph Lab | 🧮 `micro-ppf`<br>📈 `gl-ppc-drag` |
 | 5: Consumer's Equilibrium and Demand | Utility, Marginal Utility, Law of Diminishing MU, Consumer Equilibrium (MU Analysis) | Derive a consumer's equilibrium condition using marginal-utility analysis. | Simulator | 🧮 `micro-consumer-equilibrium` |
-| 5: Consumer's Equilibrium and Demand | Indifference Curve Analysis: Budget Line, Indifference Curve/Map, Consumer Equilibrium (MRS) | Locate consumer equilibrium as the tangency of the budget line and the highest attainable indifference curve. | Simulator | 🧮 `micro-indifference-curve` |
-| 5: Consumer's Equilibrium and Demand | Demand: Determinants, Schedule, Curve, Movements & Shifts | Distinguish a movement along the demand curve from a shift in it, and name the determinant behind each shift. | Simulator | 🧮 `micro-supply-demand` |
+| 5: Consumer's Equilibrium and Demand | Indifference Curve Analysis: Budget Line, Indifference Curve/Map, Consumer Equilibrium (MRS) | Locate consumer equilibrium as the tangency of the budget line and the highest attainable indifference curve. | Simulator, Graph Lab | 🧮 `micro-indifference-curve`<br>📈 `gl-consumer-equilibrium-ic` |
+| 5: Consumer's Equilibrium and Demand | Demand: Determinants, Schedule, Curve, Movements & Shifts | Distinguish a movement along the demand curve from a shift in it, and name the determinant behind each shift. | Simulator, Graph Lab | 🧮 `micro-supply-demand`<br>📈 `gl-demand-movement-shift` |
 | 5: Consumer's Equilibrium and Demand | Price Elasticity of Demand: Meaning, Determinants, Measurement | Measure price elasticity of demand and classify it as elastic/inelastic/unit elastic. | Simulator | 🧮 `micro-elasticity` |
 | 6: Producer Behaviour and Supply | Production Function, TP/AP/MP, Returns to a Factor | Trace how TP/AP/MP behave as a variable factor increases, and identify the three stages of returns. | Simulator | 🧮 `micro-producer-costs` |
-| 6: Producer Behaviour and Supply | Costs: TC/TFC/TVC/AC/AFC/AVC/MC and their Relationships | Derive AC and MC from TC and explain why MC cuts AC at its minimum. | Simulator | 🧮 `micro-producer-costs` |
-| 6: Producer Behaviour and Supply | Revenue: TR/AR/MR and their Relationships | Derive AR and MR from TR under a given price, and relate MR to AR under perfect competition. | Simulator | 🧮 `micro-revenue-producer-equilibrium` |
-| 6: Producer Behaviour and Supply | Producer's Equilibrium (MR = MC) | Identify the profit-maximising output where MR = MC and MC is rising. | Simulator | 🧮 `micro-revenue-producer-equilibrium` |
-| 6: Producer Behaviour and Supply | Supply: Determinants, Schedule, Curve, Movements & Shifts, Price Elasticity of Supply | Distinguish a movement along the supply curve from a shift, and measure price elasticity of supply. | Simulator | 🧮 `micro-supply-demand`<br>🧮 `micro-elasticity-supply` |
+| 6: Producer Behaviour and Supply | Costs: TC/TFC/TVC/AC/AFC/AVC/MC and their Relationships | Derive AC and MC from TC and explain why MC cuts AC at its minimum. | Simulator, Graph Lab | 🧮 `micro-producer-costs`<br>📈 `gl-cost-curves` |
+| 6: Producer Behaviour and Supply | Revenue: TR/AR/MR and their Relationships | Derive AR and MR from TR under a given price, and relate MR to AR under perfect competition. | Simulator, Graph Lab | 🧮 `micro-revenue-producer-equilibrium`<br>📈 `gl-revenue-producer-eq` |
+| 6: Producer Behaviour and Supply | Producer's Equilibrium (MR = MC) | Identify the profit-maximising output where MR = MC and MC is rising. | Simulator, Graph Lab | 🧮 `micro-revenue-producer-equilibrium`<br>📈 `gl-revenue-producer-eq` |
+| 6: Producer Behaviour and Supply | Supply: Determinants, Schedule, Curve, Movements & Shifts, Price Elasticity of Supply | Distinguish a movement along the supply curve from a shift, and measure price elasticity of supply. | Simulator, Graph Lab | 🧮 `micro-supply-demand`<br>🧮 `micro-elasticity-supply`<br>📈 `gl-supply-movement-shift` |
 | 7: Perfect Competition — Price Determination and Simple Applications | Perfect Competition: Meaning & Features | List the defining features of a perfectly competitive market. | Simulator | 🧮 `micro-supply-demand` |
-| 7: Perfect Competition — Price Determination and Simple Applications | Market Equilibrium & Shifts in Demand/Supply (short run) | Determine short-run market equilibrium and predict how it moves when demand or supply shifts. | Simulator | 🧮 `micro-supply-demand` |
-| 7: Perfect Competition — Price Determination and Simple Applications | Simple Applications: Price Ceiling & Price Floor | Predict shortage under a price ceiling and surplus under a price floor, relative to free-market equilibrium. | Simulator | 🧮 `micro-price-controls` |
+| 7: Perfect Competition — Price Determination and Simple Applications | Market Equilibrium & Shifts in Demand/Supply (short run) | Determine short-run market equilibrium and predict how it moves when demand or supply shifts. | Simulator, Graph Lab | 🧮 `micro-supply-demand`<br>📈 `gl-market-equilibrium-shifts` |
+| 7: Perfect Competition — Price Determination and Simple Applications | Simple Applications: Price Ceiling & Price Floor | Predict shortage under a price ceiling and surplus under a price floor, relative to free-market equilibrium. | Simulator, Graph Lab | 🧮 `micro-price-controls`<br>📈 `gl-market-equilibrium-shifts` |
 
 ## Class XII
 
@@ -57,19 +57,19 @@
 | 2: Money and Banking | Money Creation by the Commercial Banking System | Compute total deposits/credit created from an initial deposit given the Legal Reserve Ratio. | Simulator | 🧮 `macro-money-creation` |
 | 2: Money and Banking | Central Bank (RBI): Functions | Name RBI's three core functions as India's central bank. | Simulator | 🧮 `macro-money-creation` |
 | 2: Money and Banking | Credit Control Instruments: Bank Rate, CRR, SLR, Repo, Reverse Repo, OMO, Margin Requirement | Name each RBI credit-control instrument and whether raising it is expansionary or contractionary. | Simulator | 🧮 `macro-money-creation` |
-| 3: Determination of Income and Employment | Aggregate Demand: Meaning & Components | List the components of Aggregate Demand. | Simulator | 🧮 `macro-inflation-gap` |
-| 3: Determination of Income and Employment | Propensity to Consume & Save (APC/MPC/APS/MPS) | Compute APC/MPC/APS/MPS from consumption-income data and verify APC+APS=1, MPC+MPS=1. | Data Lab | 📊 `macro-propensity` |
-| 3: Determination of Income and Employment | Equilibrium Output (Short Run) | Find short-run equilibrium income where AD = Y (or S = I). | Simulator | 🧮 `macro-multiplier` |
+| 3: Determination of Income and Employment | Aggregate Demand: Meaning & Components | List the components of Aggregate Demand. | Simulator, Graph Lab | 🧮 `macro-inflation-gap`<br>📈 `gl-ad-as-equilibrium` |
+| 3: Determination of Income and Employment | Propensity to Consume & Save (APC/MPC/APS/MPS) | Compute APC/MPC/APS/MPS from consumption-income data and verify APC+APS=1, MPC+MPS=1. | Data Lab, Graph Lab | 📊 `macro-propensity`<br>📈 `gl-consumption-saving` |
+| 3: Determination of Income and Employment | Equilibrium Output (Short Run) | Find short-run equilibrium income where AD = Y (or S = I). | Simulator, Graph Lab | 🧮 `macro-multiplier`<br>📈 `gl-ad-as-equilibrium` |
 | 3: Determination of Income and Employment | Investment Multiplier | Compute the investment multiplier k=1/(1-MPC) and the resulting ΔY for a given ΔI. | Simulator | 🧮 `macro-multiplier` |
-| 3: Determination of Income and Employment | Full Employment & Involuntary Unemployment | Distinguish full employment income from the equilibrium income and explain involuntary unemployment. | Simulator | 🧮 `macro-inflation-gap` |
-| 3: Determination of Income and Employment | Excess & Deficient Demand: Meaning, Effects, Corrective (Fiscal/Monetary) Measures | Identify an inflationary vs deflationary gap and name a fiscal or monetary measure to correct each. | Simulator | 🧮 `macro-inflation-gap` |
+| 3: Determination of Income and Employment | Full Employment & Involuntary Unemployment | Distinguish full employment income from the equilibrium income and explain involuntary unemployment. | Simulator, Graph Lab | 🧮 `macro-inflation-gap`<br>📈 `gl-ad-as-equilibrium` |
+| 3: Determination of Income and Employment | Excess & Deficient Demand: Meaning, Effects, Corrective (Fiscal/Monetary) Measures | Identify an inflationary vs deflationary gap and name a fiscal or monetary measure to correct each. | Simulator, Graph Lab | 🧮 `macro-inflation-gap`<br>📈 `gl-ad-as-equilibrium` |
 | 4: Government Budget and the Economy | Government Budget: Meaning, Objectives, Components | State the objectives of a government budget. | Simulator | 🧮 `macro-govt-budget` |
 | 4: Government Budget and the Economy | Government Receipts: Revenue & Capital | Classify a given government receipt as revenue or capital. | Simulator | 🧮 `macro-govt-budget` |
 | 4: Government Budget and the Economy | Government Expenditure: Revenue & Capital | Classify a given government expenditure as revenue or capital. | Simulator | 🧮 `macro-govt-budget` |
 | 4: Government Budget and the Economy | Budget Types & Measures of Government Deficit | Compute Revenue, Fiscal and Primary Deficit from given budget data. | Simulator | 🧮 `macro-govt-budget` |
 | 5: Balance of Payments | BOP: Meaning, Account Structure, Components | Classify a transaction into the current or capital account of the BOP. | Simulator | 🧮 `macro-forex` |
-| 5: Balance of Payments | Foreign Exchange Rate: Fixed, Flexible, Managed Floating | Distinguish fixed, flexible and managed-floating exchange-rate regimes. | Simulator | 🧮 `macro-forex` |
-| 5: Balance of Payments | Exchange Rate Determination in a Free (Flexible) Market | Determine the equilibrium exchange rate from demand for and supply of foreign exchange, and predict appreciation/depreciation. | Simulator | 🧮 `macro-forex` |
+| 5: Balance of Payments | Foreign Exchange Rate: Fixed, Flexible, Managed Floating | Distinguish fixed, flexible and managed-floating exchange-rate regimes. | Simulator, Graph Lab | 🧮 `macro-forex`<br>📈 `gl-forex-determination` |
+| 5: Balance of Payments | Exchange Rate Determination in a Free (Flexible) Market | Determine the equilibrium exchange rate from demand for and supply of foreign exchange, and predict appreciation/depreciation. | Simulator, Graph Lab | 🧮 `macro-forex`<br>📈 `gl-forex-determination` |
 | 5: Balance of Payments | Evaluation of Exchange Rate Systems (Merits/Demerits) | Weigh the merits and demerits of fixed vs flexible exchange-rate systems. | Simulator | 🧮 `macro-forex` |
 
 ### Part B: Indian Economic Development
@@ -134,4 +134,14 @@
 | 32 | `ied-rural-development` | XII | B | 7 | Concept Explorer | — |
 | 33 | `ied-sustainable-development` | XII | B | 7 | Concept Explorer | — |
 | 34 | `ied-comparison-neighbours` | XII | B | 8 | Data Lab | — |
+| 35 | `gl-demand-movement-shift` | XI | B | 5 | Graph Lab | — |
+| 36 | `gl-supply-movement-shift` | XI | B | 6 | Graph Lab | — |
+| 37 | `gl-market-equilibrium-shifts` | XI | B | 7 | Graph Lab | — |
+| 38 | `gl-consumer-equilibrium-ic` | XI | B | 5 | Graph Lab | — |
+| 39 | `gl-cost-curves` | XI | B | 6 | Graph Lab | — |
+| 40 | `gl-revenue-producer-eq` | XI | B | 6 | Graph Lab | — |
+| 41 | `gl-ppc-drag` | XI | B | 4 | Graph Lab | — |
+| 42 | `gl-ad-as-equilibrium` | XII | A | 3 | Graph Lab | — |
+| 43 | `gl-consumption-saving` | XII | A | 3 | Graph Lab | — |
+| 44 | `gl-forex-determination` | XII | A | 5 | Graph Lab | — |
 
