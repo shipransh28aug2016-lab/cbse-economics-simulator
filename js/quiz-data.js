@@ -192,7 +192,7 @@ if (typeof QUIZ_BANK !== 'undefined') {
             },
             {
                 level: 'create',
-                question: { en: 'A student wants to redraw this circular flow to also include a bank sector. Where would "household saving" most logically be added?', hi: 'एक छात्र इस चक्रीय प्रवाह को बैंक क्षेत्र शामिल करने के लिए फिर से बनाना चाहता है। "परिवारों की बचत" को तार्किक रूप से कहाँ जोड़ा जाएगा?' },
+                question: { en: 'Switching the "Financial Market (Banks)" toggle ON adds a bank node to this circular flow. Where does "household saving" get added?', hi: '"वित्तीय बाज़ार (बैंक)" टॉगल को चालू करने से इस चक्रीय प्रवाह में एक बैंक नोड जुड़ जाता है। "परिवारों की बचत" कहाँ जोड़ी जाती है?' },
                 options: [
                     { en: 'As a leakage from Households into the financial/banking sector', hi: 'परिवारों से वित्तीय/बैंकिंग क्षेत्र में एक लीकेज (रिसाव) के रूप में' },
                     { en: 'As a factor payment from Firms', hi: 'फर्मों से एक फैक्टर भुगतान के रूप में' },
@@ -200,7 +200,20 @@ if (typeof QUIZ_BANK !== 'undefined') {
                     { en: 'It cannot be shown in a circular flow at all', hi: 'इसे चक्रीय प्रवाह में बिल्कुल नहीं दिखाया जा सकता' }
                 ],
                 correctIndex: 0,
-                explain: { en: 'Saving is income not spent on consumption — it leaves (leaks out of) the household-firm spending loop into the financial sector, from where it can be re-injected as investment.', hi: 'बचत वह आय है जो उपभोग पर खर्च नहीं होती — यह परिवार-फर्म खर्च चक्र से निकलकर (रिसकर) वित्तीय क्षेत्र में चली जाती है, जहाँ से इसे निवेश के रूप में पुनः इंजेक्ट किया जा सकता है।' }
+                explain: { en: 'Saving is income not spent on consumption — it leaves (leaks out of) the household-firm spending loop into the financial sector, from where it is re-injected as investment.', hi: 'बचत वह आय है जो उपभोग पर खर्च नहीं होती — यह परिवार-फर्म खर्च चक्र से निकलकर (रिसकर) वित्तीय क्षेत्र में चली जाती है, जहाँ से इसे निवेश के रूप में पुनः इंजेक्ट किया जाता है।' }
+            },
+            {
+                level: 'understand',
+                question: { en: 'With the Financial Market switched ON, why does this lab always keep Investment (I) exactly equal to Savings (S)?', hi: 'वित्तीय बाज़ार चालू होने पर, यह लैब निवेश (I) को बचत (S) के बिल्कुल बराबर हमेशा क्यों रखती है?' },
+                options: [
+                    { en: 'It is a simplifying assumption for this diagram — banks are shown fully channeling every rupee saved into investment', hi: 'यह इस चित्र के लिए एक सरलीकरण मान्यता है — बैंकों को बचत का हर रुपया पूरी तरह निवेश में लगाते हुए दिखाया गया है' },
+                    { en: 'Because Saving and Investment are legally required to be equal by the government', hi: 'क्योंकि सरकार द्वारा बचत और निवेश को कानूनी रूप से बराबर होना आवश्यक है' },
+                    { en: 'Because households never actually save any money', hi: 'क्योंकि परिवार वास्तव में कभी पैसा बचाते ही नहीं' },
+                    { en: 'It is a coincidence with no economic meaning', hi: 'यह बिना किसी आर्थिक अर्थ के एक संयोग है' }
+                ],
+                correctIndex: 0,
+                explain: { en: 'This is a simplification — in reality, planned Investment need not equal planned Saving (that gap is exactly what the separate Multiplier lab explores). Here, S = I always so the Financial Market never by itself creates disequilibrium; only Government (T vs G) or Foreign Trade (M vs X) can.', hi: 'यह एक सरलीकरण है — वास्तविकता में, नियोजित निवेश का नियोजित बचत के बराबर होना ज़रूरी नहीं (यही अंतर अलग गुणक लैब में देखा जाता है)। यहाँ, S = I हमेशा रहता है, इसलिए वित्तीय बाज़ार अकेले कभी असंतुलन नहीं बनाता — केवल सरकार (T बनाम G) या विदेशी व्यापार (M बनाम X) ही बना सकते हैं।' },
+                syllabusId: 'XII-A-U1-CIRCULAR-FLOW'
             },
             {
                 level: 'remember',
@@ -218,14 +231,16 @@ if (typeof QUIZ_BANK !== 'undefined') {
         ],
         applyTemplates: [
             {
-                // Only meaningful once Government/Foreign Sector exist —
-                // for the 2-sector model this correctly returns null
-                // (skipped, retried at a different random state) rather
-                // than asking a C+I+G+NX question about a model that has
-                // neither G nor NX.
+                // Only meaningful once Government/Foreign Sector exist AND
+                // the Financial Market is off (so Investment really is the
+                // fixed illustrative ₹50B this question's wording claims)
+                // — otherwise this correctly returns null (skipped, retried
+                // at a different random state) rather than asking a
+                // C+I+G+NX question with a wrong Investment figure.
                 level: 'apply',
                 build(state, metrics) {
-                    if (!metrics || metrics.sector !== '3' && metrics.sector !== '4') return null;
+                    if (!metrics || metrics.bank === 'yes') return null;
+                    if (metrics.sector !== '3' && metrics.sector !== '4') return null;
                     if (typeof metrics.gdpExp !== 'number') return null;
                     const correct = Math.round(metrics.gdpExp);
                     const options = quizNumericOptions(correct, [20, -20, 40], { round: 0, prefix: '₹', suffix: 'B' });
@@ -238,28 +253,51 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 }
             },
             {
-                // Tests the 2-sector Y=C identity specifically — only
-                // fires for that model.
+                // Same GDP question, but for when the Financial Market is
+                // ON — Investment is the real slider-driven figure (equal
+                // to Savings), not the fixed illustrative ₹50B.
                 level: 'apply',
                 build(state, metrics) {
-                    if (!metrics || metrics.sector !== '2') return null;
-                    if (typeof metrics.consumption !== 'number') return null;
-                    const correct = Math.round(metrics.consumption);
+                    if (!metrics || metrics.bank !== 'yes') return null;
+                    if (typeof metrics.gdpExp !== 'number' || typeof metrics.investment !== 'number') return null;
+                    const correct = Math.round(metrics.gdpExp);
                     const options = quizNumericOptions(correct, [20, -20, 40], { round: 0, prefix: '₹', suffix: 'B' });
                     return {
-                        question: { en: `In the 2-Sector model with Consumption Expenditure = ₹${metrics.consumption}B, what is National Income (Y)?`, hi: `2-क्षेत्रीय मॉडल में उपभोग व्यय = ₹${metrics.consumption}B होने पर, राष्ट्रीय आय (Y) क्या है?` },
+                        question: { en: `With Consumption=₹${metrics.consumption}B, Investment (via the Financial Market)=₹${metrics.investment}B, Government Spending=₹${metrics.g}B and Net Exports=₹${metrics.nx}B, what is GDP by the Expenditure Method (C+I+G+NX)?`, hi: `उपभोग=₹${metrics.consumption}B, निवेश (वित्तीय बाज़ार द्वारा)=₹${metrics.investment}B, सरकारी व्यय=₹${metrics.g}B और निवल निर्यात=₹${metrics.nx}B के साथ, व्यय विधि (C+I+G+NX) से GDP क्या है?` },
                         options,
                         correctIndex: 0,
-                        explain: { en: `In a 2-Sector economy, Y = C exactly (no government, no foreign trade, no leakage) — so Y = ₹${correct}B.`, hi: `2-क्षेत्रीय अर्थव्यवस्था में, Y = C बिल्कुल बराबर होता है (न सरकार, न विदेशी व्यापार, न कोई रिसाव) — इसलिए Y = ₹${correct}B.` }
+                        explain: { en: `GDP (Expenditure Method) = C + I + G + (X−M) = ${metrics.consumption} + ${metrics.investment} + ${metrics.g} + ${metrics.nx} = ₹${correct}B.`, hi: `GDP (व्यय विधि) = C + I + G + (X−M) = ${metrics.consumption} + ${metrics.investment} + ${metrics.g} + ${metrics.nx} = ₹${correct}B.` }
                     };
                 }
             },
             {
-                // Tests the Injections-vs-Leakages equilibrium rule — only
-                // meaningful once at least a Government sector exists.
+                // Tests the strict 2-sector Y=C identity specifically —
+                // only fires for that exact baseline (Financial Market
+                // must also be off, since turning it on introduces a real
+                // leakage/injection pair and Y=C no longer holds).
+                level: 'apply',
+                build(state, metrics) {
+                    if (!metrics || metrics.sector !== '2' || metrics.bank === 'yes') return null;
+                    if (typeof metrics.consumption !== 'number') return null;
+                    const correct = Math.round(metrics.consumption);
+                    const options = quizNumericOptions(correct, [20, -20, 40], { round: 0, prefix: '₹', suffix: 'B' });
+                    return {
+                        question: { en: `In the strict 2-Sector model (no Financial Market) with Consumption Expenditure = ₹${metrics.consumption}B, what is National Income (Y)?`, hi: `सरल 2-क्षेत्रीय मॉडल (बिना वित्तीय बाज़ार के) में उपभोग व्यय = ₹${metrics.consumption}B होने पर, राष्ट्रीय आय (Y) क्या है?` },
+                        options,
+                        correctIndex: 0,
+                        explain: { en: `In this baseline, Y = C exactly (no government, no foreign trade, no saving) — so Y = ₹${correct}B.`, hi: `इस आधारभूत स्थिति में, Y = C बिल्कुल बराबर होता है (न सरकार, न विदेशी व्यापार, न कोई बचत) — इसलिए Y = ₹${correct}B.` }
+                    };
+                }
+            },
+            {
+                // Tests the Injections-vs-Leakages equilibrium rule —
+                // meaningful whenever ANY leakage/injection channel is
+                // open: Government, Foreign Sector, or the Financial
+                // Market (even alone, on top of a 2-Sector economy).
                 level: 'analyse',
                 build(state, metrics) {
-                    if (!metrics || (metrics.sector !== '3' && metrics.sector !== '4')) return null;
+                    if (!metrics) return null;
+                    if (metrics.sector === '2' && metrics.bank !== 'yes') return null; // strict baseline has neither
                     if (typeof metrics.totalInjections !== 'number' || typeof metrics.totalLeakages !== 'number') return null;
                     const gap = Math.round((metrics.totalInjections - metrics.totalLeakages) * 100) / 100;
                     const correct = gap > 0.01 ? 'rise' : (gap < -0.01 ? 'fall' : 'stay the same (equilibrium)');

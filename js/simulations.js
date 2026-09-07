@@ -202,19 +202,31 @@ const SIMS = [
     {
         id: 'macro-gdp',
         module: 'macro',
-        title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector)',
-        desc: 'Choose 2-Sector, 3-Sector or 4-Sector — the diagram shows ONLY that sector\'s real sectors and flows, correctly split into injections and leakages.',
+        title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector + Financial Market)',
+        desc: 'Choose 2-Sector, 3-Sector or 4-Sector, and optionally switch on the Financial Market (Banks) — the diagram draws ONLY the sectors and flows that exist in your choice, correctly split into injections and leakages.',
         class: 'XII', part: 'A', unit: 1, unitTitle: 'National Income and Related Aggregates', topicLabel: 'Circular Flow of Income',
         syllabusIds: ['XII-A-U1-CIRCULAR-FLOW', 'XII-A-U1-AGGREGATES', 'XII-A-U1-MACRO-MEANING'],
         mode: 'simulator',
-        concept: '<p><b>Macroeconomics</b> studies the economy as a whole — aggregates like total output, the overall price level and total employment — rather than a single household or firm (that\'s microeconomics). NCERT builds the circular flow up in three stages of increasing realism, and this lab draws exactly the sectors and flows of whichever stage you pick — nothing extra, nothing missing.</p><p><b>2-Sector model</b> (Households + Firms only): the simplest, closed economy with no government and no foreign trade. Households spend their <i>entire</i> income on consumption and firms pay out their <i>entire</i> revenue as factor income — nothing leaks out anywhere, so <b>National Income (Y) = Consumption Expenditure (C)</b> exactly, always.</p><p><b>3-Sector model</b> adds Government: Taxes (T) pull money OUT of the household–firm loop (a <b>leakage</b>) and Government Spending (G) pushes new money IN (an <b>injection</b>).</p><p><b>4-Sector model</b> adds the Foreign Sector: Exports (X) bring in payment from abroad for domestically-made goods (an <b>injection</b>) and Imports (M) send money abroad to pay for foreign-made goods (a <b>leakage</b>). The general CBSE rule holds at every stage: if total Injections &gt; total Leakages, National Income tends to RISE; if Injections &lt; Leakages, it tends to FALL; Injections = Leakages is equilibrium.</p><p>In every stage, the <b>real flow</b> (dashed wire, square markers) — factor services and goods &amp; services physically changing hands — always moves opposite to the <b>money flow</b> (solid wire, round markers) that pays for it.</p>',
+        // The 2026–27 taxonomy names only "Two-sector model" and "Circular
+        // flow mechanism" under this Unit 1 topic (see
+        // curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md
+        // §"C. Circular Flow of Income"). The 3-Sector/4-Sector extensions
+        // and the Financial Market (Savings→Investment) layer are standard
+        // NCERT content taught alongside it (and Saving/Investment are
+        // literally named later, under Unit 3's Determination of Income),
+        // but are enrichment relative to THIS topic's own named scope —
+        // flagged per this project's own honesty rule rather than silently
+        // claimed as core Unit 1 coverage.
+        enrichment: true,
+        enrichmentNote: 'The named 2026-27 syllabus content for this topic is just the "Two-sector model" and "Circular flow mechanism" (Households + Firms only). The 3-Sector (+Government) and 4-Sector (+Foreign Sector) extensions, and the optional Financial Market (Savings→Investment) layer, are standard NCERT/board-exam content built on top of it — kept because CBSE Class XII exams routinely test all of these — but are not literally named under this specific Unit 1 topic, so are marked as enrichment rather than claimed as core coverage. (Saving/Investment are separately, and literally, named under Unit 3 — Determination of Income and Employment.)',
+        concept: '<p><b>Macroeconomics</b> studies the economy as a whole — aggregates like total output, the overall price level and total employment — rather than a single household or firm (that\'s microeconomics). The named 2026-27 syllabus content here is the <b>Two-sector model</b>; this lab also lets you build it up, stage by stage, toward the fuller picture used in board-exam diagrams — and draws exactly the sectors and flows of whatever you pick, nothing extra, nothing missing.</p><p><b>2-Sector model</b> (Households + Firms only, Financial Market OFF): the simplest, closed economy with no government, no foreign trade, and no saving. Households spend their <i>entire</i> income on consumption and firms pay out their <i>entire</i> revenue as factor income — nothing leaks out anywhere, so <b>National Income (Y) = Consumption Expenditure (C)</b> exactly, always.</p><p><b>Financial Market (Banks)</b> — switch it ON at any stage to add Savings (S): households now keep back part of their income instead of spending it (a <b>leakage</b>, Households→Banks), and the banking system channels that saving out to firms as Investment (I) (an <b>injection</b>, Banks→Firms). This lab keeps S = I always (Savings fully re-invested) — the separate Multiplier lab is where planned Investment and Saving are allowed to diverge.</p><p><b>3-Sector model</b> adds Government: Taxes (T) pull money OUT of the household–firm loop (a <b>leakage</b>) and Government Spending (G) pushes new money IN (an <b>injection</b>).</p><p><b>4-Sector model</b> adds the Foreign Sector: Exports (X) bring in payment from abroad for domestically-made goods (an <b>injection</b>) and Imports (M) send money abroad to pay for foreign-made goods (a <b>leakage</b>). The general CBSE rule holds at every stage: if total Injections &gt; total Leakages, National Income tends to RISE; if Injections &lt; Leakages, it tends to FALL; Injections = Leakages is equilibrium.</p><p>In every stage, the <b>real flow</b> (dashed wire, square markers) — factor services and goods &amp; services physically changing hands — always moves opposite to the <b>money flow</b> (solid wire, round markers) that pays for it.</p>',
         formulas: [
-            '2-Sector: Y (National Income) = C (Consumption) — no leakage, no injection, by definition',
+            '2-Sector, no Financial Market: Y (National Income) = C (Consumption) — no leakage, no injection, by definition',
+            'Financial Market ON: adds Leakage = Saving (S); Injection = Investment (I), with S = I always in this lab',
             '3-Sector: adds Leakage = Taxes (T); Injection = Govt. Spending (G)',
             '4-Sector: adds Leakage = Imports (M); Injection = Exports (X) — money paid BY foreigners INTO domestic Firms',
             'Injections &gt; Leakages ⇒ National Income rises · Injections &lt; Leakages ⇒ falls · Injections = Leakages ⇒ equilibrium',
-            'GDP (expenditure method) = C + I + G + (X − M)',
-            'GNP = GDP + Net Factor Income from Abroad · NDP/NNP = GDP/GNP − Depreciation'
+            'GDP (expenditure method) = C + I + G + (X − M) · GNP = GDP + Net Factor Income from Abroad · NDP/NNP = GDP/GNP − Depreciation'
         ],
         controls: [
             {
@@ -225,8 +237,16 @@ const SIMS = [
                     { value: '4', label: '4-Sector (+ Foreign)' }
                 ]
             },
+            {
+                id: 'bank', label: 'Financial Market (Banks)', type: 'select', value: 'no',
+                options: [
+                    { value: 'no', label: 'Off (Investment fixed, illustrative)' },
+                    { value: 'yes', label: 'On (show Savings & Investment)' }
+                ]
+            },
             { id: 'consumption', label: 'Consumption Expenditure (C)', min: 20, max: 150, step: 5, value: 90, unit: '₹B' },
-            { id: 'wages', label: 'Factor Payments — Wages etc. (₹B)', min: 20, max: 150, step: 5, value: 100, unit: '₹B', showWhen: { id: 'sector', equals: ['3', '4'] } },
+            { id: 'wages', label: 'Factor Payments — Wages etc. (₹B)', min: 20, max: 150, step: 5, value: 100, unit: '₹B' },
+            { id: 'saving', label: 'Savings (S) = Investment (I)', min: 0, max: 80, step: 5, value: 30, unit: '₹B', showWhen: { id: 'bank', equals: 'yes' } },
             { id: 'g', label: 'Government Spending (G)', min: 0, max: 100, step: 5, value: 40, unit: '₹B', showWhen: { id: 'sector', equals: ['3', '4'] } },
             { id: 'nx', label: 'Net Exports (X − M)', min: -40, max: 40, step: 5, value: 10, unit: '₹B', showWhen: { id: 'sector', equals: '4' } }
         ],
@@ -234,28 +254,34 @@ const SIMS = [
         // static sankey diagram can't show a real flow moving opposite to
         // a money flow, which is the actual concept being taught here.
         //
-        // Sector gating: the diagram draws ONLY the nodes/flows that exist
-        // in the chosen model — a 2-sector economy must never show a
-        // Government or Foreign Sector node, because it doesn't have one.
-        // In the 2-sector case, Wages is also forced equal to Consumption
-        // (never read from the hidden `wages` slider) because that
-        // equality — Y = C — is the entire economic content of the
-        // 2-sector model, not an independent choice.
+        // Sector/bank gating: the diagram draws ONLY the nodes/flows that
+        // exist in the chosen combination — a 2-sector economy must never
+        // show a Government or Foreign Sector node, and Banks must never
+        // appear unless the Financial Market toggle is on. In the strict
+        // baseline (2-Sector, Financial Market off), Wages is also forced
+        // equal to Consumption (overriding the slider) because Y = C is an
+        // identity there, not an independent choice — the Wages control
+        // stays visible (rather than hidden) so a student can still see it
+        // get overridden, with the readings explaining why.
         //
         // Direction rule (this is the part earlier versions of this lab
-        // got backwards): Taxes/Imports are LEAKAGES — money flows OUT of
-        // Households/Firms; Govt. Spending/Exports are INJECTIONS — money
-        // flows IN. In particular, export revenue is paid BY the Foreign
-        // Sector TO domestic Firms (Foreign→Firm), and import spending is
-        // paid BY domestic Firms TO the Foreign Sector (Firm→Foreign) —
-        // the opposite of which sector shipped the physical goods.
+        // got backwards): Taxes/Imports/Saving are LEAKAGES — money flows
+        // OUT of Households/Firms; Govt. Spending/Exports/Investment are
+        // INJECTIONS — money flows IN. In particular, export revenue is
+        // paid BY the Foreign Sector TO domestic Firms (Foreign→Firm), and
+        // import spending is paid BY domestic Firms TO the Foreign Sector
+        // (Firm→Foreign) — the opposite of which sector shipped the goods.
         customRender(container, v) {
             const sector = v.sector || '2';
             const has3 = sector === '3' || sector === '4';
             const has4 = sector === '4';
+            const hasBank = v.bank === 'yes';
+            const identityHolds = sector === '2' && !hasBank; // strict Y = C baseline
 
             const consumption = v.consumption;
-            const wages = sector === '2' ? consumption : v.wages; // Y = C identity in the 2-sector model
+            const wages = identityHolds ? consumption : v.wages; // Y = C identity only in the strict baseline
+            const saving = hasBank ? v.saving : 0;
+            const investment = hasBank ? saving : 50; // S=I when the Financial Market is modeled; else an illustrative fixed I
             const taxes = has3 ? 35 : 0;
             const g = has3 ? v.g : 0;
             const nx = has4 ? v.nx : 0;
@@ -264,10 +290,16 @@ const SIMS = [
             const hh = { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' };
             const firm = { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' };
             const gov = { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' };
-            const foreign = { x: 250, y: 364, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
+            // Foreign Sector and Banks share the bottom of the diagram —
+            // spread to bottom-left/right when both are present, otherwise
+            // whichever one exists alone takes the bottom-center spot the
+            // other would have used.
+            const foreign = { x: has4 && hasBank ? 370 : 250, y: 344, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
+            const bank = { x: has4 && hasBank ? 130 : 250, y: 344, label: 'Financial Market (Banks)', icon: '🏦', color: '#0891b2' };
 
             const nodes = { hh, firm };
             if (has3) nodes.gov = gov;
+            if (hasBank) nodes.bank = bank;
             if (has4) nodes.foreign = foreign;
 
             // IMPORTANT geometry note: `bend` offsets a curve sideways from
@@ -291,6 +323,16 @@ const SIMS = [
                 { id: 'flow-factors', from: hh, to: firm, bend: 58, labelOffset: 11, value: wages, color: '#6366f1', kind: 'real', label: 'Factor Services' },
                 { id: 'flow-goods', from: firm, to: hh, bend: 58, labelOffset: 11, value: consumption, color: '#10b981', kind: 'real', label: 'Goods &amp; Services' }
             ];
+            if (hasBank) {
+                flows.push(
+                    // Saving is a LEAKAGE — Households keep back income
+                    // instead of spending it, into the banking system.
+                    { id: 'flow-saving', from: hh, to: bank, bend: 16, labelOffset: 11, value: saving, color: bank.color, kind: 'money', label: 'Savings (S) — Leakage' },
+                    // Investment is an INJECTION — Banks channel that saved
+                    // money out to Firms.
+                    { id: 'flow-invest', from: bank, to: firm, bend: 16, labelOffset: 11, value: investment, color: bank.color, kind: 'money', label: 'Investment (I) — Injection' }
+                );
+            }
             if (has3) {
                 flows.push(
                     { id: 'flow-tax', from: hh, to: gov, bend: 16, labelOffset: 11, value: taxes, color: gov.color, kind: 'money', label: 'Taxes (T) — Leakage' },
@@ -352,7 +394,7 @@ const SIMS = [
             const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');
             container.innerHTML = `
                 <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                     aria-label="${sectorLabel} circular flow of income, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
+                     aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
                     ${flowsSVG}
                     ${nodesSVG}
                     ${labelsSVG}
@@ -361,19 +403,20 @@ const SIMS = [
 
             // Injections vs Leakages — the actual CBSE-taught rule for
             // whether National Income is rising, falling, or in
-            // equilibrium. Undefined (not "zero and balanced") for the
-            // 2-sector model, which has neither concept.
+            // equilibrium. Undefined (not "zero and balanced") only in the
+            // strict 2-Sector/no-Financial-Market baseline, which has
+            // neither concept at all.
             //
             // The verdict sentence deliberately carries NO embedded
             // numbers (the numbers already have their own reading rows
             // above it) — READINGS_I18N_HI (js/i18n_hi.js) translates it
             // by exact substring match, which only works on fixed prose.
-            const totalInjections = has4 ? (g + exportsVal) : (has3 ? g : 0);
-            const totalLeakages = has4 ? (taxes + imports) : (has3 ? taxes : 0);
+            const totalInjections = (has3 ? g : 0) + (has4 ? exportsVal : 0) + (hasBank ? investment : 0);
+            const totalLeakages = (has3 ? taxes : 0) + (has4 ? imports : 0) + (hasBank ? saving : 0);
             const gap = Math.round((totalInjections - totalLeakages) * 100) / 100;
             let verdict;
-            if (!has3) {
-                verdict = 'This is the <b>2-Sector model</b> — no Government, no Foreign Sector, so there is no leakage or injection at all. By definition <b>Y = C</b>: households spend every rupee they earn, and firms pay out every rupee they receive.';
+            if (identityHolds) {
+                verdict = 'This is the strict <b>2-Sector model with no Financial Market</b> — no saving, no Government, no Foreign Sector, so there is no leakage or injection at all. By definition <b>Y = C</b>: households spend every rupee they earn, and firms pay out every rupee they receive.';
             } else if (Math.abs(gap) < 0.01) {
                 verdict = 'Total Injections = Total Leakages — the economy is in <b>equilibrium</b>, National Income stays constant.';
             } else if (gap > 0) {
@@ -382,30 +425,34 @@ const SIMS = [
                 verdict = 'Total Leakages are greater than Total Injections — a net leakage, so National Income tends to <b>FALL</b>.';
             }
 
-            const gdpExp = sector === '2' ? consumption : consumption + 50 + g + nx; // C, or C + I(illustrative ₹50B) + G + NX once Govt./Foreign exist
+            const gdpExp = identityHolds ? consumption : consumption + investment + g + nx; // C, or C + I + G + NX once any leakage/injection channel exists
             return {
-                metrics: { sector, consumption, wages, g, nx, taxes, exportsVal, imports, totalInjections, totalLeakages, gdpExp },
-                readings: `<div class="reading-row"><span>Economy Model</span><b>${sectorLabel}</b></div>
+                metrics: { sector, bank: v.bank || 'no', consumption, wages, saving, investment, g, nx, taxes, exportsVal, imports, totalInjections, totalLeakages, gdpExp },
+                readings: `<div class="reading-row"><span>Economy Model</span><b>${sectorLabel}${hasBank ? ' + Financial Market' : ''}</b></div>
                            <div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
                            <div class="reading-row"><span>Factor Payments (Wages etc.)</span><b>₹${wages}B</b></div>
+                           ${identityHolds ? `<div class="reading-row insight-row">Wages is forced equal to Consumption here — that's what "Y = C" means with no leakage channel open yet.</div>` : ''}
+                           ${hasBank ? `<div class="reading-row"><span>Savings (S) — Leakage</span><b>₹${saving}B</b></div>
+                           <div class="reading-row"><span>Investment (I) — Injection</span><b>₹${investment}B</b></div>` : ''}
                            ${has3 ? `<div class="reading-row"><span>Taxes (T) — Leakage</span><b>₹${taxes}B</b></div>
                            <div class="reading-row"><span>Govt Spending (G) — Injection</span><b>₹${g}B</b></div>` : ''}
                            ${has4 ? `<div class="reading-row"><span>Exports (X) — Injection</span><b>₹${fmt(exportsVal, 0)}B</b></div>
                            <div class="reading-row"><span>Imports (M) — Leakage</span><b>₹${fmt(imports, 0)}B</b></div>` : ''}
-                           ${has3 ? `<div class="reading-row"><span>Total Injections</span><b>₹${fmt(totalInjections, 0)}B</b></div>
+                           ${!identityHolds ? `<div class="reading-row"><span>Total Injections</span><b>₹${fmt(totalInjections, 0)}B</b></div>
                            <div class="reading-row"><span>Total Leakages</span><b>₹${fmt(totalLeakages, 0)}B</b></div>` : ''}
                            <div class="reading-row insight-row">💡 ${verdict}</div>
                            <div class="reading-row insight-row">Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms.</div>`
             };
         },
         practice: [
-            { prompt: 'Set Economy Model to "2-Sector". How many nodes does the diagram show, and how many flows?', hint: 'Exactly 2 nodes (Households, Firms) and 4 flows: Factor Services + Goods & Services (real), Factor Payments + Consumption Expenditure (money) — no Government, no Foreign Sector.' },
-            { prompt: 'Now switch to "3-Sector". Which new node appears, and which of its two flows is the injection?', hint: 'Government appears. Govt Spending (Government→Households) is the injection — new money entering the flow. Taxes (Households→Government) is the leakage — money withdrawn from it.' },
+            { prompt: 'Set Economy Model to "2-Sector" with Financial Market OFF. How many nodes does the diagram show, and how many flows?', hint: 'Exactly 2 nodes (Households, Firms) and 4 flows: Factor Services + Goods & Services (real), Factor Payments + Consumption Expenditure (money) — no Government, no Banks, no Foreign Sector.' },
+            { prompt: 'Now switch the Financial Market ON (still 2-Sector). Which new node appears, and which of its two flows is the leakage?', hint: 'The Financial Market (Banks) node appears. Savings (Households→Banks) is the leakage — income withdrawn from spending. Investment (Banks→Firms) is the injection — that same money re-enters as spending on capital goods.' },
+            { prompt: 'Switch to "3-Sector". Which new node appears, and which of its two flows is the injection?', hint: 'Government appears. Govt Spending (Government→Households) is the injection — new money entering the flow. Taxes (Households→Government) is the leakage — money withdrawn from it.' },
             { prompt: 'Switch to "4-Sector" and make Net Exports negative. Which flow (Exports or Imports) is now bigger, and is that a net injection or a net leakage on the Foreign Sector leg?', hint: 'Negative Net Exports means Imports > Exports — a net leakage: more money is flowing OUT to the Foreign Sector (Imports, Firms→Foreign) than is flowing IN (Exports, Foreign→Firms).' }
         ],
         challenge: {
-            prompt: 'End on the 4-Sector model with Net Exports negative — this only works if you correctly read Imports as a leakage (money leaving Firms) and Exports as an injection (money entering Firms from abroad).',
-            check(state) { return state.sector === '4' && state.nx < 0; }
+            prompt: 'End on the 4-Sector model with the Financial Market ON and Net Exports negative — this only works if you correctly read Imports AND Saving as leakages, and Exports AND Investment as injections.',
+            check(state) { return state.sector === '4' && state.bank === 'yes' && state.nx < 0; }
         }
     },
     {
