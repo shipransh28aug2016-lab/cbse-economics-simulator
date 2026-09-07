@@ -201,13 +201,32 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 ],
                 correctIndex: 0,
                 explain: { en: 'Saving is income not spent on consumption — it leaves (leaks out of) the household-firm spending loop into the financial sector, from where it can be re-injected as investment.', hi: 'बचत वह आय है जो उपभोग पर खर्च नहीं होती — यह परिवार-फर्म खर्च चक्र से निकलकर (रिसकर) वित्तीय क्षेत्र में चली जाती है, जहाँ से इसे निवेश के रूप में पुनः इंजेक्ट किया जा सकता है।' }
+            },
+            {
+                level: 'remember',
+                question: { en: 'In the simplest 2-Sector model (Households + Firms only, no Government, no Foreign Trade), which identity ALWAYS holds?', hi: 'सरलतम 2-क्षेत्रीय मॉडल (केवल परिवार + फर्में, न सरकार न विदेशी व्यापार) में, कौन-सी सर्वसमिका हमेशा सत्य रहती है?' },
+                options: [
+                    { en: 'National Income (Y) = Consumption Expenditure (C)', hi: 'राष्ट्रीय आय (Y) = उपभोग व्यय (C)' },
+                    { en: 'National Income (Y) = Government Spending (G)', hi: 'राष्ट्रीय आय (Y) = सरकारी व्यय (G)' },
+                    { en: 'National Income (Y) is always zero', hi: 'राष्ट्रीय आय (Y) हमेशा शून्य होती है' },
+                    { en: 'Consumption (C) always exceeds National Income (Y)', hi: 'उपभोग (C) हमेशा राष्ट्रीय आय (Y) से अधिक होता है' }
+                ],
+                correctIndex: 0,
+                explain: { en: 'With no government and no foreign trade, and assuming households spend their entire income, whatever firms pay out as factor income (Y) comes straight back to them as consumption spending (C) — so Y = C exactly, with no leakage or injection possible.', hi: 'न सरकार न विदेशी व्यापार होने पर, और यह मानते हुए कि परिवार अपनी पूरी आय खर्च करते हैं, फर्में जो कुछ फैक्टर आय (Y) के रूप में देती हैं वह सीधे उपभोग व्यय (C) के रूप में वापस आ जाता है — इसलिए बिना किसी रिसाव या इंजेक्शन के Y = C बिल्कुल बराबर रहता है।' },
+                syllabusId: 'XII-A-U1-CIRCULAR-FLOW'
             }
         ],
         applyTemplates: [
             {
+                // Only meaningful once Government/Foreign Sector exist —
+                // for the 2-sector model this correctly returns null
+                // (skipped, retried at a different random state) rather
+                // than asking a C+I+G+NX question about a model that has
+                // neither G nor NX.
                 level: 'apply',
                 build(state, metrics) {
-                    if (!metrics || typeof metrics.gdpExp !== 'number') return null;
+                    if (!metrics || metrics.sector !== '3' && metrics.sector !== '4') return null;
+                    if (typeof metrics.gdpExp !== 'number') return null;
                     const correct = Math.round(metrics.gdpExp);
                     const options = quizNumericOptions(correct, [20, -20, 40], { round: 0, prefix: '₹', suffix: 'B' });
                     return {
@@ -215,6 +234,42 @@ if (typeof QUIZ_BANK !== 'undefined') {
                         options,
                         correctIndex: 0,
                         explain: { en: `GDP (Expenditure Method) = C + I + G + (X−M) = ${metrics.consumption} + 50 + ${metrics.g} + ${metrics.nx} = ₹${correct}B.`, hi: `GDP (व्यय विधि) = C + I + G + (X−M) = ${metrics.consumption} + 50 + ${metrics.g} + ${metrics.nx} = ₹${correct}B.` }
+                    };
+                }
+            },
+            {
+                // Tests the 2-sector Y=C identity specifically — only
+                // fires for that model.
+                level: 'apply',
+                build(state, metrics) {
+                    if (!metrics || metrics.sector !== '2') return null;
+                    if (typeof metrics.consumption !== 'number') return null;
+                    const correct = Math.round(metrics.consumption);
+                    const options = quizNumericOptions(correct, [20, -20, 40], { round: 0, prefix: '₹', suffix: 'B' });
+                    return {
+                        question: { en: `In the 2-Sector model with Consumption Expenditure = ₹${metrics.consumption}B, what is National Income (Y)?`, hi: `2-क्षेत्रीय मॉडल में उपभोग व्यय = ₹${metrics.consumption}B होने पर, राष्ट्रीय आय (Y) क्या है?` },
+                        options,
+                        correctIndex: 0,
+                        explain: { en: `In a 2-Sector economy, Y = C exactly (no government, no foreign trade, no leakage) — so Y = ₹${correct}B.`, hi: `2-क्षेत्रीय अर्थव्यवस्था में, Y = C बिल्कुल बराबर होता है (न सरकार, न विदेशी व्यापार, न कोई रिसाव) — इसलिए Y = ₹${correct}B.` }
+                    };
+                }
+            },
+            {
+                // Tests the Injections-vs-Leakages equilibrium rule — only
+                // meaningful once at least a Government sector exists.
+                level: 'analyse',
+                build(state, metrics) {
+                    if (!metrics || (metrics.sector !== '3' && metrics.sector !== '4')) return null;
+                    if (typeof metrics.totalInjections !== 'number' || typeof metrics.totalLeakages !== 'number') return null;
+                    const gap = Math.round((metrics.totalInjections - metrics.totalLeakages) * 100) / 100;
+                    const correct = gap > 0.01 ? 'rise' : (gap < -0.01 ? 'fall' : 'stay the same (equilibrium)');
+                    const wrongs = ['rise', 'fall', 'stay the same (equilibrium)'].filter(o => o !== correct);
+                    const optionTextHi = { rise: 'बढ़ेगी', fall: 'घटेगी', 'stay the same (equilibrium)': 'अपरिवर्तित रहेगी (साम्यावस्था)' };
+                    return {
+                        question: { en: `With Total Injections=₹${Math.round(metrics.totalInjections)}B and Total Leakages=₹${Math.round(metrics.totalLeakages)}B, what will happen to National Income?`, hi: `कुल इंजेक्शन=₹${Math.round(metrics.totalInjections)}B और कुल लीकेज=₹${Math.round(metrics.totalLeakages)}B होने पर, राष्ट्रीय आय का क्या होगा?` },
+                        options: [correct, ...wrongs].map(o => ({ en: `It will ${o}`, hi: `यह ${optionTextHi[o]}` })),
+                        correctIndex: 0,
+                        explain: { en: `Injections ${gap > 0.01 ? '>' : (gap < -0.01 ? '<' : '=')} Leakages ⇒ National Income will ${correct}.`, hi: `इंजेक्शन ${gap > 0.01 ? '>' : (gap < -0.01 ? '<' : '=')} लीकेज ⇒ राष्ट्रीय आय ${optionTextHi[correct]}।` }
                     };
                 }
             }

@@ -423,7 +423,9 @@ function buildControls(sim) {
         row.className = 'control-row';
         if (c.showWhen) {
             row.dataset.showWhenId = c.showWhen.id;
-            row.dataset.showWhenEquals = String(c.showWhen.equals);
+            row.dataset.showWhenEquals = Array.isArray(c.showWhen.equals)
+                ? c.showWhen.equals.map(String).join(',')
+                : String(c.showWhen.equals);
         }
 
         if (c.type === 'select') {
@@ -521,11 +523,15 @@ function buildControls(sim) {
 // Elasticity Type = Cross). `showWhen: {id, equals}` on a control marks
 // it as conditional; this shows/hides those rows to match current state
 // without ever touching the controls that don't declare a condition.
+// `equals` can be a single value (Cross-only) or an array of values (a
+// control that's relevant to more than one, but not all, of the select's
+// options — e.g. shown for both '3-sector' and '4-sector' but not '2').
 function applyControlVisibility(sim) {
     const panel = document.getElementById('controls-panel');
     if (!panel) return;
     panel.querySelectorAll('.control-row[data-show-when-id]').forEach(row => {
-        const match = String(simEngineState[row.dataset.showWhenId]) === row.dataset.showWhenEquals;
+        const allowed = row.dataset.showWhenEquals.split(',');
+        const match = allowed.includes(String(simEngineState[row.dataset.showWhenId]));
         row.classList.toggle('hidden', !match);
     });
 }

@@ -202,45 +202,73 @@ const SIMS = [
     {
         id: 'macro-gdp',
         module: 'macro',
-        title: 'GDP & Circular Flow (Real Flow vs Money Flow)',
-        desc: 'Watch the real flow of factors & goods move opposite to the money flow that pays for them.',
+        title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector)',
+        desc: 'Choose 2-Sector, 3-Sector or 4-Sector — the diagram shows ONLY that sector\'s real sectors and flows, correctly split into injections and leakages.',
         class: 'XII', part: 'A', unit: 1, unitTitle: 'National Income and Related Aggregates', topicLabel: 'Circular Flow of Income',
         syllabusIds: ['XII-A-U1-CIRCULAR-FLOW', 'XII-A-U1-AGGREGATES', 'XII-A-U1-MACRO-MEANING'],
         mode: 'simulator',
-        concept: '<p><b>Macroeconomics</b> studies the economy as a whole — aggregates like total output, the overall price level and total employment — rather than a single household or firm (that\'s microeconomics). The circular flow below is macroeconomics\' starting picture of how the whole economy fits together.</p><p>The circular flow has two mirror-image halves that always move in <b>opposite directions</b> for the same transaction. The <b>real flow</b> (dashed wire, square markers) is what physically changes hands: households supply <b>factor services</b> — labour, land, capital, enterprise — to firms, and firms supply <b>goods &amp; services</b> back to households. The <b>money flow</b> (solid wire, round markers) is the payment for it, moving the other way: firms pay <b>factor payments</b> (wages, rent, interest, profit) to households, and households pay <b>consumption expenditure</b> to firms. Government spending and exports are injections into this flow; taxes and imports are leakages out of it.</p><p>This flow of income adds up to <b>GDP</b> (Gross Domestic Product — everything produced <i>within</i> the country). <b>GNP</b> = GDP + income earned abroad by residents − income earned domestically by non-residents. <b>NDP</b>/<b>NNP</b> subtract depreciation (wear-and-tear of capital) from GDP/GNP respectively — "Net" figures reflect only genuinely new output, not just replacing worn-out capital.</p>',
+        concept: '<p><b>Macroeconomics</b> studies the economy as a whole — aggregates like total output, the overall price level and total employment — rather than a single household or firm (that\'s microeconomics). NCERT builds the circular flow up in three stages of increasing realism, and this lab draws exactly the sectors and flows of whichever stage you pick — nothing extra, nothing missing.</p><p><b>2-Sector model</b> (Households + Firms only): the simplest, closed economy with no government and no foreign trade. Households spend their <i>entire</i> income on consumption and firms pay out their <i>entire</i> revenue as factor income — nothing leaks out anywhere, so <b>National Income (Y) = Consumption Expenditure (C)</b> exactly, always.</p><p><b>3-Sector model</b> adds Government: Taxes (T) pull money OUT of the household–firm loop (a <b>leakage</b>) and Government Spending (G) pushes new money IN (an <b>injection</b>).</p><p><b>4-Sector model</b> adds the Foreign Sector: Exports (X) bring in payment from abroad for domestically-made goods (an <b>injection</b>) and Imports (M) send money abroad to pay for foreign-made goods (a <b>leakage</b>). The general CBSE rule holds at every stage: if total Injections &gt; total Leakages, National Income tends to RISE; if Injections &lt; Leakages, it tends to FALL; Injections = Leakages is equilibrium.</p><p>In every stage, the <b>real flow</b> (dashed wire, square markers) — factor services and goods &amp; services physically changing hands — always moves opposite to the <b>money flow</b> (solid wire, round markers) that pays for it.</p>',
         formulas: [
-            'Factor Services HH→Firms (real) moves opposite to Factor Payments Firms→HH (money)',
-            'Goods &amp; Services Firms→HH (real) moves opposite to Consumption Exp. HH→Firms (money)',
+            '2-Sector: Y (National Income) = C (Consumption) — no leakage, no injection, by definition',
+            '3-Sector: adds Leakage = Taxes (T); Injection = Govt. Spending (G)',
+            '4-Sector: adds Leakage = Imports (M); Injection = Exports (X) — money paid BY foreigners INTO domestic Firms',
+            'Injections &gt; Leakages ⇒ National Income rises · Injections &lt; Leakages ⇒ falls · Injections = Leakages ⇒ equilibrium',
             'GDP (expenditure method) = C + I + G + (X − M)',
-            'GNP = GDP + Net Factor Income from Abroad',
-            'NDP/NNP = GDP/GNP − Depreciation',
-            'Injections (G + X) vs Leakages (T + M)'
+            'GNP = GDP + Net Factor Income from Abroad · NDP/NNP = GDP/GNP − Depreciation'
         ],
         controls: [
+            {
+                id: 'sector', label: 'Economy Model', type: 'select', value: '2',
+                options: [
+                    { value: '2', label: '2-Sector (HH + Firms)' },
+                    { value: '3', label: '3-Sector (+ Govt.)' },
+                    { value: '4', label: '4-Sector (+ Foreign)' }
+                ]
+            },
             { id: 'consumption', label: 'Consumption Expenditure (C)', min: 20, max: 150, step: 5, value: 90, unit: '₹B' },
-            { id: 'wages', label: 'Factor Payments — Wages etc. (₹B)', min: 20, max: 150, step: 5, value: 100, unit: '₹B' },
-            { id: 'g', label: 'Government Spending (G)', min: 0, max: 100, step: 5, value: 40, unit: '₹B' },
-            { id: 'nx', label: 'Net Exports (X − M)', min: -40, max: 40, step: 5, value: 10, unit: '₹B' }
+            { id: 'wages', label: 'Factor Payments — Wages etc. (₹B)', min: 20, max: 150, step: 5, value: 100, unit: '₹B', showWhen: { id: 'sector', equals: ['3', '4'] } },
+            { id: 'g', label: 'Government Spending (G)', min: 0, max: 100, step: 5, value: 40, unit: '₹B', showWhen: { id: 'sector', equals: ['3', '4'] } },
+            { id: 'nx', label: 'Net Exports (X − M)', min: -40, max: 40, step: 5, value: 10, unit: '₹B', showWhen: { id: 'sector', equals: '4' } }
         ],
         // Custom-rendered as an animated SVG instead of a Plotly chart: a
         // static sankey diagram can't show a real flow moving opposite to
-        // a money flow, which is the actual concept being taught here. The
-        // real flow (factor services / goods & services — dashed wire,
-        // square markers) and the money flow (factor payments / consumption
-        // — solid wire, round markers) are drawn as two visually distinct
-        // rings between Households and Firms, each with its own breathing
-        // label naming the transaction, so the opposite-direction
-        // relationship is genuinely visible, not just described in text.
+        // a money flow, which is the actual concept being taught here.
+        //
+        // Sector gating: the diagram draws ONLY the nodes/flows that exist
+        // in the chosen model — a 2-sector economy must never show a
+        // Government or Foreign Sector node, because it doesn't have one.
+        // In the 2-sector case, Wages is also forced equal to Consumption
+        // (never read from the hidden `wages` slider) because that
+        // equality — Y = C — is the entire economic content of the
+        // 2-sector model, not an independent choice.
+        //
+        // Direction rule (this is the part earlier versions of this lab
+        // got backwards): Taxes/Imports are LEAKAGES — money flows OUT of
+        // Households/Firms; Govt. Spending/Exports are INJECTIONS — money
+        // flows IN. In particular, export revenue is paid BY the Foreign
+        // Sector TO domestic Firms (Foreign→Firm), and import spending is
+        // paid BY domestic Firms TO the Foreign Sector (Firm→Foreign) —
+        // the opposite of which sector shipped the physical goods.
         customRender(container, v) {
-            const consumption = v.consumption, wages = v.wages, taxes = 35, g = v.g, nx = v.nx;
+            const sector = v.sector || '2';
+            const has3 = sector === '3' || sector === '4';
+            const has4 = sector === '4';
+
+            const consumption = v.consumption;
+            const wages = sector === '2' ? consumption : v.wages; // Y = C identity in the 2-sector model
+            const taxes = has3 ? 35 : 0;
+            const g = has3 ? v.g : 0;
+            const nx = has4 ? v.nx : 0;
             const exportsVal = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
 
-            const nodes = {
-                hh: { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' },
-                firm: { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' },
-                gov: { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' },
-                foreign: { x: 250, y: 364, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' }
-            };
+            const hh = { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' };
+            const firm = { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' };
+            const gov = { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' };
+            const foreign = { x: 250, y: 364, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
+
+            const nodes = { hh, firm };
+            if (has3) nodes.gov = gov;
+            if (has4) nodes.foreign = foreign;
 
             // IMPORTANT geometry note: `bend` offsets a curve sideways from
             // the straight line between its two points, but the "sideways"
@@ -254,21 +282,31 @@ const SIMS = [
             const flows = [
                 // Money flow (inner ring, solid, round particles): payment
                 // moving opposite to whatever real thing it's paying for.
-                { id: 'flow-cons', from: nodes.hh, to: nodes.firm, bend: 20, labelOffset: 11, value: consumption, color: '#8b5cf6', kind: 'money', label: 'Consumption Exp. (C)' },
-                { id: 'flow-wage', from: nodes.firm, to: nodes.hh, bend: 20, labelOffset: 11, value: wages, color: '#f59e0b', kind: 'money', label: 'Factor Payments (Wages)' },
+                { id: 'flow-cons', from: hh, to: firm, bend: 20, labelOffset: 11, value: consumption, color: '#8b5cf6', kind: 'money', label: 'Consumption Exp. (C)' },
+                { id: 'flow-wage', from: firm, to: hh, bend: 20, labelOffset: 11, value: wages, color: '#f59e0b', kind: 'money', label: 'Factor Payments (Wages)' },
                 // Real flow (outer ring, dashed, square particles): what
                 // actually changes hands, sized to match the payment it
                 // corresponds to (factor services ≈ what wages pay for;
                 // goods & services ≈ what consumption spending buys).
-                { id: 'flow-factors', from: nodes.hh, to: nodes.firm, bend: 58, labelOffset: 11, value: wages, color: '#6366f1', kind: 'real', label: 'Factor Services' },
-                { id: 'flow-goods', from: nodes.firm, to: nodes.hh, bend: 58, labelOffset: 11, value: consumption, color: '#10b981', kind: 'real', label: 'Goods &amp; Services' },
-                // Government & foreign sector: shown as money flows only
-                // (matches the standard 4-sector textbook diagram).
-                { id: 'flow-tax', from: nodes.hh, to: nodes.gov, bend: 16, labelOffset: 11, value: taxes, color: nodes.gov.color, kind: 'money', label: 'Taxes (T)' },
-                { id: 'flow-gspend', from: nodes.gov, to: nodes.hh, bend: 16, labelOffset: 11, value: g, color: nodes.gov.color, kind: 'money', label: 'Govt Spending (G)' },
-                { id: 'flow-exp', from: nodes.firm, to: nodes.foreign, bend: 16, labelOffset: 11, value: exportsVal, color: nodes.foreign.color, kind: 'money', label: 'Exports (X)' },
-                { id: 'flow-imp', from: nodes.foreign, to: nodes.firm, bend: 16, labelOffset: 11, value: imports, color: nodes.foreign.color, kind: 'money', label: 'Imports (M)' }
+                { id: 'flow-factors', from: hh, to: firm, bend: 58, labelOffset: 11, value: wages, color: '#6366f1', kind: 'real', label: 'Factor Services' },
+                { id: 'flow-goods', from: firm, to: hh, bend: 58, labelOffset: 11, value: consumption, color: '#10b981', kind: 'real', label: 'Goods &amp; Services' }
             ];
+            if (has3) {
+                flows.push(
+                    { id: 'flow-tax', from: hh, to: gov, bend: 16, labelOffset: 11, value: taxes, color: gov.color, kind: 'money', label: 'Taxes (T) — Leakage' },
+                    { id: 'flow-gspend', from: gov, to: hh, bend: 16, labelOffset: 11, value: g, color: gov.color, kind: 'money', label: 'Govt Spending (G) — Injection' }
+                );
+            }
+            if (has4) {
+                flows.push(
+                    // Export revenue is an INJECTION — the Foreign Sector
+                    // pays domestic Firms for what they exported.
+                    { id: 'flow-exp', from: foreign, to: firm, bend: 16, labelOffset: 11, value: exportsVal, color: foreign.color, kind: 'money', label: 'Exports (X) — Injection' },
+                    // Import spending is a LEAKAGE — domestic Firms pay the
+                    // Foreign Sector for what was imported.
+                    { id: 'flow-imp', from: firm, to: foreign, bend: 16, labelOffset: 11, value: imports, color: foreign.color, kind: 'money', label: 'Imports (M) — Leakage' }
+                );
+            }
 
             const maxValue = Math.max(...flows.map(f => f.value), 1);
             const flowsSVG = flows
@@ -311,32 +349,63 @@ const SIMS = [
                     <text x="30" y="23" font-size="8" fill="#4b4470">Real Flow (factors / goods)</text>
                 </g>`;
 
+            const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');
             container.innerHTML = `
                 <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                     aria-label="Animated circular flow of income, with every transaction labeled: real flow of factor services and goods moving opposite to the money flow of payments and expenditure, between households, firms, government and the foreign sector">
+                     aria-label="${sectorLabel} circular flow of income, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
                     ${flowsSVG}
                     ${nodesSVG}
                     ${labelsSVG}
                     ${legendSVG}
                 </svg>`;
 
-            const gdpExp = consumption + g + 50 + nx; // C + G + (illustrative I=50) + NX — illustrative expenditure-method total for this flow diagram's own figures
+            // Injections vs Leakages — the actual CBSE-taught rule for
+            // whether National Income is rising, falling, or in
+            // equilibrium. Undefined (not "zero and balanced") for the
+            // 2-sector model, which has neither concept.
+            //
+            // The verdict sentence deliberately carries NO embedded
+            // numbers (the numbers already have their own reading rows
+            // above it) — READINGS_I18N_HI (js/i18n_hi.js) translates it
+            // by exact substring match, which only works on fixed prose.
+            const totalInjections = has4 ? (g + exportsVal) : (has3 ? g : 0);
+            const totalLeakages = has4 ? (taxes + imports) : (has3 ? taxes : 0);
+            const gap = Math.round((totalInjections - totalLeakages) * 100) / 100;
+            let verdict;
+            if (!has3) {
+                verdict = 'This is the <b>2-Sector model</b> — no Government, no Foreign Sector, so there is no leakage or injection at all. By definition <b>Y = C</b>: households spend every rupee they earn, and firms pay out every rupee they receive.';
+            } else if (Math.abs(gap) < 0.01) {
+                verdict = 'Total Injections = Total Leakages — the economy is in <b>equilibrium</b>, National Income stays constant.';
+            } else if (gap > 0) {
+                verdict = 'Total Injections are greater than Total Leakages — a net injection, so National Income tends to <b>RISE</b>.';
+            } else {
+                verdict = 'Total Leakages are greater than Total Injections — a net leakage, so National Income tends to <b>FALL</b>.';
+            }
+
+            const gdpExp = sector === '2' ? consumption : consumption + 50 + g + nx; // C, or C + I(illustrative ₹50B) + G + NX once Govt./Foreign exist
             return {
-                metrics: { consumption, wages, g, nx, gdpExp },
-                readings: `<div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
+                metrics: { sector, consumption, wages, g, nx, taxes, exportsVal, imports, totalInjections, totalLeakages, gdpExp },
+                readings: `<div class="reading-row"><span>Economy Model</span><b>${sectorLabel}</b></div>
+                           <div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
                            <div class="reading-row"><span>Factor Payments (Wages etc.)</span><b>₹${wages}B</b></div>
-                           <div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
-                           <div class="reading-row"><span>Net Exports (X−M)</span><b>₹${nx}B</b></div>
-                           <div class="reading-row insight-row">💡 Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms. Raising G or exports adds new injections and speeds up the whole flow.</div>`
+                           ${has3 ? `<div class="reading-row"><span>Taxes (T) — Leakage</span><b>₹${taxes}B</b></div>
+                           <div class="reading-row"><span>Govt Spending (G) — Injection</span><b>₹${g}B</b></div>` : ''}
+                           ${has4 ? `<div class="reading-row"><span>Exports (X) — Injection</span><b>₹${fmt(exportsVal, 0)}B</b></div>
+                           <div class="reading-row"><span>Imports (M) — Leakage</span><b>₹${fmt(imports, 0)}B</b></div>` : ''}
+                           ${has3 ? `<div class="reading-row"><span>Total Injections</span><b>₹${fmt(totalInjections, 0)}B</b></div>
+                           <div class="reading-row"><span>Total Leakages</span><b>₹${fmt(totalLeakages, 0)}B</b></div>` : ''}
+                           <div class="reading-row insight-row">💡 ${verdict}</div>
+                           <div class="reading-row insight-row">Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms.</div>`
             };
         },
         practice: [
-            { prompt: 'Raise Net Exports to the maximum. Which flow (Exports or Imports) becomes visibly thicker?', hint: 'A higher X−M means Exports grow relative to Imports — watch the Exports wire to the Foreign Sector thicken and speed up.' },
-            { prompt: 'Set Government Spending to 0. Does the real flow between Households and Firms stop?', hint: "No — G only affects the Government leg. The Households↔Firms real/money flows (factor services/goods vs wages/consumption) keep moving on their own." }
+            { prompt: 'Set Economy Model to "2-Sector". How many nodes does the diagram show, and how many flows?', hint: 'Exactly 2 nodes (Households, Firms) and 4 flows: Factor Services + Goods & Services (real), Factor Payments + Consumption Expenditure (money) — no Government, no Foreign Sector.' },
+            { prompt: 'Now switch to "3-Sector". Which new node appears, and which of its two flows is the injection?', hint: 'Government appears. Govt Spending (Government→Households) is the injection — new money entering the flow. Taxes (Households→Government) is the leakage — money withdrawn from it.' },
+            { prompt: 'Switch to "4-Sector" and make Net Exports negative. Which flow (Exports or Imports) is now bigger, and is that a net injection or a net leakage on the Foreign Sector leg?', hint: 'Negative Net Exports means Imports > Exports — a net leakage: more money is flowing OUT to the Foreign Sector (Imports, Firms→Foreign) than is flowing IN (Exports, Foreign→Firms).' }
         ],
         challenge: {
-            prompt: 'Push Consumption Expenditure and Government Spending both to their maximum while keeping Net Exports negative — can you still tell which wire is "real" vs "money" just from the animation style?',
-            check(state) { return state.consumption >= 145 && state.g >= 95 && state.nx < 0; }
+            prompt: 'End on the 4-Sector model with Net Exports negative — this only works if you correctly read Imports as a leakage (money leaving Firms) and Exports as an injection (money entering Firms from abroad).',
+            check(state) { return state.sector === '4' && state.nx < 0; }
         }
     },
     {
