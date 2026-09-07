@@ -22,13 +22,6 @@ const _corrRandN = makeRandN(42);
 const _corrX = range(30).map(() => _corrRandN());
 const _corrNoise = range(30).map(() => _corrRandN());
 
-// Persists the 2D/3D toggle choice on the Circular Flow lab across
-// re-renders (every slider drag re-runs customRender) — a module-level
-// flag rather than per-render state, so mid-drag it doesn't keep
-// snapping back to the default view. js/webgl-flow.js supplies the
-// actual Three.js scene; this file only decides when to call it.
-let flow3DActive = false;
-
 const SIMS = [
     {
         id: 'micro-supply-demand',
@@ -319,55 +312,13 @@ const SIMS = [
                 </g>`;
 
             container.innerHTML = `
-                <div class="flow-view-2d">
-                    <button type="button" id="flow-3d-toggle" class="flow-3d-toggle-btn">🌐 3D View</button>
-                    <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                         aria-label="Animated circular flow of income, with every transaction labeled: real flow of factor services and goods moving opposite to the money flow of payments and expenditure, between households, firms, government and the foreign sector">
-                        ${flowsSVG}
-                        ${nodesSVG}
-                        ${labelsSVG}
-                        ${legendSVG}
-                    </svg>
-                </div>
-                <div class="flow-view-3d hidden">
-                    <button type="button" class="flow-3d-toggle-btn">📊 2D View</button>
-                    <div class="flow-3d-slot" aria-label="Immersive 3D WebGL view of the circular flow, with the same real/money flows animated as glowing tubes between orbiting node spheres"></div>
-                </div>`;
-
-            // The 3D view is an OPT-IN companion (js/webgl-flow.js), never
-            // a replacement — it's built from these exact same `flows`/
-            // `nodes` objects so it can't show numbers the 2D view
-            // disagrees with, and it silently no-ops (returns false)
-            // wherever WebGL isn't available (the headless test harness,
-            // an old device) rather than erroring.
-            const view2D = container.querySelector('.flow-view-2d');
-            const view3D = container.querySelector('.flow-view-3d');
-            const slot3D = container.querySelector('.flow-3d-slot');
-            const nodes3D = {};
-            Object.keys(nodes).forEach(k => { nodes3D[k] = { x: nodes[k].x, y: nodes[k].y, color: nodes[k].color }; });
-            const showFlow3D = () => {
-                if (typeof renderCircularFlow3D !== 'function') return;
-                if (!renderCircularFlow3D(slot3D, flows, nodes3D)) {
-                    // WebGL unavailable — stay on the 2D view rather than
-                    // showing a blank panel.
-                    flow3DActive = false;
-                    view2D.classList.remove('hidden');
-                    view3D.classList.add('hidden');
-                }
-            };
-            container.querySelectorAll('.flow-3d-toggle-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    flow3DActive = !flow3DActive;
-                    view2D.classList.toggle('hidden', flow3DActive);
-                    view3D.classList.toggle('hidden', !flow3DActive);
-                    if (flow3DActive) showFlow3D();
-                });
-            });
-            if (flow3DActive) {
-                view2D.classList.add('hidden');
-                view3D.classList.remove('hidden');
-                showFlow3D();
-            }
+                <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+                     aria-label="Animated circular flow of income, with every transaction labeled: real flow of factor services and goods moving opposite to the money flow of payments and expenditure, between households, firms, government and the foreign sector">
+                    ${flowsSVG}
+                    ${nodesSVG}
+                    ${labelsSVG}
+                    ${legendSVG}
+                </svg>`;
 
             const gdpExp = consumption + g + 50 + nx; // C + G + (illustrative I=50) + NX — illustrative expenditure-method total for this flow diagram's own figures
             return {
