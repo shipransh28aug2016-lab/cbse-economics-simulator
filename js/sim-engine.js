@@ -432,6 +432,10 @@ function buildControls(sim) {
             // continuous slider — some variables in the syllabus are a
             // choice of mode, not a number.
             const label = controlLabel(sim, c);
+            // A row of segmented buttons reads poorly squeezed into one
+            // ~200px grid column, so it spans the full compact-controls
+            // grid width (see .control-row--wide in css/styles.css).
+            row.classList.add('control-row--wide');
             row.innerHTML = `
                 <div class="control-label-row">
                     <label>${label}</label>
@@ -648,6 +652,12 @@ function renderSim(sim) {
     // needs to be taller for it — and only for it.
     const simScreen = document.getElementById('screen-sim');
     if (simScreen) simScreen.classList.toggle('screen-sim-graphlab', sim.mode === 'graphlab');
+    // Plain Simulator-mode sims are the only ones that fill #controls-panel
+    // with the slider-per-row `.control-row` markup buildControls() below
+    // produces — Data Labs put a table there and Explorers put nav/cards,
+    // so this class scopes the compact multi-column control grid (see
+    // css/styles.css) to exactly the layout it was designed for.
+    if (simScreen) simScreen.classList.toggle('screen-sim-compact-controls', !sim.mode || sim.mode === 'simulator');
 
     simEngineState = {};
     prevSimEngineState = {};

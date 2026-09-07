@@ -663,6 +663,38 @@ header, .sim-topbar {
 
 .control-row.hidden { display: none !important; }
 
+/* ── Compact multi-column control grid (Simulator mode only) ────
+   The stacked one-slider-per-row layout used to push the panel to
+   several screen-heights on any sim with 5+ controls, forcing a scroll
+   to see chart + last slider together. Packing sliders into a
+   responsive grid — same "don't waste vertical space" idea the Graph
+   Lab variable strip already applies — keeps the whole control set
+   visible alongside the chart above it. Scoped to
+   `.screen-sim-compact-controls` (toggled in renderSim(), sim-engine.js)
+   so Data Lab tables and Explorer nav/cards, which reuse the same
+   #controls-panel element with completely different markup, are
+   untouched. */
+.screen-sim-compact-controls .controls-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  column-gap: 22px;
+  row-gap: 12px;
+  padding: 14px 18px 18px;
+}
+.screen-sim-compact-controls .controls-panel-header,
+.screen-sim-compact-controls .controls-panel-hint,
+.screen-sim-compact-controls .controls-panel > .empty-hint,
+.screen-sim-compact-controls .control-row--wide {
+  grid-column: 1 / -1;
+}
+/* Spacing now comes from the grid's row-gap, not stacked margins. */
+.screen-sim-compact-controls .control-row + .control-row { margin-top: 0; }
+.screen-sim-compact-controls .controls-panel-hint { margin-bottom: 2px; }
+
+@media (max-width: 640px) {
+  .screen-sim-compact-controls .controls-panel { grid-template-columns: 1fr; }
+}
+
 /* ── Info sidebar cards ──────────────────────────────────────── */
 .info-card {
   border-radius: 14px;
