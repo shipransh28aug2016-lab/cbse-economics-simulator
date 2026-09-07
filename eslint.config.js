@@ -34,24 +34,28 @@ const appGlobals = {
     selectQuizAnswer: 'readonly', showQuizResult: 'readonly', BLOOM_LABELS: 'readonly',
     I18N_HI: 'writable', SIM_I18N_HI: 'writable', mergeSimTranslations: 'readonly', translateStaticUI: 'readonly',
     hiPath: 'readonly', tEngine: 'readonly', controlLabel: 'readonly', dataLabColLabel: 'readonly',
-    READINGS_I18N_HI: 'writable', translateReadings: 'readonly'
+    READINGS_I18N_HI: 'writable', translateReadings: 'readonly',
+    // js/webgl-flow.js (Three.js-powered 3D Circular Flow companion view).
+    THREE: 'readonly', renderCircularFlow3D: 'readonly', circularFlow3DSupported: 'readonly',
+    flow3DActive: 'writable'
 };
 
 module.exports = [
     js.configs.recommended,
     {
-        // Vendored third-party library — not ours to lint or fix.
-        ignores: ['js/plotly.min.js']
+        // Vendored third-party libraries — not ours to lint or fix.
+        ignores: ['js/plotly.min.js', 'js/three.min.js']
     },
     {
         files: ['js/**/*.js'],
-        ignores: ['js/plotly.min.js'],
+        ignores: ['js/plotly.min.js', 'js/three.min.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',
             globals: {
                 window: 'readonly', document: 'readonly', console: 'readonly',
                 localStorage: 'readonly', fetch: 'readonly', setTimeout: 'readonly',
+                requestAnimationFrame: 'readonly', devicePixelRatio: 'readonly', globalThis: 'readonly',
                 module: 'writable', require: 'readonly',
                 ...appGlobals
             }
