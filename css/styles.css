@@ -250,6 +250,20 @@ header, .sim-topbar {
 }
 
 /* ── Simulation cards ────────────────────────────────────────── */
+/* Corner badge for sim.enrichment:true (see reports/modernization-audit.md
+   finding E-2) — a student/teacher browsing the Home grid should be able
+   to tell "goes beyond the named 2026-27 topic" without opening the card
+   first; sim-engine.js's own .enrichment-tag inside the sim screen is the
+   full explanation, this is just the at-a-glance signal. */
+.sim-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 14px;
+  cursor: help;
+  opacity: 0.85;
+}
+
 .sim-card {
   flex: 1 1 250px;
   min-width: 250px;

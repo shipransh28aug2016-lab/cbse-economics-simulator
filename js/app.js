@@ -129,6 +129,13 @@ function rebuildHomeGrids() {
         SIMS.forEach(sim => {
             const title = simField(sim, 'title');
             const desc = simField(sim, 'desc');
+            // Surfaced on the Home grid too, not just inside the sim screen
+            // (sim-engine.js's enrichment-tag) — a student/teacher browsing
+            // cards should see "this goes beyond the named 2026-27 topic"
+            // BEFORE opening it, not discover it only after clicking in.
+            const badge = sim.enrichment
+                ? `<span class="sim-card-badge" title="${tEngine('engine.enrichmentTag', '✨ Enrichment — beyond the 2026–27 unit list for this topic')}">✨</span>`
+                : '';
             // Note: each grid needs its own card element with its own click
             // handler attached directly. cloneNode(true) does NOT copy
             // JS-assigned event handlers (like .onclick), so cards created
@@ -136,14 +143,14 @@ function rebuildHomeGrids() {
             if (grids[sim.module]) {
                 const card = document.createElement('div');
                 card.className = `sim-card sim-card--${sim.module}`;
-                card.innerHTML = `<h3>${title}</h3><p>${desc}</p>`;
+                card.innerHTML = `${badge}<h3>${title}</h3><p>${desc}</p>`;
                 card.onclick = () => openSim(sim.id);
                 grids[sim.module].appendChild(card);
             }
             if (grids['all']) {
                 const sysCard = document.createElement('div');
                 sysCard.className = `sim-card sim-card--${sim.module}`;
-                sysCard.innerHTML = `<h3>${title}</h3><p>${desc}</p>`;
+                sysCard.innerHTML = `${badge}<h3>${title}</h3><p>${desc}</p>`;
                 sysCard.onclick = () => openSim(sim.id);
                 grids['all'].appendChild(sysCard);
             }
