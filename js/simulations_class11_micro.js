@@ -16,6 +16,22 @@ if (typeof SIMS !== 'undefined') {
             mode: 'simulator',
             concept: '<p>Every economy faces three central problems — <b>what</b> to produce, <b>how</b> to produce it, and <b>for whom</b> — because resources are scarce relative to wants. The <b>Production Possibility Frontier (PPF)</b> shows every combination of two goods an economy can produce at full, efficient resource use. A point <i>on</i> the frontier is efficient; a point <i>inside</i> it means resources are unemployed or underused (an "inefficient" economy — one answer to "how to produce" gone wrong); a point <i>outside</i> it is unattainable with current resources and technology. The PPF bows outward (concave to the origin) because resources aren\'t perfectly suited to producing both goods — shifting more resources toward Good X costs progressively <i>more</i> Good Y each time: the <b>Law of Increasing Opportunity Cost</b>.</p>',
             formulas: ['Illustrative PPF: Y = C − X² / C  (C = resource/technology endowment)', 'Opportunity Cost of one more X (in terms of Y) = Marginal Rate of Transformation = 2X / C', 'On the frontier = efficient · Inside = inefficient · Outside = unattainable'],
+            // Generic simulator-mode PREDICT card (js/sim-engine.js) —
+            // the Law of Increasing Opportunity Cost is exactly the kind
+            // of monotonic-trend prediction this mechanic is built for.
+            predict: {
+                controlId: 'x',
+                prompt: 'Staying "On the Frontier", before you raise Output of Good X, predict: what happens to the Opportunity Cost of one more unit of X?',
+                choices: [
+                    { value: 'rise', label: '📈 Opportunity Cost RISES' },
+                    { value: 'fall', label: '📉 Opportunity Cost FALLS' }
+                ],
+                evaluate(before, after) {
+                    if (!before || !after || before.pointType !== 'on' || after.pointType !== 'on') return null;
+                    if (typeof before.mrt !== 'number' || typeof after.mrt !== 'number') return null;
+                    return after.mrt > before.mrt ? 'rise' : 'fall';
+                }
+            },
             controls: [
                 { id: 'resources', label: 'Resources & Technology (C)', min: 10, max: 30, step: 1, value: 20, unit: '' },
                 { id: 'x', label: 'Output of Good X', min: 0, max: 30, step: 1, value: 10, unit: '' },
