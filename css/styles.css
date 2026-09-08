@@ -1421,6 +1421,59 @@ header, .sim-topbar {
   background: rgba(16, 185, 129, 0.14);
 }
 
+/* ── Teaching & Learning Toolkit sidebar card ────────────────────── */
+.tlm-section {
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.4);
+}
+.tlm-section:last-child { margin-bottom: 0; }
+.tlm-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text1);
+}
+.tlm-section p { margin: 0 0 4px 0; font-size: 12.2px; line-height: 1.55; color: var(--text2); }
+.tlm-section p:last-child { margin-bottom: 0; }
+.tlm-section ul { margin: 0; padding-left: 18px; }
+.tlm-section li { font-size: 12.2px; line-height: 1.6; color: var(--text2); margin-bottom: 4px; }
+.tlm-section li:last-child { margin-bottom: 0; }
+
+.tlm-examtip { border-left: 3px solid #f59e0b; }
+.tlm-mistakes { border-left: 3px solid #ef4444; }
+.tlm-keyidea { border-left: 3px solid #8b5cf6; }
+.tlm-exitticket { border-left: 3px solid #0891b2; }
+.tlm-teacher { border-left: 3px solid #10b981; }
+
+.tlm-qc-question { font-size: 12.5px; font-weight: 600; color: var(--text1); margin: 0 0 8px; }
+.tlm-qc-options { display: flex; flex-direction: column; gap: 6px; }
+.tlm-qc-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text1);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 7px 9px;
+  text-align: left;
+}
+.tlm-qc-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.tlm-qc-btn:disabled { cursor: default; }
+.tlm-qc-btn--correct { border-color: #10b981; background: rgba(16, 185, 129, 0.14); }
+.tlm-qc-btn--wrong { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.tlm-qc-feedback {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text2);
+}
+
 /* ── Data Lab: editable table (DATA -> TABLE -> CALCULATION) ────── */
 .datalab-table-wrap {
   overflow-x: auto;

@@ -355,6 +355,112 @@ function refreshChallenge(sim, metrics) {
     statusEl.classList.toggle('challenge-solved', solved);
 }
 
+// ── Teaching & Learning Toolkit (generic, optional, every mode) ────
+// A sim opts in with `sim.tlm = { keyIdea?, commonMistakes?:[...],
+// examTip?, thinkQuestion?, activity?:{title,instructions}, exitTicket?,
+// teacherExplain?, quickCheck?:{question,options,correctIndex,explain} }`.
+// Every field is independent and optional — only sections a sim actually
+// declares are rendered, never a placeholder for a missing one. This is
+// deliberately separate from `concept` (the ConceptCard already exists)
+// and from `practice`/`challenge` (already-generic, already-graded
+// exercises) — these are the TLM artifact types CLAUDE.md's own audit
+// found completely absent: a one-line KeyIdea distinct from full concept
+// prose, a CommonMistake list a student can read BEFORE ever getting a
+// quiz question wrong, an ExamTip, an open-ended ThinkQuestion, a
+// classroom/independent Activity, a single ungraded QuickCheck (distinct
+// from the full multi-question Quiz modal), an ExitTicket a teacher can
+// put up before ending class, and TeacherExplain — guidance for the
+// teacher, not the student.
+function renderTLM(sim) {
+    const card = document.getElementById('tlm-card');
+    const body = document.getElementById('tlm-body');
+    if (!card || !body) return;
+    if (!sim.tlm) { card.classList.add('hidden'); return; }
+    const t = sim.tlm;
+    const sections = [];
+
+    if (t.keyIdea) {
+        sections.push(`<div class="tlm-section tlm-keyidea"><h4>${tEngine('tlm.keyIdea', '💡 Key Idea')}</h4><p>${hiPath(sim, 'tlm.keyIdea') || t.keyIdea}</p></div>`);
+    }
+    if (Array.isArray(t.commonMistakes) && t.commonMistakes.length) {
+        const items = t.commonMistakes.map((m, i) => `<li>${hiPath(sim, `tlm.commonMistakes.${i}`) || m}</li>`).join('');
+        sections.push(`<div class="tlm-section tlm-mistakes"><h4>${tEngine('tlm.commonMistakes', '⚠️ Common Mistakes')}</h4><ul>${items}</ul></div>`);
+    }
+    if (t.examTip) {
+        sections.push(`<div class="tlm-section tlm-examtip"><h4>${tEngine('tlm.examTip', '📝 Exam Tip')}</h4><p>${hiPath(sim, 'tlm.examTip') || t.examTip}</p></div>`);
+    }
+    if (t.thinkQuestion) {
+        sections.push(`<div class="tlm-section tlm-think"><h4>${tEngine('tlm.thinkQuestion', '🤔 Think About It')}</h4><p>${hiPath(sim, 'tlm.thinkQuestion') || t.thinkQuestion}</p></div>`);
+    }
+    if (t.activity) {
+        const title = hiPath(sim, 'tlm.activity.title') || t.activity.title;
+        const instructions = hiPath(sim, 'tlm.activity.instructions') || t.activity.instructions;
+        sections.push(`<div class="tlm-section tlm-activity"><h4>${tEngine('tlm.activity', '🎬 Activity')}</h4><p><b>${title}</b></p><p>${instructions}</p></div>`);
+    }
+    if (t.exitTicket) {
+        sections.push(`<div class="tlm-section tlm-exitticket"><h4>${tEngine('tlm.exitTicket', '🎫 Exit Ticket')}</h4><p>${hiPath(sim, 'tlm.exitTicket') || t.exitTicket}</p></div>`);
+    }
+    if (t.teacherExplain) {
+        sections.push(`<div class="tlm-section tlm-teacher"><h4>${tEngine('tlm.teacherExplain', '🧑‍🏫 For Teachers')}</h4><p>${hiPath(sim, 'tlm.teacherExplain') || t.teacherExplain}</p></div>`);
+    }
+    if (t.quickCheck) {
+        sections.push(`<div class="tlm-section tlm-quickcheck"><h4>${tEngine('tlm.quickCheck', '✅ Quick Check')}</h4><div id="tlm-quickcheck-host"></div></div>`);
+    }
+
+    if (!sections.length) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+    body.innerHTML = sections.join('');
+    if (t.quickCheck) renderQuickCheck(sim, t.quickCheck, document.getElementById('tlm-quickcheck-host'));
+    // No initPanelCollapse() call here — tlm-card's header is already
+    // present in index.html's static markup, so initStaticPanelCollapse()
+    // (called once at app boot, same as practice-card/challenge-card)
+    // already wires its collapse/expand click handler. Wiring it again
+    // per sim-open would stack duplicate listeners.
+}
+
+// A single ungraded, immediate-feedback MCQ — deliberately NOT the full
+// Quiz modal (no question pool, no score, no Bloom's tagging): this is a
+// quick in-flow "did that just land?" check a student answers without
+// leaving the sim screen. correctIndex/explain are authored directly
+// (unlike the Quiz modal's applyTemplates, a single fixed quickCheck has
+// no live state to compute an answer from) — kept honest by staying a
+// single fixed question per sim rather than claiming to be dynamic.
+function renderQuickCheck(sim, qc, host) {
+    if (!host) return;
+    const question = hiPath(sim, 'tlm.quickCheck.question') || qc.question;
+    const options = qc.options.map((o, i) => hiPath(sim, `tlm.quickCheck.options.${i}`) || o);
+    host.innerHTML = `
+        <p class="tlm-qc-question">${question}</p>
+        <div class="tlm-qc-options">
+            ${options.map((o, i) => `<button type="button" class="tlm-qc-btn" data-i="${i}">${o}</button>`).join('')}
+        </div>
+        <div class="tlm-qc-feedback hidden" id="tlm-qc-feedback"></div>
+    `;
+    let answered = false;
+    host.querySelectorAll('.tlm-qc-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (answered) return;
+            answered = true;
+            const i = Number(btn.dataset.i);
+            const correct = i === qc.correctIndex;
+            host.querySelectorAll('.tlm-qc-btn').forEach((b, bi) => {
+                b.disabled = true;
+                if (bi === qc.correctIndex) b.classList.add('tlm-qc-btn--correct');
+                else if (bi === i) b.classList.add('tlm-qc-btn--wrong');
+            });
+            const feedback = document.getElementById('tlm-qc-feedback');
+            if (feedback) {
+                feedback.classList.remove('hidden');
+                const explain = hiPath(sim, 'tlm.quickCheck.explain') || qc.explain || '';
+                const prefix = correct
+                    ? tEngine('quiz.correct', '✅ Correct!')
+                    : tEngine('quiz.incorrect', '❌ Not quite.');
+                feedback.innerHTML = `<b>${prefix}</b> ${explain}`;
+            }
+        });
+    });
+}
+
 function buildControls(sim) {
     const panel = document.getElementById('controls-panel');
     if (!panel) return;
@@ -753,6 +859,7 @@ function renderSim(sim) {
     suppressNextWhatChanged = true;
     renderPractice(sim);
     renderChallengeShell(sim);
+    renderTLM(sim);
 
     if (sim.mode === 'graphlab' && typeof renderGraphLab === 'function') {
         // Graph Labs render their own SVG diagram and put their variable

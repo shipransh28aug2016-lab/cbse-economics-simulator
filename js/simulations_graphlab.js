@@ -227,6 +227,36 @@ SIMS.push({
             };
         }
     },
+    // Teaching & Learning Toolkit (js/sim-engine.js's renderTLM) — the
+    // flagship lab for this too, per Stage 21's "build one module
+    // excellently, then propagate." Every field independent/optional.
+    tlm: {
+        keyIdea: 'Own price moves you ALONG the curve (movement). Anything else moves the WHOLE curve (shift). Never mix the two up.',
+        commonMistakes: [
+            'Calling a price-driven expansion/contraction an "increase/decrease in demand" — that phrase is reserved for a SHIFT, never a movement.',
+            'Saying the demand curve "shifts" when only price changed — price never shifts its own curve, it only moves you along it.',
+            'Forgetting that "both at once" needs BOTH terms named separately in the exam answer, not one combined sentence.'
+        ],
+        examTip: 'If the question changes the good\'s OWN price, your answer must use "expansion"/"contraction" — never "increase"/"decrease". If it changes anything else (income, related-good prices, tastes, expectations, number of buyers), your answer must use "increase"/"decrease" — never "expansion"/"contraction". Examiners specifically award marks for using the right pair of words.',
+        thinkQuestion: 'Bus fares rise AND, separately, more people move to the city this year. Sketch what happens to the demand curve for bus rides — is this a pure movement, a pure shift, or both? Which determinant is responsible for the shift?',
+        activity: {
+            title: 'Newspaper Headline Hunt',
+            instructions: 'Find 3 real news headlines about a good/service becoming cheaper, dearer, more fashionable, or facing a new substitute. For each, decide: movement or shift? Which named determinant (if any) is responsible? Bring your 3 headlines and answers to class.'
+        },
+        exitTicket: 'In one sentence: petrol prices rise sharply. What happens to the demand curve for petrol — and what is the exam term for it?',
+        teacherExplain: 'Project this lab on a screen. Set all non-price determinants to 0 first and drag ONLY the price handle — ask the class to name what they see before revealing the verdict banner. Then reset, and drag ONLY a determinant chip (e.g. Income) — again ask them to predict first. The contrast between the two drags, done back-to-back, is what actually fixes the distinction; doing them in the same sitting matters more than either demo alone.',
+        quickCheck: {
+            question: 'A shop announces "Diwali Sale — 20% off!" What happens to the demand curve for that shop\'s goods?',
+            options: [
+                'Movement down along the same demand curve (expansion)',
+                'The demand curve shifts right (an increase in demand)',
+                'Nothing changes',
+                'The demand curve shifts left (a decrease in demand)'
+            ],
+            correctIndex: 0,
+            explain: 'A sale is a price cut on the good itself — that is an OWN-PRICE change, so it is a movement along the same curve (expansion), not a shift. "Tastes changed because of the sale" is a common but incorrect reframing — the sale IS a price change.'
+        }
+    },
     practice: [
         { prompt: 'Set every determinant to 0, then drag the price handle down. Is this an expansion of demand or an increase in demand?', hint: 'Only the OWN PRICE changed and you stayed on the same curve DD ⇒ movement ⇒ Expansion (Extension) of Demand.' },
         { prompt: 'Now reset the price to ₹50 and raise Consumer Income instead. Which term applies?', hint: 'A non-price determinant changed ⇒ the whole curve shifts right to D₁D₁ ⇒ Increase in Demand.' },
