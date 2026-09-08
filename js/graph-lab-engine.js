@@ -33,7 +33,14 @@
 //       verdict: { kind, title, detail },   // rendered under the graph
 //       readings:[{ label, value }] | 'html',
 //       formulas:[…]?, metrics:{}?
-//     }
+//     },
+//     predict?: true   // opt-in PREDICT gate (see glOpenPredictGate below):
+//         // clicking a scenario preset asks the student to guess
+//         // verdict.kind (none/movement/shift/both) BEFORE it applies,
+//         // rather than applying it immediately. Requires `scenarios` to
+//         // be declared too — it has nothing to gate otherwise. Direct
+//         // handle-dragging is never gated (that stays instant, per the
+//         // tested drag contract every Graph Lab relies on).
 //   }
 //
 // A `handle` is the draggable affordance. Dragging it along `axis` by Δ data
@@ -556,7 +563,7 @@ function glRenderScenarios(sim, panel) {
         const label = hiPath(sim, `graphLab.scenarios.${i}.label`) || sc.label;
         const note = hiPath(sim, `graphLab.scenarios.${i}.note`) || sc.note || '';
         btn.innerHTML = `<span class="gl-scenario-label">${glEsc(label)}</span>${note ? `<span class="gl-scenario-note">${glEsc(note)}</span>` : ''}`;
-        btn.addEventListener('click', () => {
+        const applyScenario = () => {
             (sim.graphLab.vars || []).forEach(v => { glState[v.id] = v.value; });
             Object.keys(sc.set || {}).forEach(k => { glState[k] = sc.set[k]; });
             glSnapshot = Object.assign({}, glState);
@@ -564,9 +571,87 @@ function glRenderScenarios(sim, panel) {
             // verdict describes the scenario itself, not the jump into it.
             glPrevState = Object.assign({}, glState);
             glRender(sim, true);
+        };
+        btn.addEventListener('click', () => {
+            if (sim.graphLab.predict) glOpenPredictGate(sim, sc, applyScenario);
+            else applyScenario();
         });
         wrap.appendChild(btn);
     });
     panel.appendChild(wrap);
+
+    if (sim.graphLab.predict) {
+        const gate = document.createElement('div');
+        gate.className = 'gl-predict-gate hidden';
+        gate.id = 'gl-predict-gate';
+        panel.appendChild(gate);
+    }
+
     if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, header, 'controls', false);
+}
+
+// Computes what a scenario WOULD produce, without touching live glState —
+// so the predict gate can ask "what will happen?" using the exact same
+// model() a real click would run, never a separately-authored answer that
+// could drift from what the diagram actually goes on to show.
+function glComputeScenarioVerdict(sim, sc) {
+    const trial = {};
+    (sim.graphLab.vars || []).forEach(v => { trial[v.id] = v.value; });
+    Object.keys(sc.set || {}).forEach(k => { trial[k] = sc.set[k]; });
+    try {
+        const result = sim.graphLab.model(trial, { prev: trial, base: trial }) || {};
+        return result.verdict || null;
+    } catch (err) {
+        return null;
+    }
+}
+
+const GL_PREDICT_CHOICES = [
+    { kind: 'none', key: 'gl.predictNone', fallback: '❌ Nothing changes' },
+    { kind: 'movement', key: 'gl.predictMovement', fallback: '↔️ Movement along the curve' },
+    { kind: 'shift', key: 'gl.predictShift', fallback: '⇄ Shift of the curve' },
+    { kind: 'both', key: 'gl.predictBoth', fallback: '↔️⇄ Both — movement AND shift' }
+];
+
+// PREDICT-before-REVEAL gate for a scenario preset (see the `predict` doc
+// above `graphLab`'s contract). If the model throws while computing the
+// trial verdict, this fails open — applies the scenario immediately rather
+// than blocking the student on a broken prediction question.
+function glOpenPredictGate(sim, sc, applyScenario) {
+    const gate = document.getElementById('gl-predict-gate');
+    if (!gate) { applyScenario(); return; }
+    const answerVerdict = glComputeScenarioVerdict(sim, sc);
+    if (!answerVerdict) { applyScenario(); return; }
+
+    gate.classList.remove('hidden');
+    gate.innerHTML = `
+        <p class="gl-predict-prompt">${tEngine('gl.predictPrompt', '🤔 Before this applies — predict: what will it cause?')}</p>
+        <div class="gl-predict-choices">
+            ${GL_PREDICT_CHOICES.map(c => `<button type="button" class="gl-predict-btn" data-kind="${c.kind}">${tEngine(c.key, c.fallback)}</button>`).join('')}
+        </div>
+        <button type="button" class="gl-predict-skip">${tEngine('gl.predictSkip', 'Skip prediction →')}</button>
+        <div class="gl-predict-result hidden" id="gl-predict-result"></div>
+    `;
+
+    const finish = (chosenKind) => {
+        applyScenario();
+        const resultEl = document.getElementById('gl-predict-result');
+        if (chosenKind && resultEl) {
+            const correct = chosenKind === answerVerdict.kind;
+            resultEl.classList.remove('hidden');
+            resultEl.classList.toggle('gl-predict-result--correct', correct);
+            resultEl.classList.toggle('gl-predict-result--wrong', !correct);
+            const prefix = correct
+                ? tEngine('gl.predictCorrectPrefix', '✅ Correct! It really was:')
+                : tEngine('gl.predictWrongPrefix', '❌ Not quite — it was actually:');
+            resultEl.innerHTML = `<b>${prefix}</b> ${answerVerdict.title}`;
+        }
+        gate.querySelectorAll('.gl-predict-btn, .gl-predict-skip').forEach(b => { b.disabled = true; });
+    };
+
+    gate.querySelectorAll('.gl-predict-btn').forEach(btn => {
+        btn.addEventListener('click', () => finish(btn.dataset.kind));
+    });
+    const skipBtn = gate.querySelector('.gl-predict-skip');
+    if (skipBtn) skipBtn.addEventListener('click', () => finish(null));
 }

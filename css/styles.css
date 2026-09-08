@@ -1899,6 +1899,72 @@ header, .sim-topbar {
 .gl-scenario-label { font-size: 12px; font-weight: 700; color: var(--text1); }
 .gl-scenario-note  { font-size: 10.5px; color: var(--primary-2); font-weight: 600; }
 
+/* ── PREDICT gate (graphLab.predict: true) ──────────────────── */
+.gl-predict-gate {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--primary-2);
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.gl-predict-prompt {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text1);
+  margin: 0 0 8px;
+}
+
+.gl-predict-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+}
+
+.gl-predict-btn {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text1);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 9px;
+  padding: 7px 9px;
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gl-predict-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.18);
+}
+
+.gl-predict-btn:disabled { opacity: 0.55; cursor: default; }
+
+.gl-predict-skip {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  text-decoration: underline;
+}
+
+.gl-predict-skip:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+
+.gl-predict-result {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 7px 9px;
+  border-radius: 8px;
+}
+
+.gl-predict-result--correct { background: rgba(16, 185, 129, 0.12); color: #047857; }
+.gl-predict-result--wrong   { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+.gl-predict-result b { color: inherit; }
+
 /* A Graph Lab with no scenario presets hides the panel entirely rather
    than leaving an empty glass card under the diagram. */
 .controls-panel.hidden { display: none; }

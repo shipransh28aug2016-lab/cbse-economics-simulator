@@ -104,11 +104,11 @@ SIMS.push({
     id: 'gl-demand-movement-shift',
     module: 'micro',
     title: 'Demand: Movement vs Shift (Drag the Curve)',
-    desc: 'Drag the point ALONG DD for expansion/contraction; drag the whole curve for increase/decrease. The diagram names what you did, in exam words.',
+    desc: 'Drag the point ALONG DD for expansion/contraction; drag the whole curve for increase/decrease. The diagram names what you did, in exam words. Demand only, one cause at a time — for demand AND supply together with every named determinant, see "Supply & Demand: Every Determinant".',
     class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topicLabel: 'Movements vs Shifts',
     syllabusIds: ['XI-B-U5-DEMAND'],
     mode: 'graphlab',
-    concept: '<p>This is the single most-tested distinction in the demand chapter, and the one students lose marks on.</p><p><b>Movement along the demand curve</b> happens when — and <i>only</i> when — the good\'s <b>own price</b> changes. You stay on the same curve DD and slide to a different point on it. Price falls ⇒ <b>Expansion (Extension) of Demand</b>. Price rises ⇒ <b>Contraction of Demand</b>.</p><p><b>Shift of the demand curve</b> happens when a <b>non-price determinant</b> changes — income, price of substitutes or complements, tastes, expectations, number of buyers. The whole curve moves to a new position D₁D₁. Rightward ⇒ <b>Increase in Demand</b>. Leftward ⇒ <b>Decrease in Demand</b>.</p><p>The exam wording matters: a price fall is <i>never</i> "an increase in demand". Drag both kinds of control here and watch the diagram say so.</p>',
+    concept: '<p>This is the single most-tested distinction in the demand chapter, and the one students lose marks on.</p><p><b>Movement along the demand curve</b> happens when — and <i>only</i> when — the good\'s <b>own price</b> changes. You stay on the same curve DD and slide to a different point on it. Price falls ⇒ <b>Expansion (Extension) of Demand</b>. Price rises ⇒ <b>Contraction of Demand</b>.</p><p><b>Shift of the demand curve</b> happens when a <b>non-price determinant</b> changes — income, price of substitutes or complements, tastes, expectations, number of buyers. The whole curve moves to a new position D₁D₁. Rightward ⇒ <b>Increase in Demand</b>. Leftward ⇒ <b>Decrease in Demand</b>.</p><p>The exam wording matters: a price fall is <i>never</i> "an increase in demand". Drag both kinds of control here and watch the diagram say so. Use the <b>🎬 Textbook Scenarios</b> below to predict the outcome before it applies.</p><p>💡 This lab isolates <b>demand alone, one named cause at a time</b> — the sharpest tool for this one distinction. Once you\'ve got it, <b>"Supply &amp; Demand: Every Determinant"</b> lets you move several demand AND supply determinants together and watch the market <b>equilibrium</b> itself move.</p>',
     formulas: [
         'Demand curve: P = a − b·Q  (a = intercept, b = slope)',
         'Own price ↓ ⇒ MOVEMENT down along DD ⇒ Expansion of Demand',
@@ -118,6 +118,13 @@ SIMS.push({
         'Net shift = ΔIncome + ΔP(substitute) − ΔP(complement) + ΔTastes + ΔBuyers'
     ],
     graphLab: {
+        // PREDICT gate: clicking a scenario preset first asks the student
+        // to guess movement/shift/both/none, revealing the real answer
+        // (computed live from this same model()) only after they answer —
+        // see js/graph-lab-engine.js's glOpenPredictGate(). This is the
+        // flagship lab for this feature; direct handle-dragging stays
+        // instant as always.
+        predict: true,
         x: { label: 'Quantity Demanded (units) →', min: 0, max: 100 },
         y: { label: 'Price (₹ per unit) →', min: 0, max: 100 },
         vars: [
