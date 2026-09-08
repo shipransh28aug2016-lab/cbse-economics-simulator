@@ -357,6 +357,33 @@ SIMS.push({
             };
         }
     },
+    tlm: {
+        keyIdea: 'Own price moves you ALONG SS (movement). Anything else moves the WHOLE curve (shift) — exactly as with demand, just with the direction of the movement flipped.',
+        commonMistakes: [
+            'Calling a price-driven expansion/contraction of supply an "increase/decrease in supply" — reserved for a shift, never a movement.',
+            'Assuming supply behaves like demand: a price RISE is an expansion of SUPPLY but a CONTRACTION of demand — same direction of price change, opposite name, because the curves slope opposite ways.',
+            'Forgetting a subsidy is a non-price determinant (it cuts effective cost) — students sometimes treat it as a price change on the good itself.'
+        ],
+        examTip: 'Always check the SLOPE before naming a movement: SS slopes upward, so price↑ ⇒ Q↑ ⇒ expansion; DD slopes downward, so price↑ ⇒ Q↓ ⇒ contraction. Examiners specifically test this direction-flip between the two curves.',
+        thinkQuestion: 'A new factory-automation technology arrives AND, separately, the government raises tax on the good. Sketch what happens to the supply curve — is this a pure shift, a pure movement, or both? Which direction does each named determinant push the curve?',
+        activity: {
+            title: 'Cost & Technology Tracker',
+            instructions: 'Pick a real product (e.g. smartphones, sugar, cotton shirts). Find one real news item about its input costs, technology, or government tax/subsidy changing. Decide: does SS shift right or left? Bring your example and reasoning to class.'
+        },
+        exitTicket: 'In one sentence: a severe drought raises the cost of raw cotton. What happens to the supply curve for cotton shirts — and what is the exam term for it?',
+        teacherExplain: 'Run this immediately after the Demand movement/shift lab, back-to-back — the payoff is the CONTRAST: drag price up on both labs and ask the class why the same direction of price change gets a different name (expansion for supply, contraction for demand). That single side-by-side comparison does more than either lab alone.',
+        quickCheck: {
+            question: 'The government announces a new tax on sugar production. What happens to the supply curve for sugar?',
+            options: [
+                'The supply curve shifts left (a decrease in supply)',
+                'Movement up along the same supply curve (expansion)',
+                'The supply curve shifts right (an increase in supply)',
+                'Nothing changes'
+            ],
+            correctIndex: 0,
+            explain: 'A tax raises the effective cost of production — a non-price determinant — so at every price less is supplied. The whole curve shifts left: a decrease in supply, not a movement.'
+        }
+    },
     practice: [
         { prompt: 'Why is a price RISE called an expansion for supply but a contraction for demand?', hint: 'Both are movements along the curve. SS slopes upward so P↑ ⇒ Q↑ (expansion); DD slopes downward so P↑ ⇒ Q↓ (contraction). The name follows the quantity, not the price.' },
         { prompt: 'A subsidy is announced. Drag the Tax(+)/Subsidy(−) chip negative. Movement or shift?', hint: 'A subsidy is a non-price determinant — it cuts effective cost, so SS shifts right ⇒ Increase in Supply.' },
@@ -479,6 +506,33 @@ SIMS.push({
                 verdict: { kind: vKind, title: vTitle, detail: vDetail },
                 metrics: { eqP: eq.P, eqQ: eq.Q, gap, dShift: v.dShift, sShift: v.sShift }
             };
+        }
+    },
+    tlm: {
+        keyIdea: 'Equilibrium is the ONE price where Qd = Qs. Push price away from it and the market itself pushes back — that pressure IS excess demand or excess supply.',
+        commonMistakes: [
+            'Assuming price can sit anywhere — a price away from equilibrium always creates a gap (shortage or surplus) that pushes it back, it does not just stay put.',
+            'When both curves shift together, trying to name a definite price direction — "indeterminate" is the correct, complete exam answer when the shifts are of similar size, not a sign of not knowing the answer.',
+            'Mixing up which shift caused which change in a two-shift scenario, instead of tracing demand and supply effects on price and quantity separately.'
+        ],
+        examTip: 'For a single shift, use the 4-case table directly: DD right ⇒ P↑Q↑, DD left ⇒ P↓Q↓, SS right ⇒ P↓Q↑, SS left ⇒ P↑Q↓. For BOTH shifting, decide quantity first (it is usually determinate) and only call price "indeterminate" when the two effects genuinely oppose each other by unclear relative size — say so explicitly, don\'t guess a direction.',
+        thinkQuestion: 'A bumper harvest increases the supply of onions AND, separately, a food-delivery trend increases demand for restaurant meals using onions. If both shifts happen to onions\' market at once, what can you say for certain about quantity, and what would you need to know to say anything about price?',
+        activity: {
+            title: 'Real Market Disequilibrium Hunt',
+            instructions: 'Find one real example of a price ceiling (e.g. rent control) or a price floor (e.g. minimum support price for crops) in the news. Identify whether it creates excess demand or excess supply, and what real-world symptom that produces (queues, black markets, unsold stock, etc.).'
+        },
+        exitTicket: 'In one sentence: a government sets a price ceiling below the market equilibrium price. What does the diagram show, and what real-world symptom follows?',
+        teacherExplain: 'Set the market price handle away from equilibrium FIRST (before touching either curve) and ask the class to predict which way price will move and why — this establishes the "market has a pull toward equilibrium" intuition before shifts are introduced at all. Only then drag a curve to show a shift moving the equilibrium point itself.',
+        quickCheck: {
+            question: 'At the current market price, Quantity Demanded is 40 units and Quantity Supplied is 25 units. What is happening, and which way will price move?',
+            options: [
+                'Excess Demand (shortage) of 15 units — price will rise',
+                'Excess Supply (surplus) of 15 units — price will fall',
+                'The market is in equilibrium — no change',
+                'Excess Demand of 65 units — price will fall'
+            ],
+            correctIndex: 0,
+            explain: 'Qd (40) > Qs (25) means buyers want more than is being offered — excess demand (a shortage) of 40−25=15 units. Buyers competing for the scarce goods bid the price up, which is exactly the market\'s own pressure back toward equilibrium.'
         }
     },
     practice: [
