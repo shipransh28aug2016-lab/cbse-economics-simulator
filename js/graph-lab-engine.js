@@ -606,6 +606,16 @@ function glComputeScenarioVerdict(sim, sc) {
     }
 }
 
+// Default 4-way choice set — right for any lab using the movement/shift/
+// both/none vocabulary (glMoveShiftVerdict: demand, supply). A lab whose
+// verdict.kind means something else (e.g. gl-market-equilibrium-shifts,
+// where 'movement' means "price away from equilibrium", not "movement
+// along a curve") must NOT reuse this wording — it would be confidently
+// wrong, the same trap CLAUDE.md's `groupLabels` doc warns about for the
+// chip-strip headings. Such a lab declares its own `graphLab.predictChoices`
+// (same {kind, label} shape, label a plain string — not yet routed through
+// tEngine/Hindi, since these are per-lab custom strings rather than fixed
+// engine chrome) matching the actual kind values ITS OWN model() returns.
 const GL_PREDICT_CHOICES = [
     { kind: 'none', key: 'gl.predictNone', fallback: '❌ Nothing changes' },
     { kind: 'movement', key: 'gl.predictMovement', fallback: '↔️ Movement along the curve' },
@@ -623,11 +633,14 @@ function glOpenPredictGate(sim, sc, applyScenario) {
     const answerVerdict = glComputeScenarioVerdict(sim, sc);
     if (!answerVerdict) { applyScenario(); return; }
 
+    const choices = sim.graphLab.predictChoices || GL_PREDICT_CHOICES;
+    const choiceLabel = c => c.label || tEngine(c.key, c.fallback);
+
     gate.classList.remove('hidden');
     gate.innerHTML = `
         <p class="gl-predict-prompt">${tEngine('gl.predictPrompt', '🤔 Before this applies — predict: what will it cause?')}</p>
         <div class="gl-predict-choices">
-            ${GL_PREDICT_CHOICES.map(c => `<button type="button" class="gl-predict-btn" data-kind="${c.kind}">${tEngine(c.key, c.fallback)}</button>`).join('')}
+            ${choices.map(c => `<button type="button" class="gl-predict-btn" data-kind="${c.kind}">${choiceLabel(c)}</button>`).join('')}
         </div>
         <button type="button" class="gl-predict-skip">${tEngine('gl.predictSkip', 'Skip prediction →')}</button>
         <div class="gl-predict-result hidden" id="gl-predict-result"></div>

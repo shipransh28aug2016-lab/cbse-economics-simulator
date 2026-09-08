@@ -256,6 +256,10 @@ SIMS.push({
         'Costlier inputs / higher tax ⇒ SS shifts LEFT ⇒ Decrease in Supply'
     ],
     graphLab: {
+        // See gl-demand-movement-shift's identical flag — same movement/
+        // shift verdict vocabulary (glMoveShiftVerdict), so the PREDICT
+        // gate propagates here for free.
+        predict: true,
         x: { label: 'Quantity Supplied (units) →', min: 0, max: 100 },
         y: { label: 'Price (₹ per unit) →', min: 0, max: 100 },
         vars: [
@@ -352,6 +356,17 @@ SIMS.push({
         'Both shift right: Q↑ definitely, P indeterminate'
     ],
     graphLab: {
+        // This lab's own verdict.kind vocabulary means something different
+        // from demand/supply's ('movement' here = "price away from
+        // equilibrium", not "movement along a curve"), so it declares its
+        // own predictChoices rather than reusing GL_PREDICT_CHOICES's
+        // wording, which would be confidently wrong here.
+        predict: true,
+        predictChoices: [
+            { kind: 'none', label: '✔️ Market already clears (Qd = Qs)' },
+            { kind: 'movement', label: '⚖️ Disequilibrium — price is away from equilibrium (excess demand/supply)' },
+            { kind: 'shift', label: '↗️ A curve shifts — equilibrium itself moves' }
+        ],
         x: { label: 'Quantity (units) →', min: 0, max: 100 },
         y: { label: 'Price (₹ per unit) →', min: 0, max: 100 },
         vars: [
