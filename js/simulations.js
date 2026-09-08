@@ -208,6 +208,33 @@ const SIMS = [
                            <div class="reading-row insight-row">💡 ${insight}</div>`
             };
         },
+        tlm: {
+            keyIdea: '|Ed| measures how STRONGLY quantity demanded reacts to a price change — not the size of the price change itself. |Ed| > 1 is elastic, |Ed| < 1 is inelastic, |Ed| = 1 is unit elastic.',
+            commonMistakes: [
+                'Confusing "elastic" with "expensive" or "important" — elasticity is about RESPONSIVENESS to price, not the price level or how essential the good is (though necessities usually ARE inelastic).',
+                'Reading the SLOPE of the curve alone as "the" elasticity — elasticity also depends on the price/quantity point you\'re AT, not the slope alone (a straight-line demand curve has different Ed at every point on it).',
+                'Forgetting the negative sign convention — Ed for a normal downward-sloping demand curve is negative; "|Ed| > 1" (magnitude) is what "elastic" means, not Ed > 1 literally.'
+            ],
+            examTip: 'When asked to justify WHY a good is elastic or inelastic, name the actual determinant — number of substitutes, necessity vs luxury, proportion of income spent, or time period — never just restate the number. "Ed = 2, so demand is elastic" earns fewer marks than "Ed = 2 because this good has several close substitutes, so demand is elastic."',
+            thinkQuestion: 'Salt and a specific brand of fizzy drink are both consumer goods, but one has much higher price elasticity of demand. Which one, and which determinant (substitutes, necessity, income share, time) is doing the most work?',
+            activity: {
+                title: 'Elasticity Rank the Basket',
+                instructions: 'List 5 goods you or your family buy regularly (e.g. rice, a specific smartphone brand, electricity, a particular restaurant meal, salt). Rank them from most to least price-elastic, and for each, name the ONE determinant you think matters most.'
+            },
+            exitTicket: 'In one sentence: why does a life-saving medicine with no substitute have very low price elasticity of demand?',
+            teacherExplain: 'Use the Substitutes slider as the live demonstration: fix price, then move Substitutes from 0 to 5 and have the class watch |Ed| in the readings panel change in real time — this makes "more substitutes → more elastic" a directly observed fact rather than a memorized rule.',
+            quickCheck: {
+                question: 'A good has Ed = −0.3. What does this tell you?',
+                options: [
+                    'Demand is inelastic — quantity demanded barely responds to a price change',
+                    'Demand is elastic — quantity demanded responds strongly to a price change',
+                    'The good is a luxury',
+                    'The price of the good is very low'
+                ],
+                correctIndex: 0,
+                explain: '|Ed| = 0.3 is less than 1, so demand is inelastic — a price change produces a proportionally smaller change in quantity demanded. The negative sign just reflects the Law of Demand (price and quantity move opposite ways); it\'s the MAGNITUDE, 0.3, that tells you inelastic.'
+            }
+        },
         practice: [
             { prompt: 'With Elasticity Type = Price, push Substitutes from 0 to 5 at a fixed price. What happens to |Ed|?', hint: 'More close substitutes make demand more elastic — |Ed| rises as the slider increases.' },
             { prompt: 'Find a price where demand is exactly unit elastic (Ed = −1) with 1 substitute.', hint: 'With bEff = 0.4, Ed = −1 when P/Q = 2.5 — try prices around ₹36–38 and watch the readings panel.' }

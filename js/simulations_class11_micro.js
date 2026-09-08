@@ -78,6 +78,33 @@ if (typeof SIMS !== 'undefined') {
                                <div class="reading-row insight-row">💡 ${note} At X=${X}, giving up ${fmt(mrt)} units of Y buys one more unit of X — and that cost keeps rising as X increases, because resources are progressively less suited to producing X.</div>`
                 };
             },
+            tlm: {
+                keyIdea: 'The PPF shows the MAXIMUM combinations an economy can produce with what it has right now. On it = efficient. Inside = wasting resources. Outside = needs more resources/technology first.',
+                commonMistakes: [
+                    'Swapping INSIDE (inefficient — has the resources, wasting them) with OUTSIDE (unattainable — doesn\'t have enough resources yet) — these are opposite problems, not the same idea in different words.',
+                    'Thinking the PPF is a straight line — it bows outward (concave to the origin) specifically because of the Law of Increasing Opportunity Cost; a straight-line PPF would mean constant opportunity cost, which contradicts the law.',
+                    'Treating "opportunity cost" as only relevant at the current point, rather than realizing it CHANGES (and rises) as you move along the frontier toward more of one good.'
+                ],
+                examTip: 'When asked to explain the PPF\'s shape, always name the reason: resources are NOT equally suited to producing both goods, so shifting more of them toward Good X means using progressively less-suited resources — that\'s why each extra unit of X costs MORE of Y. "It bows outward because resources aren\'t equally suited to both goods" is the complete exam sentence.',
+                thinkQuestion: 'A country invests heavily in new irrigation technology that helps farming far more than it helps manufacturing. What happens to the shape and position of its PPF between "Food" and "Manufactured goods" — does it shift outward evenly, or does one end move more than the other?',
+                activity: {
+                    title: 'Household PPF',
+                    instructions: 'Pick two things you could do with the next 2 hours (e.g. study Economics vs. study Physics, or homework vs. leisure). Sketch your own personal "PPF" for those two hours, mark a point that would be "inefficient" for you, and explain in one line what your opportunity cost of 30 more minutes of one activity is.'
+                },
+                exitTicket: 'In one sentence: why is a point outside a country\'s current PPF called "unattainable" rather than just "very difficult"?',
+                teacherExplain: 'Start with Point Type = "On the Frontier" and slide Good X output up slowly while the class watches the Opportunity Cost reading climb — then switch to "Inside" at the SAME X value and ask what real-world situation could put an economy there. The contrast between a rising cost (on the frontier) and a fixed, avoidable waste (inside it) is the lesson.',
+                quickCheck: {
+                    question: 'An economy is producing a combination of goods that lies INSIDE its PPF. What does this mean?',
+                    options: [
+                        'Some resources are unemployed or being used inefficiently',
+                        'The economy has run out of resources entirely',
+                        'The economy is producing at the best possible combination',
+                        'The combination is impossible to produce'
+                    ],
+                    correctIndex: 0,
+                    explain: 'A point inside the PPF means the economy COULD produce more of both goods with the resources it already has — some resources are sitting idle or are badly allocated. That is the definition of productive inefficiency.'
+                }
+            },
             practice: [
                 { prompt: 'With Point Type = "On the Frontier", raise Good X output from 5 to 25. Does the Opportunity Cost of X rise or fall?', hint: 'It rises steadily (MRT = 2X/C) — the Law of Increasing Opportunity Cost, visible directly in the readings panel.' },
                 { prompt: 'Switch Point Type to "Inside (Inefficient)" at the same X. What real-world situation does this represent?', hint: 'Unemployed resources, or resources not used in their most productive way — the economy is producing less than it could of both goods.' }
