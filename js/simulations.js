@@ -107,6 +107,24 @@ const SIMS = [
         mode: 'simulator',
         concept: '<p>The 2026–27 Class XI Microeconomics unit names <b>Price elasticity of demand (Ed)</b> — responsiveness to the good\'s own price — with its determinants (substitutes, necessity vs luxury, share of income, time) and its two measurement methods (percentage-change, total-expenditure). This lab also lets you explore <b>Income elasticity (Ey)</b> and <b>Cross elasticity (Exy)</b> as useful contrast — they sharpen what "elasticity" means in general, even though the supplied 2026–27 topic list names price elasticity specifically, not these two by name.</p>',
         formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', 'Demand: Q = 50 − 0.5P'],
+        // Generic simulator-mode PREDICT card (see js/sim-engine.js's
+        // resetPredictCard/checkPredictReveal): the student guesses BEFORE
+        // dragging Substitutes, and the guess is graded the first time
+        // they actually move it, against the sim's own live compute()
+        // output — never a separately-authored answer.
+        predict: {
+            controlId: 'substitutes',
+            prompt: 'Before you drag "Number of Close Substitutes", predict: what will happen to Price Elasticity of Demand?',
+            choices: [
+                { value: 'more', label: '📈 Demand becomes MORE elastic (|Ed| rises)' },
+                { value: 'less', label: '📉 Demand becomes LESS elastic (|Ed| falls)' }
+            ],
+            evaluate(before, after) {
+                if (!before || !after || before.mode !== 'price' || after.mode !== 'price') return null;
+                if (typeof before.Ed !== 'number' || typeof after.Ed !== 'number') return null;
+                return Math.abs(after.Ed) > Math.abs(before.Ed) ? 'more' : 'less';
+            }
+        },
         controls: [
             {
                 id: 'type', label: 'Elasticity Type', type: 'select', value: 'price',

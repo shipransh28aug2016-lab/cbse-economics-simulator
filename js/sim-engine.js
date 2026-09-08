@@ -404,6 +404,7 @@ function buildControls(sim) {
             }
         });
         applyControlVisibility(sim);
+        if (sim.predict) resetPredictCard(sim);
         renderSimChart(sim);
     });
     header.appendChild(resetBtn);
@@ -415,6 +416,13 @@ function buildControls(sim) {
     panel.appendChild(header);
     panel.appendChild(hint);
     if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, header, 'controls', false);
+
+    if (sim.predict) {
+        const card = document.createElement('div');
+        card.className = 'predict-card';
+        card.id = 'predict-card';
+        panel.appendChild(card);
+    }
 
     sim.controls.forEach(c => {
         simEngineState[c.id] = c.value;
@@ -516,6 +524,80 @@ function buildControls(sim) {
     });
 
     applyControlVisibility(sim);
+    if (sim.predict) resetPredictCard(sim);
+}
+
+// ── generic PREDICT card for `mode: 'simulator'` sims ──────────
+// Opt-in via `sim.predict = { controlId, prompt, choices:[{value,label}],
+// evaluate(beforeMetrics, afterMetrics) => value|null }`. Unlike the
+// Graph Lab predict gate (which gates a discrete scenario click), this
+// tracks a CONTINUOUS slider: the student picks a trend guess ("will |Ed|
+// go up or down?"), then the guess auto-resolves the first time they
+// actually move `controlId` away from its value when the card was shown —
+// comparing `evaluate()`'s own verdict (computed from the sim's own live
+// compute() output before/after, never a separately-authored answer) to
+// what they picked. `evaluate` returning null (e.g. the student switched
+// to a different mode of a `select` control first) leaves the card
+// pending rather than resolving on a question that no longer applies.
+let predictState = null;
+
+function resetPredictCard(sim) {
+    const card = document.getElementById('predict-card');
+    if (!card || !sim.predict) return;
+    const cfg = sim.predict;
+    let initialMetrics;
+    try {
+        const r = typeof sim.compute === 'function' ? sim.compute(Object.assign({}, simEngineState)) : null;
+        initialMetrics = (r && r.metrics) || null;
+    } catch (e) {
+        initialMetrics = null;
+    }
+    predictState = {
+        controlId: cfg.controlId,
+        initialValue: simEngineState[cfg.controlId],
+        initialMetrics,
+        guess: null,
+        resolved: false
+    };
+    card.innerHTML = `
+        <p class="predict-prompt">🤔 ${cfg.prompt}</p>
+        <div class="predict-choices">
+            ${cfg.choices.map(c => `<button type="button" class="predict-btn" data-value="${c.value}">${c.label}</button>`).join('')}
+        </div>
+        <div class="predict-result hidden" id="predict-result"></div>
+    `;
+    card.querySelectorAll('.predict-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (predictState.resolved || predictState.guess) return; // one guess per question
+            predictState.guess = btn.dataset.value;
+            card.querySelectorAll('.predict-btn').forEach(b => {
+                b.classList.toggle('predict-btn--chosen', b === btn);
+                b.disabled = true;
+            });
+        });
+    });
+}
+
+// Called from renderSimChart() on every recompute — checks whether the
+// tracked control has actually moved since the guess was made, and if so,
+// grades it exactly once.
+function checkPredictReveal(sim, result) {
+    if (!sim.predict || !predictState || predictState.resolved || !predictState.guess) return;
+    if (simEngineState[predictState.controlId] === predictState.initialValue) return; // hasn't moved yet
+    const correctValue = sim.predict.evaluate(predictState.initialMetrics, (result && result.metrics) || null);
+    if (correctValue === null || correctValue === undefined) return; // question doesn't apply right now — stay pending
+    predictState.resolved = true;
+    const resultEl = document.getElementById('predict-result');
+    if (!resultEl) return;
+    const correct = predictState.guess === correctValue;
+    resultEl.classList.remove('hidden');
+    resultEl.classList.toggle('predict-result--correct', correct);
+    resultEl.classList.toggle('predict-result--wrong', !correct);
+    const chosenLabel = (sim.predict.choices.find(c => c.value === predictState.guess) || {}).label || predictState.guess;
+    const correctLabel = (sim.predict.choices.find(c => c.value === correctValue) || {}).label || correctValue;
+    resultEl.innerHTML = correct
+        ? `✅ Correct! You guessed <b>${chosenLabel}</b> — that's exactly what happened.`
+        : `❌ Not quite — you guessed <b>${chosenLabel}</b>, but it was actually <b>${correctLabel}</b>.`;
 }
 
 // Some controls only make sense for a particular mode of a "select"
@@ -570,6 +652,7 @@ function renderSimChart(sim) {
         if (typeof Plotly !== 'undefined') {
             Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
+        if (sim.predict) checkPredictReveal(sim, result);
     } else {
         return;
     }
