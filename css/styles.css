@@ -1164,6 +1164,17 @@ header, .sim-topbar {
 
 .quiz-feedback { margin-top: 14px; font-size: 13px; font-weight: 600; line-height: 1.5; }
 
+.quiz-misconception {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
 .quiz-next-btn {
   display: block;
   width: 100%;

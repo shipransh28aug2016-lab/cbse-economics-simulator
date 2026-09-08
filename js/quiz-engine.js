@@ -107,14 +107,31 @@ function quizNumericOptions(correctValue, deltas, opts) {
 
 // Resolves a raw bank entry (English/Hindi option objects, etc.) to a
 // plain-string question ready to render in the current language.
+//
+// `q.misconceptions` (optional): { <original option index>: {en,hi} } —
+// a targeted "why this specific wrong answer is a common mix-up" message
+// for a wrong option, distinct from `explain`'s general "here's the right
+// answer" text. Converted here into a map keyed by the option's own
+// (already-localized) TEXT rather than its index, so it survives
+// shuffleQuizOptions() reordering the options array untouched — no
+// separate bookkeeping needed to keep it aligned after a shuffle.
 function normalizeQuizQuestion(q) {
+    const options = (q.options || []).map(quizLocalize);
+    let misconceptions = null;
+    if (q.misconceptions) {
+        misconceptions = {};
+        Object.keys(q.misconceptions).forEach(idx => {
+            if (options[idx] !== undefined) misconceptions[options[idx]] = quizLocalize(q.misconceptions[idx]);
+        });
+    }
     return {
         level: q.level || 'understand',
         question: quizLocalize(q.question),
-        options: (q.options || []).map(quizLocalize),
+        options,
         correctIndex: q.correctIndex,
         explain: quizLocalize(q.explain),
-        syllabusId: q.syllabusId || null
+        syllabusId: q.syllabusId || null,
+        misconceptions
     };
 }
 
@@ -256,7 +273,17 @@ function selectQuizAnswer(i) {
         const incorrectText = localize
             ? localize({ en: '❌ Not quite.', hi: '❌ यह सही नहीं है।' })
             : '❌ Not quite.';
-        feedbackEl.innerHTML = `<b>${correct ? correctText : incorrectText}</b> ${q.explain}`;
+        // A wrong option can carry its OWN targeted misconception text
+        // (q.misconceptions, see normalizeQuizQuestion) — distinct from
+        // `explain`'s general "here's the right answer" — naming exactly
+        // why THIS specific wrong answer is a common mix-up, not just that
+        // it's wrong. Shown only for the option the student actually
+        // picked, in addition to (not instead of) the usual explanation.
+        const misconception = !correct && q.misconceptions ? q.misconceptions[q.options[i]] : null;
+        const misconceptionHTML = misconception
+            ? `<div class="quiz-misconception">⚠️ ${localize ? localize({ en: 'Common mistake:', hi: 'सामान्य भूल:' }) : 'Common mistake:'} ${misconception}</div>`
+            : '';
+        feedbackEl.innerHTML = `<b>${correct ? correctText : incorrectText}</b> ${q.explain}${misconceptionHTML}`;
     }
     const nextBtn = document.getElementById('quiz-next-btn');
     if (nextBtn) {

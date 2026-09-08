@@ -23,7 +23,13 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 ],
                 correctIndex: 0,
                 explain: { en: 'Own price is the one variable already measured on the axis, so a price change never moves the curve — it moves you along it. Price down means quantity demanded up: expansion.', hi: 'स्वयं की कीमत पहले से ही अक्ष पर मापी जाती है, इसलिए कीमत परिवर्तन वक्र को कभी नहीं हिलाता — यह आपको वक्र पर सरकाता है। कीमत घटी तो माँगी गई मात्रा बढ़ी: विस्तार।' },
-                syllabusId: 'XI-B-U5-DEMAND'
+                syllabusId: 'XI-B-U5-DEMAND',
+                // Option index 1 is THE classic exam mix-up this whole lab
+                // is built to prevent — a price-driven change mistaken for
+                // a shift. See CLAUDE.md's "Graph Labs" section.
+                misconceptions: {
+                    1: { en: 'A price change is a MOVEMENT along the same curve, never a shift — "increase in demand" specifically means the whole curve relocated, which only a non-price determinant (income, tastes, substitutes…) can cause. This price fall is an expansion, not an increase.', hi: 'कीमत परिवर्तन उसी वक्र पर एक संचलन है, कभी खिसकाव नहीं — "माँग में वृद्धि" का अर्थ विशेष रूप से यह है कि पूरा वक्र स्थानांतरित हुआ, जो केवल एक गैर-कीमत निर्धारक (आय, रुचि, स्थानापन्न…) से हो सकता है। यह कीमत गिरावट एक विस्तार है, वृद्धि नहीं।' }
+                }
             },
             {
                 level: 'understand',
@@ -36,7 +42,13 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 ],
                 correctIndex: 0,
                 explain: { en: 'Income is a non-price determinant. For a normal good, higher income means more is demanded at EVERY price — so the entire curve relocates rightward.', hi: 'आय एक गैर-कीमत निर्धारक है। सामान्य वस्तु के लिए अधिक आय का अर्थ है हर कीमत पर अधिक माँग — इसलिए पूरा वक्र दाईं ओर स्थानांतरित होता है।' },
-                syllabusId: 'XI-B-U5-DEMAND'
+                syllabusId: 'XI-B-U5-DEMAND',
+                // The mirror-image mix-up of the question above — a
+                // non-price determinant mistaken for a price-driven
+                // movement.
+                misconceptions: {
+                    1: { en: '"Moving down along the existing curve" is what an OWN-PRICE fall causes — but income is not the good\'s own price, it\'s a non-price determinant. Those always relocate the whole curve (a shift), never just slide you along it.', hi: '"मौजूदा वक्र पर नीचे सरकना" वह है जो स्वयं की कीमत में गिरावट से होता है — लेकिन आय वस्तु की अपनी कीमत नहीं, एक गैर-कीमत निर्धारक है। ये हमेशा पूरे वक्र को स्थानांतरित करते हैं (खिसकाव), कभी केवल उस पर सरकाते नहीं।' }
+                }
             },
             {
                 level: 'analyse',
