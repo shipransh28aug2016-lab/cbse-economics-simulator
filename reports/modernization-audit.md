@@ -1,7 +1,10 @@
-# EconSim Pro → EconSim 2.0 — Modernization Audit (Stage 1)
+# EconSim Pro → EconSim 2.0 — Modernization Audit
 
-Date: 2026-09-07
-Scope: STAGE 1 only — inspection and classification. No code changed in this pass.
+Date: 2026-09-07 (Stage 1 audit). Updated 2026-09-08 with implementation status.
+Scope: Stage 1 was inspection and classification only. Implementation since then has followed
+Stage 21's gold-standard order; each item below is marked with what has actually shipped,
+verified by `npm run verify` plus manual headless-browser checks after every change (see git
+history on this branch — nothing here is batched/unverified).
 Method: read `CLAUDE.md`/`README.md`/`index.html`/`css/**`/`js/**`/`curriculum/**`/`reports/**`/`tools/**`,
 ran `npm run verify` (see finding C-1 — it currently cannot complete), and read the actual source of the
 five gold-standard modules named in the brief (Demand, Supply, Equilibrium, Elasticity, PPF) rather than
@@ -11,6 +14,23 @@ assuming their state from file names.
 starting point ("everything is a slider", "no movement-vs-shift distinction", "no accessibility") turned
 out to already be handled, that is reported as a strength, not silently confirmed — an audit that only
 finds problems the brief expected to find isn't a real audit.
+
+## Implementation status (updated as work lands — see git log for verification detail per commit)
+
+| Finding | Status |
+|---|---|
+| C-1 (P0): `npm run verify` broken at lint | ✅ Fixed — `eslint.config.js` now declares `performance`/`requestAnimationFrame`; full chain (typecheck→lint→test→build→smoke) runs clean. |
+| D-1 (P1): no PREDICT step anywhere | ✅ Built, two mechanisms: a scenario-click gate for Graph Labs (`graphLab.predict: true`, `js/graph-lab-engine.js`) and a continuous-slider predict card for `simulator`-mode sims (`sim.predict`, `js/sim-engine.js`). Live on all 5 gold-standard-order modules: `gl-demand-movement-shift`, `gl-supply-movement-shift`, `gl-market-equilibrium-shifts` (Graph Lab gate — the last with its own `predictChoices` since its verdict vocabulary differs), `micro-elasticity`, `micro-ppf` (predict card). Not yet propagated beyond these 5. |
+| C-2 (P1): two disconnected Demand experiences | ✅ Cross-linked in both languages — each sim's `desc`/`concept` now names the other and says when to use which. |
+| E-2 (P2): Home grid doesn't flag enrichment | ✅ Fixed — `.sim-card-badge` (`js/app.js`, `css/styles.css`), same tooltip text as the existing in-sim tag. |
+| I-1 (P0): full teacher-TLM component set absent | ❌ Not started — this is a genuine net-new subsystem (ConceptCard/TeacherExplain/QuickCheck/etc.), scoped as later work per Stage 21's "propagate after the first modules are excellent." |
+| D-2 (P1): no misconception engine | ❌ Not started. The PREDICT mechanisms above give a *right/wrong* signal against live state, which is a building block, but not yet a structured "detected misconception → targeted correction → retry" loop. |
+| D-3 (P1): no live WHY button | 🟡 Partially addressed as a side effect of PREDICT: the predict-result banners are a form of on-demand "here's why" text, and every Graph Lab already had an always-visible verdict. A dedicated, re-openable WHY affordance (Stage 14's literal ask) is not built. |
+| E-1 (P1): no Student/Teacher/Presentation modes | ❌ Not started. |
+| G-1 (P1): Plotly charts not directly manipulable | ❌ Not started — the PREDICT card was chosen specifically because it doesn't require this; direct manipulation of a Plotly-mode chart is a separate, larger piece of work. |
+| J-1/J-2 (P1/P2): non-adaptive quiz, no assessment-format variety | ❌ Not started. |
+
+Everything else in the sections below reflects the original Stage 1 findings, unchanged.
 
 ---
 
