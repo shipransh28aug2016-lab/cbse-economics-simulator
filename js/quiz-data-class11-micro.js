@@ -15,7 +15,13 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 ],
                 correctIndex: 0,
                 explain: { en: 'A point inside the frontier means resources are unemployed or badly allocated — the economy could produce more of both goods.', hi: 'सीमा के अंदर एक बिंदु का अर्थ है संसाधन बेरोज़गार हैं या ख़राब ढंग से आबंटित हैं — अर्थव्यवस्था दोनों वस्तुओं का अधिक उत्पादन कर सकती है।' },
-                syllabusId: 'XI-B-U4-PPF-OC'
+                syllabusId: 'XI-B-U4-PPF-OC',
+                // Classic mix-up: INSIDE (has the resources, just wasting
+                // them — inefficient) vs OUTSIDE (doesn't have enough
+                // resources yet — unattainable) get swapped constantly.
+                misconceptions: {
+                    2: { en: '"Unattainable" describes a point OUTSIDE the frontier — where the economy doesn\'t have enough resources/technology to produce that combination at all. A point INSIDE is the opposite problem: the resources exist, they\'re just unemployed or misallocated.', hi: '"अप्राप्य" सीमा के बाहर के बिंदु का वर्णन करता है — जहाँ अर्थव्यवस्था के पास वह संयोजन उत्पादित करने के लिए पर्याप्त संसाधन/प्रौद्योगिकी बिल्कुल नहीं है। सीमा के अंदर का बिंदु इसका उल्टा है: संसाधन मौजूद हैं, बस वे बेरोज़गार हैं या ग़लत ढंग से आबंटित हैं।' }
+                }
             },
             {
                 level: 'understand',
