@@ -16,6 +16,22 @@ if (typeof SIMS !== 'undefined') {
             mode: 'simulator',
             concept: '<p>Every economy faces three central problems — <b>what</b> to produce, <b>how</b> to produce it, and <b>for whom</b> — because resources are scarce relative to wants. The <b>Production Possibility Frontier (PPF)</b> shows every combination of two goods an economy can produce at full, efficient resource use. A point <i>on</i> the frontier is efficient; a point <i>inside</i> it means resources are unemployed or underused (an "inefficient" economy — one answer to "how to produce" gone wrong); a point <i>outside</i> it is unattainable with current resources and technology. The PPF bows outward (concave to the origin) because resources aren\'t perfectly suited to producing both goods — shifting more resources toward Good X costs progressively <i>more</i> Good Y each time: the <b>Law of Increasing Opportunity Cost</b>.</p>',
             formulas: ['Illustrative PPF: Y = C − X² / C  (C = resource/technology endowment)', 'Opportunity Cost of one more X (in terms of Y) = Marginal Rate of Transformation = 2X / C', 'On the frontier = efficient · Inside = inefficient · Outside = unattainable'],
+            // Generic simulator-mode PREDICT card (js/sim-engine.js) —
+            // the Law of Increasing Opportunity Cost is exactly the kind
+            // of monotonic-trend prediction this mechanic is built for.
+            predict: {
+                controlId: 'x',
+                prompt: 'Staying "On the Frontier", before you raise Output of Good X, predict: what happens to the Opportunity Cost of one more unit of X?',
+                choices: [
+                    { value: 'rise', label: '📈 Opportunity Cost RISES' },
+                    { value: 'fall', label: '📉 Opportunity Cost FALLS' }
+                ],
+                evaluate(before, after) {
+                    if (!before || !after || before.pointType !== 'on' || after.pointType !== 'on') return null;
+                    if (typeof before.mrt !== 'number' || typeof after.mrt !== 'number') return null;
+                    return after.mrt > before.mrt ? 'rise' : 'fall';
+                }
+            },
             controls: [
                 { id: 'resources', label: 'Resources & Technology (C)', min: 10, max: 30, step: 1, value: 20, unit: '' },
                 { id: 'x', label: 'Output of Good X', min: 0, max: 30, step: 1, value: 10, unit: '' },
@@ -61,6 +77,33 @@ if (typeof SIMS !== 'undefined') {
                                <div class="reading-row"><span>Opportunity Cost of 1 more X (in Y)</span><b>${fmt(mrt)}</b></div>
                                <div class="reading-row insight-row">💡 ${note} At X=${X}, giving up ${fmt(mrt)} units of Y buys one more unit of X — and that cost keeps rising as X increases, because resources are progressively less suited to producing X.</div>`
                 };
+            },
+            tlm: {
+                keyIdea: 'The PPF shows the MAXIMUM combinations an economy can produce with what it has right now. On it = efficient. Inside = wasting resources. Outside = needs more resources/technology first.',
+                commonMistakes: [
+                    'Swapping INSIDE (inefficient — has the resources, wasting them) with OUTSIDE (unattainable — doesn\'t have enough resources yet) — these are opposite problems, not the same idea in different words.',
+                    'Thinking the PPF is a straight line — it bows outward (concave to the origin) specifically because of the Law of Increasing Opportunity Cost; a straight-line PPF would mean constant opportunity cost, which contradicts the law.',
+                    'Treating "opportunity cost" as only relevant at the current point, rather than realizing it CHANGES (and rises) as you move along the frontier toward more of one good.'
+                ],
+                examTip: 'When asked to explain the PPF\'s shape, always name the reason: resources are NOT equally suited to producing both goods, so shifting more of them toward Good X means using progressively less-suited resources — that\'s why each extra unit of X costs MORE of Y. "It bows outward because resources aren\'t equally suited to both goods" is the complete exam sentence.',
+                thinkQuestion: 'A country invests heavily in new irrigation technology that helps farming far more than it helps manufacturing. What happens to the shape and position of its PPF between "Food" and "Manufactured goods" — does it shift outward evenly, or does one end move more than the other?',
+                activity: {
+                    title: 'Household PPF',
+                    instructions: 'Pick two things you could do with the next 2 hours (e.g. study Economics vs. study Physics, or homework vs. leisure). Sketch your own personal "PPF" for those two hours, mark a point that would be "inefficient" for you, and explain in one line what your opportunity cost of 30 more minutes of one activity is.'
+                },
+                exitTicket: 'In one sentence: why is a point outside a country\'s current PPF called "unattainable" rather than just "very difficult"?',
+                teacherExplain: 'Start with Point Type = "On the Frontier" and slide Good X output up slowly while the class watches the Opportunity Cost reading climb — then switch to "Inside" at the SAME X value and ask what real-world situation could put an economy there. The contrast between a rising cost (on the frontier) and a fixed, avoidable waste (inside it) is the lesson.',
+                quickCheck: {
+                    question: 'An economy is producing a combination of goods that lies INSIDE its PPF. What does this mean?',
+                    options: [
+                        'Some resources are unemployed or being used inefficiently',
+                        'The economy has run out of resources entirely',
+                        'The economy is producing at the best possible combination',
+                        'The combination is impossible to produce'
+                    ],
+                    correctIndex: 0,
+                    explain: 'A point inside the PPF means the economy COULD produce more of both goods with the resources it already has — some resources are sitting idle or are badly allocated. That is the definition of productive inefficiency.'
+                }
             },
             practice: [
                 { prompt: 'With Point Type = "On the Frontier", raise Good X output from 5 to 25. Does the Opportunity Cost of X rise or fall?', hint: 'It rises steadily (MRT = 2X/C) — the Law of Increasing Opportunity Cost, visible directly in the readings panel.' },

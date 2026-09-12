@@ -355,6 +355,112 @@ function refreshChallenge(sim, metrics) {
     statusEl.classList.toggle('challenge-solved', solved);
 }
 
+// ── Teaching & Learning Toolkit (generic, optional, every mode) ────
+// A sim opts in with `sim.tlm = { keyIdea?, commonMistakes?:[...],
+// examTip?, thinkQuestion?, activity?:{title,instructions}, exitTicket?,
+// teacherExplain?, quickCheck?:{question,options,correctIndex,explain} }`.
+// Every field is independent and optional — only sections a sim actually
+// declares are rendered, never a placeholder for a missing one. This is
+// deliberately separate from `concept` (the ConceptCard already exists)
+// and from `practice`/`challenge` (already-generic, already-graded
+// exercises) — these are the TLM artifact types CLAUDE.md's own audit
+// found completely absent: a one-line KeyIdea distinct from full concept
+// prose, a CommonMistake list a student can read BEFORE ever getting a
+// quiz question wrong, an ExamTip, an open-ended ThinkQuestion, a
+// classroom/independent Activity, a single ungraded QuickCheck (distinct
+// from the full multi-question Quiz modal), an ExitTicket a teacher can
+// put up before ending class, and TeacherExplain — guidance for the
+// teacher, not the student.
+function renderTLM(sim) {
+    const card = document.getElementById('tlm-card');
+    const body = document.getElementById('tlm-body');
+    if (!card || !body) return;
+    if (!sim.tlm) { card.classList.add('hidden'); return; }
+    const t = sim.tlm;
+    const sections = [];
+
+    if (t.keyIdea) {
+        sections.push(`<div class="tlm-section tlm-keyidea"><h4>${tEngine('tlm.keyIdea', '💡 Key Idea')}</h4><p>${hiPath(sim, 'tlm.keyIdea') || t.keyIdea}</p></div>`);
+    }
+    if (Array.isArray(t.commonMistakes) && t.commonMistakes.length) {
+        const items = t.commonMistakes.map((m, i) => `<li>${hiPath(sim, `tlm.commonMistakes.${i}`) || m}</li>`).join('');
+        sections.push(`<div class="tlm-section tlm-mistakes"><h4>${tEngine('tlm.commonMistakes', '⚠️ Common Mistakes')}</h4><ul>${items}</ul></div>`);
+    }
+    if (t.examTip) {
+        sections.push(`<div class="tlm-section tlm-examtip"><h4>${tEngine('tlm.examTip', '📝 Exam Tip')}</h4><p>${hiPath(sim, 'tlm.examTip') || t.examTip}</p></div>`);
+    }
+    if (t.thinkQuestion) {
+        sections.push(`<div class="tlm-section tlm-think"><h4>${tEngine('tlm.thinkQuestion', '🤔 Think About It')}</h4><p>${hiPath(sim, 'tlm.thinkQuestion') || t.thinkQuestion}</p></div>`);
+    }
+    if (t.activity) {
+        const title = hiPath(sim, 'tlm.activity.title') || t.activity.title;
+        const instructions = hiPath(sim, 'tlm.activity.instructions') || t.activity.instructions;
+        sections.push(`<div class="tlm-section tlm-activity"><h4>${tEngine('tlm.activity', '🎬 Activity')}</h4><p><b>${title}</b></p><p>${instructions}</p></div>`);
+    }
+    if (t.exitTicket) {
+        sections.push(`<div class="tlm-section tlm-exitticket"><h4>${tEngine('tlm.exitTicket', '🎫 Exit Ticket')}</h4><p>${hiPath(sim, 'tlm.exitTicket') || t.exitTicket}</p></div>`);
+    }
+    if (t.teacherExplain) {
+        sections.push(`<div class="tlm-section tlm-teacher"><h4>${tEngine('tlm.teacherExplain', '🧑‍🏫 For Teachers')}</h4><p>${hiPath(sim, 'tlm.teacherExplain') || t.teacherExplain}</p></div>`);
+    }
+    if (t.quickCheck) {
+        sections.push(`<div class="tlm-section tlm-quickcheck"><h4>${tEngine('tlm.quickCheck', '✅ Quick Check')}</h4><div id="tlm-quickcheck-host"></div></div>`);
+    }
+
+    if (!sections.length) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+    body.innerHTML = sections.join('');
+    if (t.quickCheck) renderQuickCheck(sim, t.quickCheck, document.getElementById('tlm-quickcheck-host'));
+    // No initPanelCollapse() call here — tlm-card's header is already
+    // present in index.html's static markup, so initStaticPanelCollapse()
+    // (called once at app boot, same as practice-card/challenge-card)
+    // already wires its collapse/expand click handler. Wiring it again
+    // per sim-open would stack duplicate listeners.
+}
+
+// A single ungraded, immediate-feedback MCQ — deliberately NOT the full
+// Quiz modal (no question pool, no score, no Bloom's tagging): this is a
+// quick in-flow "did that just land?" check a student answers without
+// leaving the sim screen. correctIndex/explain are authored directly
+// (unlike the Quiz modal's applyTemplates, a single fixed quickCheck has
+// no live state to compute an answer from) — kept honest by staying a
+// single fixed question per sim rather than claiming to be dynamic.
+function renderQuickCheck(sim, qc, host) {
+    if (!host) return;
+    const question = hiPath(sim, 'tlm.quickCheck.question') || qc.question;
+    const options = qc.options.map((o, i) => hiPath(sim, `tlm.quickCheck.options.${i}`) || o);
+    host.innerHTML = `
+        <p class="tlm-qc-question">${question}</p>
+        <div class="tlm-qc-options">
+            ${options.map((o, i) => `<button type="button" class="tlm-qc-btn" data-i="${i}">${o}</button>`).join('')}
+        </div>
+        <div class="tlm-qc-feedback hidden" id="tlm-qc-feedback"></div>
+    `;
+    let answered = false;
+    host.querySelectorAll('.tlm-qc-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (answered) return;
+            answered = true;
+            const i = Number(btn.dataset.i);
+            const correct = i === qc.correctIndex;
+            host.querySelectorAll('.tlm-qc-btn').forEach((b, bi) => {
+                b.disabled = true;
+                if (bi === qc.correctIndex) b.classList.add('tlm-qc-btn--correct');
+                else if (bi === i) b.classList.add('tlm-qc-btn--wrong');
+            });
+            const feedback = document.getElementById('tlm-qc-feedback');
+            if (feedback) {
+                feedback.classList.remove('hidden');
+                const explain = hiPath(sim, 'tlm.quickCheck.explain') || qc.explain || '';
+                const prefix = correct
+                    ? tEngine('quiz.correct', '✅ Correct!')
+                    : tEngine('quiz.incorrect', '❌ Not quite.');
+                feedback.innerHTML = `<b>${prefix}</b> ${explain}`;
+            }
+        });
+    });
+}
+
 function buildControls(sim) {
     const panel = document.getElementById('controls-panel');
     if (!panel) return;
@@ -404,6 +510,7 @@ function buildControls(sim) {
             }
         });
         applyControlVisibility(sim);
+        if (sim.predict) resetPredictCard(sim);
         renderSimChart(sim);
     });
     header.appendChild(resetBtn);
@@ -416,6 +523,13 @@ function buildControls(sim) {
     panel.appendChild(hint);
     if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, header, 'controls', false);
 
+    if (sim.predict) {
+        const card = document.createElement('div');
+        card.className = 'predict-card';
+        card.id = 'predict-card';
+        panel.appendChild(card);
+    }
+
     sim.controls.forEach(c => {
         simEngineState[c.id] = c.value;
 
@@ -423,7 +537,9 @@ function buildControls(sim) {
         row.className = 'control-row';
         if (c.showWhen) {
             row.dataset.showWhenId = c.showWhen.id;
-            row.dataset.showWhenEquals = String(c.showWhen.equals);
+            row.dataset.showWhenEquals = Array.isArray(c.showWhen.equals)
+                ? c.showWhen.equals.map(String).join(',')
+                : String(c.showWhen.equals);
         }
 
         if (c.type === 'select') {
@@ -514,6 +630,80 @@ function buildControls(sim) {
     });
 
     applyControlVisibility(sim);
+    if (sim.predict) resetPredictCard(sim);
+}
+
+// ── generic PREDICT card for `mode: 'simulator'` sims ──────────
+// Opt-in via `sim.predict = { controlId, prompt, choices:[{value,label}],
+// evaluate(beforeMetrics, afterMetrics) => value|null }`. Unlike the
+// Graph Lab predict gate (which gates a discrete scenario click), this
+// tracks a CONTINUOUS slider: the student picks a trend guess ("will |Ed|
+// go up or down?"), then the guess auto-resolves the first time they
+// actually move `controlId` away from its value when the card was shown —
+// comparing `evaluate()`'s own verdict (computed from the sim's own live
+// compute() output before/after, never a separately-authored answer) to
+// what they picked. `evaluate` returning null (e.g. the student switched
+// to a different mode of a `select` control first) leaves the card
+// pending rather than resolving on a question that no longer applies.
+let predictState = null;
+
+function resetPredictCard(sim) {
+    const card = document.getElementById('predict-card');
+    if (!card || !sim.predict) return;
+    const cfg = sim.predict;
+    let initialMetrics;
+    try {
+        const r = typeof sim.compute === 'function' ? sim.compute(Object.assign({}, simEngineState)) : null;
+        initialMetrics = (r && r.metrics) || null;
+    } catch (e) {
+        initialMetrics = null;
+    }
+    predictState = {
+        controlId: cfg.controlId,
+        initialValue: simEngineState[cfg.controlId],
+        initialMetrics,
+        guess: null,
+        resolved: false
+    };
+    card.innerHTML = `
+        <p class="predict-prompt">🤔 ${cfg.prompt}</p>
+        <div class="predict-choices">
+            ${cfg.choices.map(c => `<button type="button" class="predict-btn" data-value="${c.value}">${c.label}</button>`).join('')}
+        </div>
+        <div class="predict-result hidden" id="predict-result"></div>
+    `;
+    card.querySelectorAll('.predict-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (predictState.resolved || predictState.guess) return; // one guess per question
+            predictState.guess = btn.dataset.value;
+            card.querySelectorAll('.predict-btn').forEach(b => {
+                b.classList.toggle('predict-btn--chosen', b === btn);
+                b.disabled = true;
+            });
+        });
+    });
+}
+
+// Called from renderSimChart() on every recompute — checks whether the
+// tracked control has actually moved since the guess was made, and if so,
+// grades it exactly once.
+function checkPredictReveal(sim, result) {
+    if (!sim.predict || !predictState || predictState.resolved || !predictState.guess) return;
+    if (simEngineState[predictState.controlId] === predictState.initialValue) return; // hasn't moved yet
+    const correctValue = sim.predict.evaluate(predictState.initialMetrics, (result && result.metrics) || null);
+    if (correctValue === null || correctValue === undefined) return; // question doesn't apply right now — stay pending
+    predictState.resolved = true;
+    const resultEl = document.getElementById('predict-result');
+    if (!resultEl) return;
+    const correct = predictState.guess === correctValue;
+    resultEl.classList.remove('hidden');
+    resultEl.classList.toggle('predict-result--correct', correct);
+    resultEl.classList.toggle('predict-result--wrong', !correct);
+    const chosenLabel = (sim.predict.choices.find(c => c.value === predictState.guess) || {}).label || predictState.guess;
+    const correctLabel = (sim.predict.choices.find(c => c.value === correctValue) || {}).label || correctValue;
+    resultEl.innerHTML = correct
+        ? `✅ Correct! You guessed <b>${chosenLabel}</b> — that's exactly what happened.`
+        : `❌ Not quite — you guessed <b>${chosenLabel}</b>, but it was actually <b>${correctLabel}</b>.`;
 }
 
 // Some controls only make sense for a particular mode of a "select"
@@ -521,11 +711,15 @@ function buildControls(sim) {
 // Elasticity Type = Cross). `showWhen: {id, equals}` on a control marks
 // it as conditional; this shows/hides those rows to match current state
 // without ever touching the controls that don't declare a condition.
+// `equals` can be a single value (Cross-only) or an array of values (a
+// control that's relevant to more than one, but not all, of the select's
+// options — e.g. shown for both '3-sector' and '4-sector' but not '2').
 function applyControlVisibility(sim) {
     const panel = document.getElementById('controls-panel');
     if (!panel) return;
     panel.querySelectorAll('.control-row[data-show-when-id]').forEach(row => {
-        const match = String(simEngineState[row.dataset.showWhenId]) === row.dataset.showWhenEquals;
+        const allowed = row.dataset.showWhenEquals.split(',');
+        const match = allowed.includes(String(simEngineState[row.dataset.showWhenId]));
         row.classList.toggle('hidden', !match);
     });
 }
@@ -564,6 +758,7 @@ function renderSimChart(sim) {
         if (typeof Plotly !== 'undefined') {
             Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
+        if (sim.predict) checkPredictReveal(sim, result);
     } else {
         return;
     }
@@ -664,6 +859,7 @@ function renderSim(sim) {
     suppressNextWhatChanged = true;
     renderPractice(sim);
     renderChallengeShell(sim);
+    renderTLM(sim);
 
     if (sim.mode === 'graphlab' && typeof renderGraphLab === 'function') {
         // Graph Labs render their own SVG diagram and put their variable

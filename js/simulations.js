@@ -22,23 +22,16 @@ const _corrRandN = makeRandN(42);
 const _corrX = range(30).map(() => _corrRandN());
 const _corrNoise = range(30).map(() => _corrRandN());
 
-// Persists the 2D/3D toggle choice on the Circular Flow lab across
-// re-renders (every slider drag re-runs customRender) — a module-level
-// flag rather than per-render state, so mid-drag it doesn't keep
-// snapping back to the default view. js/webgl-flow.js supplies the
-// actual Three.js scene; this file only decides when to call it.
-let flow3DActive = false;
-
 const SIMS = [
     {
         id: 'micro-supply-demand',
         module: 'micro',
         title: 'Supply & Demand: Every Determinant',
-        desc: 'Every named CBSE determinant of demand and supply as its own live control — not just one abstract "shift".',
+        desc: 'Every named CBSE determinant of demand and supply as its own live control, changed together to see equilibrium move — not just one abstract "shift". For the exam-precise movement-vs-shift distinction on demand alone, see "Demand: Movement vs Shift (Drag the Curve)" instead.',
         class: 'XI', part: 'B', unit: '5–7', unitTitle: 'Demand, Supply & Market Equilibrium', topicLabel: 'Every Named Determinant',
         syllabusIds: ['XI-B-U5-DEMAND', 'XI-B-U6-SUPPLY', 'XI-B-U7-MARKET-EQ', 'XI-B-U7-PERFECT-COMP'],
         mode: 'simulator',
-        concept: '<p>Demand and supply each shift for specific, named reasons — this lab makes every one of them a separate control instead of one abstract "shift" number. <b>Demand</b> shifts with consumer income, the price of substitute/complement goods, and tastes &amp; preferences. <b>Supply</b> shifts with input/factor costs, technology, and government tax or subsidy policy. Move any factor and watch exactly how it moves its own curve — and the resulting equilibrium.</p><p>This equilibrium is the one taught for a <b>Perfect Competition</b> market — many buyers and sellers, an identical (homogeneous) product, free entry and exit, and every buyer/seller a price-taker rather than a price-setter — which is why one demand curve and one supply curve are enough to pin down a single market price.</p>',
+        concept: '<p>Demand and supply each shift for specific, named reasons — this lab makes every one of them a separate control instead of one abstract "shift" number. <b>Demand</b> shifts with consumer income, the price of substitute/complement goods, and tastes &amp; preferences. <b>Supply</b> shifts with input/factor costs, technology, and government tax or subsidy policy. Move any factor and watch exactly how it moves its own curve — and the resulting equilibrium.</p><p>This equilibrium is the one taught for a <b>Perfect Competition</b> market — many buyers and sellers, an identical (homogeneous) product, free entry and exit, and every buyer/seller a price-taker rather than a price-setter — which is why one demand curve and one supply curve are enough to pin down a single market price.</p><p>💡 This lab is for seeing <b>many determinants and both curves at once</b>. If you specifically need to nail the exam distinction between a <b>movement along</b> the demand curve and a <b>shift of</b> it — with the diagram naming which one you just did — open <b>"Demand: Movement vs Shift (Drag the Curve)"</b> instead; it drags one curve at a time and is built exactly for that distinction.</p>',
         formulas: [
             'Demand: P = 100 − 1.2Q + (net demand shift)',
             'Supply: P = 20 + 0.8Q + (net supply shift)',
@@ -114,6 +107,24 @@ const SIMS = [
         mode: 'simulator',
         concept: '<p>The 2026–27 Class XI Microeconomics unit names <b>Price elasticity of demand (Ed)</b> — responsiveness to the good\'s own price — with its determinants (substitutes, necessity vs luxury, share of income, time) and its two measurement methods (percentage-change, total-expenditure). This lab also lets you explore <b>Income elasticity (Ey)</b> and <b>Cross elasticity (Exy)</b> as useful contrast — they sharpen what "elasticity" means in general, even though the supplied 2026–27 topic list names price elasticity specifically, not these two by name.</p>',
         formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', 'Demand: Q = 50 − 0.5P'],
+        // Generic simulator-mode PREDICT card (see js/sim-engine.js's
+        // resetPredictCard/checkPredictReveal): the student guesses BEFORE
+        // dragging Substitutes, and the guess is graded the first time
+        // they actually move it, against the sim's own live compute()
+        // output — never a separately-authored answer.
+        predict: {
+            controlId: 'substitutes',
+            prompt: 'Before you drag "Number of Close Substitutes", predict: what will happen to Price Elasticity of Demand?',
+            choices: [
+                { value: 'more', label: '📈 Demand becomes MORE elastic (|Ed| rises)' },
+                { value: 'less', label: '📉 Demand becomes LESS elastic (|Ed| falls)' }
+            ],
+            evaluate(before, after) {
+                if (!before || !after || before.mode !== 'price' || after.mode !== 'price') return null;
+                if (typeof before.Ed !== 'number' || typeof after.Ed !== 'number') return null;
+                return Math.abs(after.Ed) > Math.abs(before.Ed) ? 'more' : 'less';
+            }
+        },
         controls: [
             {
                 id: 'type', label: 'Elasticity Type', type: 'select', value: 'price',
@@ -197,6 +208,33 @@ const SIMS = [
                            <div class="reading-row insight-row">💡 ${insight}</div>`
             };
         },
+        tlm: {
+            keyIdea: '|Ed| measures how STRONGLY quantity demanded reacts to a price change — not the size of the price change itself. |Ed| > 1 is elastic, |Ed| < 1 is inelastic, |Ed| = 1 is unit elastic.',
+            commonMistakes: [
+                'Confusing "elastic" with "expensive" or "important" — elasticity is about RESPONSIVENESS to price, not the price level or how essential the good is (though necessities usually ARE inelastic).',
+                'Reading the SLOPE of the curve alone as "the" elasticity — elasticity also depends on the price/quantity point you\'re AT, not the slope alone (a straight-line demand curve has different Ed at every point on it).',
+                'Forgetting the negative sign convention — Ed for a normal downward-sloping demand curve is negative; "|Ed| > 1" (magnitude) is what "elastic" means, not Ed > 1 literally.'
+            ],
+            examTip: 'When asked to justify WHY a good is elastic or inelastic, name the actual determinant — number of substitutes, necessity vs luxury, proportion of income spent, or time period — never just restate the number. "Ed = 2, so demand is elastic" earns fewer marks than "Ed = 2 because this good has several close substitutes, so demand is elastic."',
+            thinkQuestion: 'Salt and a specific brand of fizzy drink are both consumer goods, but one has much higher price elasticity of demand. Which one, and which determinant (substitutes, necessity, income share, time) is doing the most work?',
+            activity: {
+                title: 'Elasticity Rank the Basket',
+                instructions: 'List 5 goods you or your family buy regularly (e.g. rice, a specific smartphone brand, electricity, a particular restaurant meal, salt). Rank them from most to least price-elastic, and for each, name the ONE determinant you think matters most.'
+            },
+            exitTicket: 'In one sentence: why does a life-saving medicine with no substitute have very low price elasticity of demand?',
+            teacherExplain: 'Use the Substitutes slider as the live demonstration: fix price, then move Substitutes from 0 to 5 and have the class watch |Ed| in the readings panel change in real time — this makes "more substitutes → more elastic" a directly observed fact rather than a memorized rule.',
+            quickCheck: {
+                question: 'A good has Ed = −0.3. What does this tell you?',
+                options: [
+                    'Demand is inelastic — quantity demanded barely responds to a price change',
+                    'Demand is elastic — quantity demanded responds strongly to a price change',
+                    'The good is a luxury',
+                    'The price of the good is very low'
+                ],
+                correctIndex: 0,
+                explain: '|Ed| = 0.3 is less than 1, so demand is inelastic — a price change produces a proportionally smaller change in quantity demanded. The negative sign just reflects the Law of Demand (price and quantity move opposite ways); it\'s the MAGNITUDE, 0.3, that tells you inelastic.'
+            }
+        },
         practice: [
             { prompt: 'With Elasticity Type = Price, push Substitutes from 0 to 5 at a fixed price. What happens to |Ed|?', hint: 'More close substitutes make demand more elastic — |Ed| rises as the slider increases.' },
             { prompt: 'Find a price where demand is exactly unit elastic (Ed = −1) with 1 substitute.', hint: 'With bEff = 0.4, Ed = −1 when P/Q = 2.5 — try prices around ₹36–38 and watch the readings panel.' }
@@ -209,45 +247,105 @@ const SIMS = [
     {
         id: 'macro-gdp',
         module: 'macro',
-        title: 'GDP & Circular Flow (Real Flow vs Money Flow)',
-        desc: 'Watch the real flow of factors & goods move opposite to the money flow that pays for them.',
+        title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector + Financial Market)',
+        desc: 'Choose 2-Sector, 3-Sector or 4-Sector, and optionally switch on the Financial Market (Banks) — the diagram draws ONLY the sectors and flows that exist in your choice, correctly split into injections and leakages.',
         class: 'XII', part: 'A', unit: 1, unitTitle: 'National Income and Related Aggregates', topicLabel: 'Circular Flow of Income',
         syllabusIds: ['XII-A-U1-CIRCULAR-FLOW', 'XII-A-U1-AGGREGATES', 'XII-A-U1-MACRO-MEANING'],
         mode: 'simulator',
-        concept: '<p><b>Macroeconomics</b> studies the economy as a whole — aggregates like total output, the overall price level and total employment — rather than a single household or firm (that\'s microeconomics). The circular flow below is macroeconomics\' starting picture of how the whole economy fits together.</p><p>The circular flow has two mirror-image halves that always move in <b>opposite directions</b> for the same transaction. The <b>real flow</b> (dashed wire, square markers) is what physically changes hands: households supply <b>factor services</b> — labour, land, capital, enterprise — to firms, and firms supply <b>goods &amp; services</b> back to households. The <b>money flow</b> (solid wire, round markers) is the payment for it, moving the other way: firms pay <b>factor payments</b> (wages, rent, interest, profit) to households, and households pay <b>consumption expenditure</b> to firms. Government spending and exports are injections into this flow; taxes and imports are leakages out of it.</p><p>This flow of income adds up to <b>GDP</b> (Gross Domestic Product — everything produced <i>within</i> the country). <b>GNP</b> = GDP + income earned abroad by residents − income earned domestically by non-residents. <b>NDP</b>/<b>NNP</b> subtract depreciation (wear-and-tear of capital) from GDP/GNP respectively — "Net" figures reflect only genuinely new output, not just replacing worn-out capital.</p>',
+        // The 2026–27 taxonomy names only "Two-sector model" and "Circular
+        // flow mechanism" under this Unit 1 topic (see
+        // curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md
+        // §"C. Circular Flow of Income"). The 3-Sector/4-Sector extensions
+        // and the Financial Market (Savings→Investment) layer are standard
+        // NCERT content taught alongside it (and Saving/Investment are
+        // literally named later, under Unit 3's Determination of Income),
+        // but are enrichment relative to THIS topic's own named scope —
+        // flagged per this project's own honesty rule rather than silently
+        // claimed as core Unit 1 coverage.
+        enrichment: true,
+        enrichmentNote: 'The named 2026-27 syllabus content for this topic is just the "Two-sector model" and "Circular flow mechanism" (Households + Firms only). The 3-Sector (+Government) and 4-Sector (+Foreign Sector) extensions, and the optional Financial Market (Savings→Investment) layer, are standard NCERT/board-exam content built on top of it — kept because CBSE Class XII exams routinely test all of these — but are not literally named under this specific Unit 1 topic, so are marked as enrichment rather than claimed as core coverage. (Saving/Investment are separately, and literally, named under Unit 3 — Determination of Income and Employment.)',
+        concept: '<p><b>Macroeconomics</b> studies the economy as a whole — aggregates like total output, the overall price level and total employment — rather than a single household or firm (that\'s microeconomics). The named 2026-27 syllabus content here is the <b>Two-sector model</b>; this lab also lets you build it up, stage by stage, toward the fuller picture used in board-exam diagrams — and draws exactly the sectors and flows of whatever you pick, nothing extra, nothing missing.</p><p><b>2-Sector model</b> (Households + Firms only, Financial Market OFF): the simplest, closed economy with no government, no foreign trade, and no saving. Households spend their <i>entire</i> income on consumption and firms pay out their <i>entire</i> revenue as factor income — nothing leaks out anywhere, so <b>National Income (Y) = Consumption Expenditure (C)</b> exactly, always.</p><p><b>Financial Market (Banks)</b> — switch it ON at any stage to add Savings (S): households now keep back part of their income instead of spending it (a <b>leakage</b>, Households→Banks), and the banking system channels that saving out to firms as Investment (I) (an <b>injection</b>, Banks→Firms). This lab keeps S = I always (Savings fully re-invested) — the separate Multiplier lab is where planned Investment and Saving are allowed to diverge.</p><p><b>3-Sector model</b> adds Government: Taxes (T) pull money OUT of the household–firm loop (a <b>leakage</b>) and Government Spending (G) pushes new money IN (an <b>injection</b>).</p><p><b>4-Sector model</b> adds the Foreign Sector: Exports (X) bring in payment from abroad for domestically-made goods (an <b>injection</b>) and Imports (M) send money abroad to pay for foreign-made goods (a <b>leakage</b>). The general CBSE rule holds at every stage: if total Injections &gt; total Leakages, National Income tends to RISE; if Injections &lt; Leakages, it tends to FALL; Injections = Leakages is equilibrium.</p><p>In every stage, the <b>real flow</b> (dashed wire, square markers) — factor services and goods &amp; services physically changing hands — always moves opposite to the <b>money flow</b> (solid wire, round markers) that pays for it.</p>',
         formulas: [
-            'Factor Services HH→Firms (real) moves opposite to Factor Payments Firms→HH (money)',
-            'Goods &amp; Services Firms→HH (real) moves opposite to Consumption Exp. HH→Firms (money)',
-            'GDP (expenditure method) = C + I + G + (X − M)',
-            'GNP = GDP + Net Factor Income from Abroad',
-            'NDP/NNP = GDP/GNP − Depreciation',
-            'Injections (G + X) vs Leakages (T + M)'
+            '2-Sector, no Financial Market: Y (National Income) = C (Consumption) — no leakage, no injection, by definition',
+            'Financial Market ON: adds Leakage = Saving (S); Injection = Investment (I), with S = I always in this lab',
+            '3-Sector: adds Leakage = Taxes (T); Injection = Govt. Spending (G)',
+            '4-Sector: adds Leakage = Imports (M); Injection = Exports (X) — money paid BY foreigners INTO domestic Firms',
+            'Injections &gt; Leakages ⇒ National Income rises · Injections &lt; Leakages ⇒ falls · Injections = Leakages ⇒ equilibrium',
+            'GDP (expenditure method) = C + I + G + (X − M) · GNP = GDP + Net Factor Income from Abroad · NDP/NNP = GDP/GNP − Depreciation'
         ],
         controls: [
+            {
+                id: 'sector', label: 'Economy Model', type: 'select', value: '2',
+                options: [
+                    { value: '2', label: '2-Sector (HH + Firms)' },
+                    { value: '3', label: '3-Sector (+ Govt.)' },
+                    { value: '4', label: '4-Sector (+ Foreign)' }
+                ]
+            },
+            {
+                id: 'bank', label: 'Financial Market (Banks)', type: 'select', value: 'no',
+                options: [
+                    { value: 'no', label: 'Off (Investment fixed, illustrative)' },
+                    { value: 'yes', label: 'On (show Savings & Investment)' }
+                ]
+            },
             { id: 'consumption', label: 'Consumption Expenditure (C)', min: 20, max: 150, step: 5, value: 90, unit: '₹B' },
             { id: 'wages', label: 'Factor Payments — Wages etc. (₹B)', min: 20, max: 150, step: 5, value: 100, unit: '₹B' },
-            { id: 'g', label: 'Government Spending (G)', min: 0, max: 100, step: 5, value: 40, unit: '₹B' },
-            { id: 'nx', label: 'Net Exports (X − M)', min: -40, max: 40, step: 5, value: 10, unit: '₹B' }
+            { id: 'saving', label: 'Savings (S) = Investment (I)', min: 0, max: 80, step: 5, value: 30, unit: '₹B', showWhen: { id: 'bank', equals: 'yes' } },
+            { id: 'g', label: 'Government Spending (G)', min: 0, max: 100, step: 5, value: 40, unit: '₹B', showWhen: { id: 'sector', equals: ['3', '4'] } },
+            { id: 'nx', label: 'Net Exports (X − M)', min: -40, max: 40, step: 5, value: 10, unit: '₹B', showWhen: { id: 'sector', equals: '4' } }
         ],
         // Custom-rendered as an animated SVG instead of a Plotly chart: a
         // static sankey diagram can't show a real flow moving opposite to
-        // a money flow, which is the actual concept being taught here. The
-        // real flow (factor services / goods & services — dashed wire,
-        // square markers) and the money flow (factor payments / consumption
-        // — solid wire, round markers) are drawn as two visually distinct
-        // rings between Households and Firms, each with its own breathing
-        // label naming the transaction, so the opposite-direction
-        // relationship is genuinely visible, not just described in text.
+        // a money flow, which is the actual concept being taught here.
+        //
+        // Sector/bank gating: the diagram draws ONLY the nodes/flows that
+        // exist in the chosen combination — a 2-sector economy must never
+        // show a Government or Foreign Sector node, and Banks must never
+        // appear unless the Financial Market toggle is on. In the strict
+        // baseline (2-Sector, Financial Market off), Wages is also forced
+        // equal to Consumption (overriding the slider) because Y = C is an
+        // identity there, not an independent choice — the Wages control
+        // stays visible (rather than hidden) so a student can still see it
+        // get overridden, with the readings explaining why.
+        //
+        // Direction rule (this is the part earlier versions of this lab
+        // got backwards): Taxes/Imports/Saving are LEAKAGES — money flows
+        // OUT of Households/Firms; Govt. Spending/Exports/Investment are
+        // INJECTIONS — money flows IN. In particular, export revenue is
+        // paid BY the Foreign Sector TO domestic Firms (Foreign→Firm), and
+        // import spending is paid BY domestic Firms TO the Foreign Sector
+        // (Firm→Foreign) — the opposite of which sector shipped the goods.
         customRender(container, v) {
-            const consumption = v.consumption, wages = v.wages, taxes = 35, g = v.g, nx = v.nx;
+            const sector = v.sector || '2';
+            const has3 = sector === '3' || sector === '4';
+            const has4 = sector === '4';
+            const hasBank = v.bank === 'yes';
+            const identityHolds = sector === '2' && !hasBank; // strict Y = C baseline
+
+            const consumption = v.consumption;
+            const wages = identityHolds ? consumption : v.wages; // Y = C identity only in the strict baseline
+            const saving = hasBank ? v.saving : 0;
+            const investment = hasBank ? saving : 50; // S=I when the Financial Market is modeled; else an illustrative fixed I
+            const taxes = has3 ? 35 : 0;
+            const g = has3 ? v.g : 0;
+            const nx = has4 ? v.nx : 0;
             const exportsVal = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
 
-            const nodes = {
-                hh: { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' },
-                firm: { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' },
-                gov: { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' },
-                foreign: { x: 250, y: 364, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' }
-            };
+            const hh = { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' };
+            const firm = { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' };
+            const gov = { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' };
+            // Foreign Sector and Banks share the bottom of the diagram —
+            // spread to bottom-left/right when both are present, otherwise
+            // whichever one exists alone takes the bottom-center spot the
+            // other would have used.
+            const foreign = { x: has4 && hasBank ? 370 : 250, y: 344, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
+            const bank = { x: has4 && hasBank ? 130 : 250, y: 344, label: 'Financial Market (Banks)', icon: '🏦', color: '#0891b2' };
+
+            const nodes = { hh, firm };
+            if (has3) nodes.gov = gov;
+            if (hasBank) nodes.bank = bank;
+            if (has4) nodes.foreign = foreign;
 
             // IMPORTANT geometry note: `bend` offsets a curve sideways from
             // the straight line between its two points, but the "sideways"
@@ -261,21 +359,41 @@ const SIMS = [
             const flows = [
                 // Money flow (inner ring, solid, round particles): payment
                 // moving opposite to whatever real thing it's paying for.
-                { id: 'flow-cons', from: nodes.hh, to: nodes.firm, bend: 20, labelOffset: 11, value: consumption, color: '#8b5cf6', kind: 'money', label: 'Consumption Exp. (C)' },
-                { id: 'flow-wage', from: nodes.firm, to: nodes.hh, bend: 20, labelOffset: 11, value: wages, color: '#f59e0b', kind: 'money', label: 'Factor Payments (Wages)' },
+                { id: 'flow-cons', from: hh, to: firm, bend: 20, labelOffset: 11, value: consumption, color: '#8b5cf6', kind: 'money', label: 'Consumption Exp. (C)' },
+                { id: 'flow-wage', from: firm, to: hh, bend: 20, labelOffset: 11, value: wages, color: '#f59e0b', kind: 'money', label: 'Factor Payments (Wages)' },
                 // Real flow (outer ring, dashed, square particles): what
                 // actually changes hands, sized to match the payment it
                 // corresponds to (factor services ≈ what wages pay for;
                 // goods & services ≈ what consumption spending buys).
-                { id: 'flow-factors', from: nodes.hh, to: nodes.firm, bend: 58, labelOffset: 11, value: wages, color: '#6366f1', kind: 'real', label: 'Factor Services' },
-                { id: 'flow-goods', from: nodes.firm, to: nodes.hh, bend: 58, labelOffset: 11, value: consumption, color: '#10b981', kind: 'real', label: 'Goods &amp; Services' },
-                // Government & foreign sector: shown as money flows only
-                // (matches the standard 4-sector textbook diagram).
-                { id: 'flow-tax', from: nodes.hh, to: nodes.gov, bend: 16, labelOffset: 11, value: taxes, color: nodes.gov.color, kind: 'money', label: 'Taxes (T)' },
-                { id: 'flow-gspend', from: nodes.gov, to: nodes.hh, bend: 16, labelOffset: 11, value: g, color: nodes.gov.color, kind: 'money', label: 'Govt Spending (G)' },
-                { id: 'flow-exp', from: nodes.firm, to: nodes.foreign, bend: 16, labelOffset: 11, value: exportsVal, color: nodes.foreign.color, kind: 'money', label: 'Exports (X)' },
-                { id: 'flow-imp', from: nodes.foreign, to: nodes.firm, bend: 16, labelOffset: 11, value: imports, color: nodes.foreign.color, kind: 'money', label: 'Imports (M)' }
+                { id: 'flow-factors', from: hh, to: firm, bend: 58, labelOffset: 11, value: wages, color: '#6366f1', kind: 'real', label: 'Factor Services' },
+                { id: 'flow-goods', from: firm, to: hh, bend: 58, labelOffset: 11, value: consumption, color: '#10b981', kind: 'real', label: 'Goods &amp; Services' }
             ];
+            if (hasBank) {
+                flows.push(
+                    // Saving is a LEAKAGE — Households keep back income
+                    // instead of spending it, into the banking system.
+                    { id: 'flow-saving', from: hh, to: bank, bend: 16, labelOffset: 11, value: saving, color: bank.color, kind: 'money', label: 'Savings (S) — Leakage' },
+                    // Investment is an INJECTION — Banks channel that saved
+                    // money out to Firms.
+                    { id: 'flow-invest', from: bank, to: firm, bend: 16, labelOffset: 11, value: investment, color: bank.color, kind: 'money', label: 'Investment (I) — Injection' }
+                );
+            }
+            if (has3) {
+                flows.push(
+                    { id: 'flow-tax', from: hh, to: gov, bend: 16, labelOffset: 11, value: taxes, color: gov.color, kind: 'money', label: 'Taxes (T) — Leakage' },
+                    { id: 'flow-gspend', from: gov, to: hh, bend: 16, labelOffset: 11, value: g, color: gov.color, kind: 'money', label: 'Govt Spending (G) — Injection' }
+                );
+            }
+            if (has4) {
+                flows.push(
+                    // Export revenue is an INJECTION — the Foreign Sector
+                    // pays domestic Firms for what they exported.
+                    { id: 'flow-exp', from: foreign, to: firm, bend: 16, labelOffset: 11, value: exportsVal, color: foreign.color, kind: 'money', label: 'Exports (X) — Injection' },
+                    // Import spending is a LEAKAGE — domestic Firms pay the
+                    // Foreign Sector for what was imported.
+                    { id: 'flow-imp', from: firm, to: foreign, bend: 16, labelOffset: 11, value: imports, color: foreign.color, kind: 'money', label: 'Imports (M) — Leakage' }
+                );
+            }
 
             const maxValue = Math.max(...flows.map(f => f.value), 1);
             const flowsSVG = flows
@@ -318,74 +436,68 @@ const SIMS = [
                     <text x="30" y="23" font-size="8" fill="#4b4470">Real Flow (factors / goods)</text>
                 </g>`;
 
+            const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');
             container.innerHTML = `
-                <div class="flow-view-2d">
-                    <button type="button" id="flow-3d-toggle" class="flow-3d-toggle-btn">🌐 3D View</button>
-                    <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                         aria-label="Animated circular flow of income, with every transaction labeled: real flow of factor services and goods moving opposite to the money flow of payments and expenditure, between households, firms, government and the foreign sector">
-                        ${flowsSVG}
-                        ${nodesSVG}
-                        ${labelsSVG}
-                        ${legendSVG}
-                    </svg>
-                </div>
-                <div class="flow-view-3d hidden">
-                    <button type="button" class="flow-3d-toggle-btn">📊 2D View</button>
-                    <div class="flow-3d-slot" aria-label="Immersive 3D WebGL view of the circular flow, with the same real/money flows animated as glowing tubes between orbiting node spheres"></div>
-                </div>`;
+                <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+                     aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
+                    ${flowsSVG}
+                    ${nodesSVG}
+                    ${labelsSVG}
+                    ${legendSVG}
+                </svg>`;
 
-            // The 3D view is an OPT-IN companion (js/webgl-flow.js), never
-            // a replacement — it's built from these exact same `flows`/
-            // `nodes` objects so it can't show numbers the 2D view
-            // disagrees with, and it silently no-ops (returns false)
-            // wherever WebGL isn't available (the headless test harness,
-            // an old device) rather than erroring.
-            const view2D = container.querySelector('.flow-view-2d');
-            const view3D = container.querySelector('.flow-view-3d');
-            const slot3D = container.querySelector('.flow-3d-slot');
-            const nodes3D = {};
-            Object.keys(nodes).forEach(k => { nodes3D[k] = { x: nodes[k].x, y: nodes[k].y, color: nodes[k].color }; });
-            const showFlow3D = () => {
-                if (typeof renderCircularFlow3D !== 'function') return;
-                if (!renderCircularFlow3D(slot3D, flows, nodes3D)) {
-                    // WebGL unavailable — stay on the 2D view rather than
-                    // showing a blank panel.
-                    flow3DActive = false;
-                    view2D.classList.remove('hidden');
-                    view3D.classList.add('hidden');
-                }
-            };
-            container.querySelectorAll('.flow-3d-toggle-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    flow3DActive = !flow3DActive;
-                    view2D.classList.toggle('hidden', flow3DActive);
-                    view3D.classList.toggle('hidden', !flow3DActive);
-                    if (flow3DActive) showFlow3D();
-                });
-            });
-            if (flow3DActive) {
-                view2D.classList.add('hidden');
-                view3D.classList.remove('hidden');
-                showFlow3D();
+            // Injections vs Leakages — the actual CBSE-taught rule for
+            // whether National Income is rising, falling, or in
+            // equilibrium. Undefined (not "zero and balanced") only in the
+            // strict 2-Sector/no-Financial-Market baseline, which has
+            // neither concept at all.
+            //
+            // The verdict sentence deliberately carries NO embedded
+            // numbers (the numbers already have their own reading rows
+            // above it) — READINGS_I18N_HI (js/i18n_hi.js) translates it
+            // by exact substring match, which only works on fixed prose.
+            const totalInjections = (has3 ? g : 0) + (has4 ? exportsVal : 0) + (hasBank ? investment : 0);
+            const totalLeakages = (has3 ? taxes : 0) + (has4 ? imports : 0) + (hasBank ? saving : 0);
+            const gap = Math.round((totalInjections - totalLeakages) * 100) / 100;
+            let verdict;
+            if (identityHolds) {
+                verdict = 'This is the strict <b>2-Sector model with no Financial Market</b> — no saving, no Government, no Foreign Sector, so there is no leakage or injection at all. By definition <b>Y = C</b>: households spend every rupee they earn, and firms pay out every rupee they receive.';
+            } else if (Math.abs(gap) < 0.01) {
+                verdict = 'Total Injections = Total Leakages — the economy is in <b>equilibrium</b>, National Income stays constant.';
+            } else if (gap > 0) {
+                verdict = 'Total Injections are greater than Total Leakages — a net injection, so National Income tends to <b>RISE</b>.';
+            } else {
+                verdict = 'Total Leakages are greater than Total Injections — a net leakage, so National Income tends to <b>FALL</b>.';
             }
 
-            const gdpExp = consumption + g + 50 + nx; // C + G + (illustrative I=50) + NX — illustrative expenditure-method total for this flow diagram's own figures
+            const gdpExp = identityHolds ? consumption : consumption + investment + g + nx; // C, or C + I + G + NX once any leakage/injection channel exists
             return {
-                metrics: { consumption, wages, g, nx, gdpExp },
-                readings: `<div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
+                metrics: { sector, bank: v.bank || 'no', consumption, wages, saving, investment, g, nx, taxes, exportsVal, imports, totalInjections, totalLeakages, gdpExp },
+                readings: `<div class="reading-row"><span>Economy Model</span><b>${sectorLabel}${hasBank ? ' + Financial Market' : ''}</b></div>
+                           <div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
                            <div class="reading-row"><span>Factor Payments (Wages etc.)</span><b>₹${wages}B</b></div>
-                           <div class="reading-row"><span>Govt Spending (G)</span><b>₹${g}B</b></div>
-                           <div class="reading-row"><span>Net Exports (X−M)</span><b>₹${nx}B</b></div>
-                           <div class="reading-row insight-row">💡 Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms. Raising G or exports adds new injections and speeds up the whole flow.</div>`
+                           ${identityHolds ? `<div class="reading-row insight-row">Wages is forced equal to Consumption here — that's what "Y = C" means with no leakage channel open yet.</div>` : ''}
+                           ${hasBank ? `<div class="reading-row"><span>Savings (S) — Leakage</span><b>₹${saving}B</b></div>
+                           <div class="reading-row"><span>Investment (I) — Injection</span><b>₹${investment}B</b></div>` : ''}
+                           ${has3 ? `<div class="reading-row"><span>Taxes (T) — Leakage</span><b>₹${taxes}B</b></div>
+                           <div class="reading-row"><span>Govt Spending (G) — Injection</span><b>₹${g}B</b></div>` : ''}
+                           ${has4 ? `<div class="reading-row"><span>Exports (X) — Injection</span><b>₹${fmt(exportsVal, 0)}B</b></div>
+                           <div class="reading-row"><span>Imports (M) — Leakage</span><b>₹${fmt(imports, 0)}B</b></div>` : ''}
+                           ${!identityHolds ? `<div class="reading-row"><span>Total Injections</span><b>₹${fmt(totalInjections, 0)}B</b></div>
+                           <div class="reading-row"><span>Total Leakages</span><b>₹${fmt(totalLeakages, 0)}B</b></div>` : ''}
+                           <div class="reading-row insight-row">💡 ${verdict}</div>
+                           <div class="reading-row insight-row">Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms.</div>`
             };
         },
         practice: [
-            { prompt: 'Raise Net Exports to the maximum. Which flow (Exports or Imports) becomes visibly thicker?', hint: 'A higher X−M means Exports grow relative to Imports — watch the Exports wire to the Foreign Sector thicken and speed up.' },
-            { prompt: 'Set Government Spending to 0. Does the real flow between Households and Firms stop?', hint: "No — G only affects the Government leg. The Households↔Firms real/money flows (factor services/goods vs wages/consumption) keep moving on their own." }
+            { prompt: 'Set Economy Model to "2-Sector" with Financial Market OFF. How many nodes does the diagram show, and how many flows?', hint: 'Exactly 2 nodes (Households, Firms) and 4 flows: Factor Services + Goods & Services (real), Factor Payments + Consumption Expenditure (money) — no Government, no Banks, no Foreign Sector.' },
+            { prompt: 'Now switch the Financial Market ON (still 2-Sector). Which new node appears, and which of its two flows is the leakage?', hint: 'The Financial Market (Banks) node appears. Savings (Households→Banks) is the leakage — income withdrawn from spending. Investment (Banks→Firms) is the injection — that same money re-enters as spending on capital goods.' },
+            { prompt: 'Switch to "3-Sector". Which new node appears, and which of its two flows is the injection?', hint: 'Government appears. Govt Spending (Government→Households) is the injection — new money entering the flow. Taxes (Households→Government) is the leakage — money withdrawn from it.' },
+            { prompt: 'Switch to "4-Sector" and make Net Exports negative. Which flow (Exports or Imports) is now bigger, and is that a net injection or a net leakage on the Foreign Sector leg?', hint: 'Negative Net Exports means Imports > Exports — a net leakage: more money is flowing OUT to the Foreign Sector (Imports, Firms→Foreign) than is flowing IN (Exports, Foreign→Firms).' }
         ],
         challenge: {
-            prompt: 'Push Consumption Expenditure and Government Spending both to their maximum while keeping Net Exports negative — can you still tell which wire is "real" vs "money" just from the animation style?',
-            check(state) { return state.consumption >= 145 && state.g >= 95 && state.nx < 0; }
+            prompt: 'End on the 4-Sector model with the Financial Market ON and Net Exports negative — this only works if you correctly read Imports AND Saving as leakages, and Exports AND Investment as injections.',
+            check(state) { return state.sector === '4' && state.bank === 'yes' && state.nx < 0; }
         }
     },
     {
