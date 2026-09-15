@@ -9,18 +9,79 @@ if (typeof SIMS !== 'undefined') {
             id: 'micro-consumer-equilibrium',
             module: 'micro',
             title: 'Consumer Equilibrium (Marginal Utility)',
-            desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium.',
+            desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium — single-good (MU=0) and the two-good Law of Equi-Marginal Utility (MUx/Px = MUy/Py).',
             class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topicLabel: 'Marginal Utility Analysis',
             syllabusIds: ['XI-B-U5-UTILITY'],
             mode: 'simulator',
-            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. With only one good and free disposal, a rational consumer keeps consuming until <b>MU = 0</b>. But real consumers spend limited money income across many goods, so the actual equilibrium condition compares <b>Marginal Utility per Rupee</b> (MU/P) — a consumer maximizes satisfaction by buying the good with the highest MU per rupee first, which is why price is included as its own factor here.</p>',
-            formulas: ['MU = ΔTU / ΔQ', 'TU = Σ MU', 'MU per Rupee = MU / P', 'Single-good limit: Consumer stops at MU = 0 (satiation point)'],
+            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. With only <b>one good</b> and free disposal, a rational consumer keeps consuming until <b>MU = 0</b> — the <b>Single Good</b> view below.</p><p>But a real consumer splits a <b>fixed money income</b> across <b>two (or more) goods</b>. The actual equilibrium condition — the <b>Law of Equi-Marginal Utility</b> — is reached when the last rupee spent on every good buys the same Marginal Utility: <b>MUx/Px = MUy/Py</b>. If MUx/Px is higher, the consumer is better off shifting a rupee from Y to X (and vice versa) — switch to the <b>Two Goods (Equi-Marginal)</b> view to move your budget between X and Y and watch the two MU/Rupee curves cross exactly at that equilibrium.</p>',
+            formulas: ['Single good: MU = ΔTU / ΔQ; TU = Σ MU; consumer stops at MU = 0',
+                'Two goods: Budget constraint Px·Qx + Py·Qy = M',
+                'Equi-Marginal condition: MUx / Px = MUy / Py'],
             controls: [
-                { id: 'q', label: 'Units Consumed (Q)', min: 0, max: 20, step: 1, value: 5, unit: '' },
-                { id: 'price', label: 'Price per Unit (₹)', min: 2, max: 20, step: 1, value: 5, unit: '' }
+                { id: 'view', label: 'View', type: 'select', options: [
+                    { value: 'single', label: 'Single Good (MU = 0)' },
+                    { value: 'twogood', label: 'Two Goods (Equi-Marginal)' }
+                ], value: 'single' },
+                { id: 'q', label: 'Units Consumed (Q)', min: 0, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'single' } },
+                { id: 'price', label: 'Price per Unit (₹)', min: 2, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'single' } },
+                { id: 'income', label: 'Money Income (M, ₹)', min: 20, max: 100, step: 10, value: 60, unit: '', showWhen: { id: 'view', equals: 'twogood' } },
+                { id: 'px', label: 'Price of X (₹)', min: 5, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'twogood' } },
+                { id: 'py', label: 'Price of Y (₹)', min: 5, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'twogood' } },
+                { id: 'shareX', label: 'Budget Spent on X (%)', min: 0, max: 100, step: 5, value: 50, unit: '%', showWhen: { id: 'view', equals: 'twogood' } }
             ],
             compute(v) {
-                const a = 20, b = 1, Q = v.q, P = v.price;
+                const a = 20, b = 1;
+                if (v.view === 'twogood') {
+                    const M = v.income, Px = v.px, Py = v.py;
+                    const qxMax = M / Px;
+                    const Qx = (v.shareX / 100) * qxMax;
+                    const Qy = Math.max((M - Px * Qx) / Py, 0);
+                    const MUx = a - b * Qx, MUy = a - b * Qy;
+                    const muxPerRupee = MUx / Px, muyPerRupee = MUy / Py;
+                    const diff = muxPerRupee - muyPerRupee;
+
+                    // Sweep the whole feasible Qx range to draw both MU/Rupee curves
+                    // and to locate the equi-marginal crossing by grid search — a
+                    // closed-form solve would be one more place to get the algebra
+                    // wrong; a fine grid search over the actual model is guaranteed
+                    // consistent with what the chart itself shows.
+                    const N = 200;
+                    const qxs = range(N + 1).map(i => (i / N) * qxMax);
+                    const muxSeries = qxs.map(qx => (a - b * qx) / Px);
+                    const muySeries = qxs.map(qx => (a - b * Math.max((M - Px * qx) / Py, 0)) / Py);
+                    let bestQx = 0, bestGap = Infinity;
+                    qxs.forEach((qx, i) => {
+                        const gap = Math.abs(muxSeries[i] - muySeries[i]);
+                        if (gap < bestGap) { bestGap = gap; bestQx = qx; }
+                    });
+                    const bestQy = Math.max((M - Px * bestQx) / Py, 0);
+                    const bestMuPerRupee = (a - b * bestQx) / Px;
+
+                    const TU = (a * Qx - (b * Qx * Qx) / 2) + (a * Qy - (b * Qy * Qy) / 2);
+                    const verdict = Math.abs(diff) < 0.4
+                        ? '✔ At (or very near) equilibrium — MUx/Px ≈ MUy/Py'
+                        : diff > 0 ? '→ MUx/Px is higher: shift budget from Y to X'
+                            : '→ MUy/Py is higher: shift budget from X to Y';
+
+                    return {
+                        traces: [
+                            { x: qxs, y: muxSeries, mode: 'lines', name: 'MUx / Px', line: { color: '#2563eb', width: 3 } },
+                            { x: qxs, y: muySeries, mode: 'lines', name: 'MUy / Py', line: { color: '#f59e0b', width: 3 } },
+                            { x: [bestQx], y: [bestMuPerRupee], mode: 'markers', name: 'Equi-Marginal Equilibrium', marker: { color: '#10b981', size: 13, symbol: 'star' } },
+                            { x: [Qx], y: [muxPerRupee], mode: 'markers', name: 'Your MUx/Px', marker: { color: '#2563eb', size: 10 } },
+                            { x: [Qx], y: [muyPerRupee], mode: 'markers', name: 'Your MUy/Py', marker: { color: '#f59e0b', size: 10 } }
+                        ],
+                        layout: { xaxis: { title: 'Units of X purchased (Qx)', range: [0, qxMax] }, yaxis: { title: 'Marginal Utility per Rupee' } },
+                        metrics: { Qx, Qy, muxPerRupee, muyPerRupee, diff, bestQx, bestQy, TU },
+                        readings: `<div class="reading-row"><span>Your bundle</span><b>Qx = ${fmt(Qx, 1)}, Qy = ${fmt(Qy, 1)}</b></div>
+                                   <div class="reading-row"><span>MUx / Px</span><b>${fmt(muxPerRupee)}</b></div>
+                                   <div class="reading-row"><span>MUy / Py</span><b>${fmt(muyPerRupee)}</b></div>
+                                   <div class="reading-row"><span>Equi-Marginal Bundle</span><b>Qx = ${fmt(bestQx, 1)}, Qy = ${fmt(bestQy, 1)}</b></div>
+                                   <div class="reading-row"><span>Total Utility (your bundle)</span><b>${fmt(TU)}</b></div>
+                                   <div class="reading-row insight-row">💡 ${verdict}. Both goods together always spend the full ₹${M} income (Px·Qx + Py·Qy = M) — the question is only how to SPLIT it. The consumer maximizes total satisfaction exactly where the two MU-per-Rupee curves cross, because moving even ₹1 away from that split takes a rupee from the good giving MORE utility per rupee and gives it to the one giving less.</div>`
+                    };
+                }
+                const Q = v.q, P = v.price;
                 const qs = range(21);
                 const mus = qs.map(q => a - b * q);
                 const MU = a - b * Q;
@@ -37,16 +98,21 @@ if (typeof SIMS !== 'undefined') {
                     readings: `<div class="reading-row"><span>Marginal Utility at Q</span><b>${fmt(MU)}</b></div>
                                <div class="reading-row"><span>MU per Rupee (MU/P)</span><b>${fmt(muPerRupee)}</b></div>
                                <div class="reading-row"><span>Total Utility</span><b>${fmt(TU)}</b></div>
-                               <div class="reading-row insight-row">💡 ${MU > 0 ? 'MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.' : MU < 0 ? 'MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.' : 'MU = 0 — this is the single-good equilibrium (maximum Total Utility).'} With multiple goods, the consumer instead compares MU/P across goods and buys more of whichever gives more satisfaction per rupee — at ₹${P}/unit, this good currently gives ${fmt(muPerRupee)} utils per rupee.</div>`
+                               <div class="reading-row insight-row">💡 ${MU > 0 ? 'MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.' : MU < 0 ? 'MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.' : 'MU = 0 — this is the single-good equilibrium (maximum Total Utility).'} With multiple goods, the consumer instead compares MU/P across goods and buys more of whichever gives more satisfaction per rupee — at ₹${P}/unit, this good currently gives ${fmt(muPerRupee)} utils per rupee. Switch to the "Two Goods" view above to see that comparison directly.</div>`
                 };
             },
             practice: [
                 { prompt: 'Increase Q from 0 to 20. At what point does MU hit zero?', hint: 'MU = 20 − Q, so MU = 0 exactly at Q = 20 — the single-good satiation point.' },
-                { prompt: 'Keep Q = 10. Raise the price from ₹2 to ₹20 — what happens to MU per Rupee?', hint: 'MU stays fixed at Q=10 (MU=10), but MU/P = 10/P falls as price rises — the same satisfaction costs more per rupee.' }
+                { prompt: 'Keep Q = 10. Raise the price from ₹2 to ₹20 — what happens to MU per Rupee?', hint: 'MU stays fixed at Q=10 (MU=10), but MU/P = 10/P falls as price rises — the same satisfaction costs more per rupee.' },
+                { prompt: 'Switch to Two Goods. Set Px = Py, then move the Budget slider. At what share is the consumer in equilibrium?', hint: 'Exactly 50% — with identical prices and identical MU curves, the two goods are symmetric, so an equal split is the only point where MUx/Px = MUy/Py.' },
+                { prompt: 'Now make Y more expensive than X (raise Py). Does the equilibrium share of budget on X rise or fall?', hint: 'It rises — a dearer Y means Y\'s Marginal Utility per Rupee is lower at any given physical split, so the consumer rationally shifts more of the budget toward the now-relatively-cheaper X.' }
             ],
             challenge: {
-                prompt: 'Find a Q where MU is still positive but MU per Rupee has fallen below 1.',
-                check(state, metrics) { return metrics && metrics.MU > 0 && metrics.muPerRupee < 1; }
+                prompt: 'In the Two Goods view, get within 0.3 of the Equi-Marginal Equilibrium share using the Budget slider.',
+                check(state, metrics) {
+                    if (state.view !== 'twogood' || !metrics || metrics.bestQx === undefined) return false;
+                    return Math.abs(metrics.Qx - metrics.bestQx) < 0.3;
+                }
             }
         },
         {

@@ -498,6 +498,32 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     ok(long.metrics.Es > market.metrics.Es, 'Elasticity of Supply: long run is more elastic than the market period at the same price');
 })();
 
+(function testEquiMarginalUtility() {
+    const sim = findSim('micro-consumer-equilibrium');
+    // Symmetric prices (Px = Py) with identical MU curves for X and Y ⇒
+    // the equi-marginal split must be exactly 50/50 by symmetry.
+    const symmetric = sim.compute({ view: 'twogood', income: 60, px: 5, py: 5, shareX: 50 });
+    approx(symmetric.metrics.bestQx, symmetric.metrics.Qx, 0.2, 'Equi-Marginal Utility: with Px = Py, the 50/50 split IS the equilibrium');
+    approx(symmetric.metrics.diff, 0, 0.05, 'Equi-Marginal Utility: at the symmetric split, MUx/Px = MUy/Py');
+    // At the numerically-located equilibrium itself, the two MU-per-Rupee
+    // values must actually be equal (not just "close to the student's guess").
+    const eqQy = symmetric.metrics.bestQy;
+    const eqMUx = (20 - symmetric.metrics.bestQx) / 5;
+    const eqMUy = (20 - eqQy) / 5;
+    approx(eqMUx, eqMUy, 0.1, 'Equi-Marginal Utility: at the located equilibrium, MUx/Px actually equals MUy/Py');
+    // A dearer Y should pull the equilibrium share of the budget on X UP —
+    // this is the Law of Equi-Marginal Utility's actual comparative-statics
+    // prediction, not just "the model runs without crashing".
+    const cheapY = sim.compute({ view: 'twogood', income: 60, px: 5, py: 5, shareX: 50 });
+    const dearY = sim.compute({ view: 'twogood', income: 60, px: 5, py: 15, shareX: 50 });
+    const cheapYShareAtEq = cheapY.metrics.bestQx * 5 / 60;
+    const dearYShareAtEq = dearY.metrics.bestQx * 5 / 60;
+    ok(dearYShareAtEq > cheapYShareAtEq, 'Equi-Marginal Utility: making Y more expensive raises the equilibrium budget share spent on X');
+    // Budget is always exhausted regardless of the split chosen.
+    const anySplit = sim.compute({ view: 'twogood', income: 80, px: 8, py: 4, shareX: 30 });
+    approx(anySplit.metrics.Qx * 8 + anySplit.metrics.Qy * 4, 80, 1e-6, 'Equi-Marginal Utility: Px·Qx + Py·Qy always exhausts the fixed budget M');
+})();
+
 (function testPriceControls() {
     const sim = findSim('micro-price-controls');
     const ceiling = sim.compute({ ctrl: 30, demandShift: 0 });
