@@ -489,6 +489,37 @@ const SIMS = [
                            <div class="reading-row insight-row">Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms.</div>`
             };
         },
+        // Teaching & Learning Toolkit — see docs/economics/models/circular-flow.md
+        // and docs/economics/pedagogy/README.md. Mode-agnostic (renderTLM() is wired
+        // at the shared renderSim() level), so this attaches to a customRender sim
+        // with zero engine changes, same as any simulator/graphlab sim.
+        tlm: {
+            keyIdea: 'Every flow is either a LEAKAGE (money OUT of Households/Firms: Taxes, Imports, Savings) or an INJECTION (money IN: Govt Spending, Exports, Investment). Injections vs Leakages decides whether National Income rises, falls, or holds steady.',
+            commonMistakes: [
+                'Assuming Government Spending always equals Taxes (a "balanced budget") — they are independent in this model; a real economy can run either a surplus or a deficit, and that gap is exactly what drives national income up or down.',
+                'Getting Exports/Imports direction backwards — Export revenue is paid BY the Foreign Sector INTO domestic Firms (an injection); Import spending is paid BY domestic Firms OUT to the Foreign Sector (a leakage). The physical goods move the opposite way from the money in both cases — it is the money direction that decides injection vs leakage.',
+                'Thinking Savings and Investment being equal (S=I) here means they are ALWAYS equal in every model — this lab keeps them equal by construction to teach the accounting identity; the separate Multiplier lab is where planned Investment and planned Saving are allowed to diverge.'
+            ],
+            examTip: 'When asked to classify a flow, ask one question: does this take money OUT of the Households/Firms loop, or bring NEW money IN? Taxes/Imports/Savings always take money out (leakages). Govt Spending/Exports/Investment always bring money in (injections). Do not classify by which sector is involved — Investment and Savings both involve the Financial Market, but one is a leakage and the other an injection.',
+            thinkQuestion: 'A country cuts taxes AND increases government spending in the same budget. Using the Injections-vs-Leakages rule, what happens to National Income — and does the direction depend on the SIZE of the tax cut relative to the spending increase, or does it happen regardless?',
+            activity: {
+                title: 'Find the Budget',
+                instructions: 'Find one real news report about a national government\'s budget (India\'s Union Budget is the obvious choice) that mentions whether it is a surplus, deficit, or balanced budget. Using this lab\'s rule, say whether that alone (ignoring trade and savings) would tend to push national income up, down, or keep it steady.'
+            },
+            exitTicket: 'In one sentence: why is Investment classified as an injection while Saving is classified as a leakage, even though both happen through the same Financial Market?',
+            teacherExplain: 'Build the diagram up live, one sector at a time: start at 2-Sector with the Financial Market off (Y=C, no leakage/injection at all), then turn the Financial Market on and ask the class to predict whether Total Injections and Total Leakages will be equal (they will, always, in this lab — S=I by construction) — then add Government and deliberately set G far from T, and ask the class to predict the direction of change BEFORE revealing the verdict.',
+            quickCheck: {
+                question: 'In the 4-Sector model, a country\'s exports fall sharply due to a global recession, while nothing else changes. What happens to Total Injections, and what does the model predict for National Income?',
+                options: [
+                    'Total Injections fall; National Income tends to fall',
+                    'Total Injections fall; National Income tends to rise',
+                    'Total Leakages fall; National Income tends to rise',
+                    'Nothing changes, since exports are a real flow, not a money flow'
+                ],
+                correctIndex: 0,
+                explain: 'Exports are an injection (Foreign Sector pays domestic Firms). A fall in exports directly reduces Total Injections. With Total Leakages unchanged, Injections now fall further below (or fail to match) Leakages, so National Income tends to fall.'
+            }
+        },
         practice: [
             { prompt: 'Set Economy Model to "2-Sector" with Financial Market OFF. How many nodes does the diagram show, and how many flows?', hint: 'Exactly 2 nodes (Households, Firms) and 4 flows: Factor Services + Goods & Services (real), Factor Payments + Consumption Expenditure (money) — no Government, no Banks, no Foreign Sector.' },
             { prompt: 'Now switch the Financial Market ON (still 2-Sector). Which new node appears, and which of its two flows is the leakage?', hint: 'The Financial Market (Banks) node appears. Savings (Households→Banks) is the leakage — income withdrawn from spending. Investment (Banks→Firms) is the injection — that same money re-enters as spending on capital goods.' },
