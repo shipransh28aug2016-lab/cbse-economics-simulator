@@ -75,6 +75,34 @@ if (typeof SIMS !== 'undefined') {
                     const a = metrics.mean, b = metrics.median, c = metrics.mode;
                     return Math.abs(a - b) > 0.5 && Math.abs(b - c) > 0.5 && Math.abs(a - c) > 0.5;
                 }
+            },
+            // Teaching & Learning Toolkit — see docs/economics/models/central-tendency.md
+            tlm: {
+                keyIdea: 'Mean uses every value (so outliers pull it hard); Median only uses rank order (so it resists outliers); Mode just counts frequency. When Mean and Median disagree, the gap tells you the direction of skew.',
+                commonMistakes: [
+                    'Assuming every dataset has exactly one mode — a dataset with all-unique values has NO mode, and one with two equally-frequent values is genuinely bimodal (both are the mode, not just the first one found).',
+                    'Assuming Mean is always "the best average" — for skewed data (e.g. household incomes with a few very rich outliers), Median is the more representative figure, which is why "median income" is reported in the news, not "mean income."',
+                    'Reading Mean > Median as automatically meaning "the data is wrong" rather than recognising it as the definition of positive (right) skew.'
+                ],
+                examTip: 'If asked to justify WHICH average to use for skewed/outlier-prone data (income, house prices, exam marks with a few zeros), the correct answer is Median — Mean gets pulled toward the outlier, Median does not, and this exact justification is what scores the mark.',
+                thinkQuestion: 'A company reports its "average" salary as ₹12 lakh, but most employees actually earn around ₹6 lakh. What kind of average is being quoted, and why might the company have chosen it?',
+                activity: {
+                    title: 'Find the Skew',
+                    instructions: 'Find one real published statistic (income, house prices, city population, cricket scores) where the source reports Median rather than Mean. Explain why Median was the better choice there.'
+                },
+                exitTicket: 'In one sentence: why does adding one very high outlier move the Mean a lot but barely move the Median?',
+                teacherExplain: 'Start with a symmetric dataset (Mean = Median). Add one extreme outlier live in front of the class and pause immediately after — ask students to predict which of the three figures moved before revealing the updated readings panel.',
+                quickCheck: {
+                    question: 'A dataset\'s Mean is noticeably HIGHER than its Median. What does this tell you?',
+                    options: [
+                        'The data is positively (right) skewed — a few unusually high values are pulling the Mean upward',
+                        'The data is negatively (left) skewed — a few unusually low values are pulling the Mean downward',
+                        'The data has no mode',
+                        'The calculation must contain an error, since Mean and Median should always be equal'
+                    ],
+                    correctIndex: 0,
+                    explain: 'Mean uses the actual magnitude of every value, so a few high outliers drag it above the Median, which only depends on rank/position — that gap is exactly the definition of positive skew.'
+                }
             }
         },
         {
