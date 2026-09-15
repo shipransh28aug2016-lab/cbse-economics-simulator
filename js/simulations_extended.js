@@ -151,16 +151,34 @@ if (typeof SIMS !== 'undefined') {
                         : MP >= 0
                             ? 'Each extra worker adds less than before (and less than the average) — this is the normal, rational stage of production.'
                             : 'Too much labour is now crowded onto fixed factors — an extra worker actually reduces Total Product.';
+                    // Stage boundaries are exact algebraic roots of THIS production
+                    // function (30l² − l³), not eyeballed off the chart: AP is
+                    // maximised, and MP crosses it, at L=15 (solving MP=AP); MP
+                    // itself hits zero — the Stage II/III boundary — at L=20
+                    // (solving MP=0). Marking both is what makes "three stages"
+                    // an actual, visible fact on the diagram instead of a claim
+                    // only the readings-panel text makes.
+                    const lStar1 = 15, lStar2 = 20;
+                    const apAtStar1 = ap(lStar1);
                     return {
                         traces: [
                             { x: Ls, y: Ls.map(ap), mode: 'lines', name: 'Average Product (AP)', line: { color: '#2563eb', width: 3 } },
                             { x: Ls, y: Ls.map(mp), mode: 'lines', name: 'Marginal Product (MP)', line: { color: '#f59e0b', width: 3 } },
                             { x: Ls, y: Ls.map(() => 0), mode: 'lines', name: 'Zero', line: { color: '#9ca3af', dash: 'dot' } },
+                            { x: [lStar1, lStar1], y: [-60, 260], mode: 'lines', name: 'Stage I / II boundary (MP = AP, AP max)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
+                            { x: [lStar2, lStar2], y: [-60, 260], mode: 'lines', name: 'Stage II / III boundary (MP = 0)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
+                            { x: [lStar1], y: [apAtStar1], mode: 'markers', name: 'MP = AP (AP at its maximum)', marker: { color: '#10b981', size: 12, symbol: 'star' } },
                             { x: [L], y: [AP], mode: 'markers', name: 'AP at L', marker: { color: '#2563eb', size: 9 } },
                             { x: [L], y: [MP], mode: 'markers', name: 'MP at L', marker: { color: '#f59e0b', size: 9 } }
                         ],
-                        layout: { xaxis: { title: 'Labour Units (L)' }, yaxis: { title: 'Product (units)', range: [-60, 260] } },
-                        formulas: ['TP = f(L), other factors fixed', 'AP = TP / L', 'MP = ΔTP / ΔL', 'Law of Variable Proportions: MP rises, then falls, then turns negative'],
+                        layout: {
+                            xaxis: { title: 'Labour Units (L)' }, yaxis: { title: 'Product (units)', range: [-60, 260] },
+                            annotations: [
+                                { x: lStar1, y: 245, showarrow: false, text: 'Stage I | Stage II', font: { color: '#64748b', size: 11 } },
+                                { x: lStar2, y: 245, showarrow: false, text: 'Stage II | Stage III', font: { color: '#64748b', size: 11 } }
+                            ]
+                        },
+                        formulas: ['TP = f(L), other factors fixed', 'AP = TP / L', 'MP = ΔTP / ΔL', 'Law of Variable Proportions: MP rises, then falls, then turns negative', 'MP crosses AP exactly at AP\'s maximum — never before, never after'],
                         metrics: { TP, AP, MP, view: 'product' },
                         readings: `<div class="reading-row"><span>Total Product (TP)</span><b>${fmt(TP, 0)}</b></div>
                                    <div class="reading-row"><span>Average Product (AP)</span><b>${fmt(AP)}</b></div>
@@ -174,24 +192,33 @@ if (typeof SIMS !== 'undefined') {
                 const acs = qs.map(q => a / q + b + c * q);
                 const mcs = qs.map(q => b + 2 * c * q);
                 const AC = a / Q + b + c * Q, MC = b + 2 * c * Q;
+                // The AC-minimum / MC=AC crossing is an exact algebraic result for
+                // this cost function (AC' = 0 at Q* = sqrt(a/c)), not eyeballed —
+                // marking it is the single most exam-tested fact about these two
+                // curves ("MC cuts AC at AC's minimum"), so it belongs ON the
+                // chart, not only inferred from the Falling/Rising reading.
+                const qStar = Math.sqrt(a / c);
+                const acStar = a / qStar + b + c * qStar;
                 return {
                     traces: [
                         { x: qs, y: acs, mode: 'lines', name: 'Average Cost (AC)', line: { color: '#2563eb', width: 3 } },
                         { x: qs, y: mcs, mode: 'lines', name: 'Marginal Cost (MC)', line: { color: '#f59e0b', width: 3 } },
+                        { x: [qStar], y: [acStar], mode: 'markers', name: 'MC = AC (Minimum Average Cost)', marker: { color: '#10b981', size: 13, symbol: 'star' } },
                         { x: [Q], y: [AC], mode: 'markers', name: 'AC at Q', marker: { color: '#2563eb', size: 9 } },
                         { x: [Q], y: [MC], mode: 'markers', name: 'MC at Q', marker: { color: '#f59e0b', size: 9 } }
                     ],
                     layout: { xaxis: { title: 'Output (Q)' }, yaxis: { title: 'Cost (₹)' } },
-                    formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ', `Fixed Cost = ₹${a} (raises AC at every Q, but never changes MC)`],
-                    metrics: { AC, MC, view: 'costs' },
+                    formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ', `Fixed Cost = ₹${a} (raises AC at every Q, but never changes MC)`, 'MC cuts AC exactly at AC\'s minimum point — never before, never after'],
+                    metrics: { AC, MC, view: 'costs', qStar, acStar },
                     readings: `<div class="reading-row"><span>Average Cost at Q</span><b>₹${fmt(AC)}</b></div>
                                <div class="reading-row"><span>Marginal Cost at Q</span><b>₹${fmt(MC)}</b></div>
+                               <div class="reading-row"><span>Minimum-AC Output (Q*)</span><b>${fmt(qStar, 1)} units (AC = ₹${fmt(acStar)})</b></div>
                                <div class="reading-row"><span>AC is currently</span><b>${MC < AC ? 'Falling' : 'Rising'}</b></div>
-                               <div class="reading-row insight-row">💡 ${MC < AC ? 'MC is below AC, so it is still pulling the average down — the firm hasn\'t reached its most efficient output yet.' : 'MC is above AC, so it is pulling the average up — output has moved past the most efficient scale.'}</div>`
+                               <div class="reading-row insight-row">💡 ${MC < AC ? 'MC is below AC, so it is still pulling the average down — the firm hasn\'t reached its most efficient output yet.' : 'MC is above AC, so it is pulling the average up — output has moved past the most efficient scale.'} The green star marks exactly where MC crosses AC — always at AC's minimum.</div>`
                 };
             },
             practice: [
-                { prompt: 'Switch to the Product view and increase Labour from 1 to 24. Find the L where MP crosses AP.', hint: 'MP crosses AP exactly at AP\'s maximum — around L=15 with this production function.' },
+                { prompt: 'Switch to the Product view and increase Labour from 1 to 24. Find the L where MP crosses AP.', hint: 'MP crosses AP exactly at AP\'s maximum — exactly L=15 with this production function (marked with a green star on the chart).' },
                 { prompt: 'Switch to Cost view and raise Fixed Cost. Does Marginal Cost change?', hint: 'No — MC = b + 2cQ has no FC term. Only AC (which divides FC by Q) shifts up.' }
             ],
             challenge: {

@@ -46,7 +46,7 @@ if (typeof SIM_I18N_HI !== 'undefined') {
                 labor: { label: 'श्रम इकाइयाँ (L)' }
             },
             practice: [
-                { prompt: 'उत्पाद दृश्य पर स्विच करें और श्रम को 1 से 24 तक बढ़ाएँ। वह L खोजें जहाँ MP, AP को काटता है।', hint: 'MP ठीक AP के अधिकतम पर उसे काटता है — इस उत्पादन फलन के साथ लगभग L=15 पर।' },
+                { prompt: 'उत्पाद दृश्य पर स्विच करें और श्रम को 1 से 24 तक बढ़ाएँ। वह L खोजें जहाँ MP, AP को काटता है।', hint: 'MP ठीक AP के अधिकतम पर उसे काटता है — इस उत्पादन फलन के साथ ठीक L=15 पर।' },
                 { prompt: 'लागत दृश्य पर स्विच करें और स्थिर लागत बढ़ाएँ। क्या सीमांत लागत बदलती है?', hint: 'नहीं — MC = b + 2cQ में कोई FC पद नहीं है। केवल AC (जो FC को Q से विभाजित करता है) ऊपर शिफ्ट होती है।' }
             ],
             challenge: { prompt: 'उत्पाद दृश्य में, चरण II (MP सकारात्मक लेकिन AP से कम) में एक श्रम मान खोजें।' }
@@ -242,6 +242,8 @@ if (typeof READINGS_I18N_HI !== 'undefined') {
             [' income (Px·Qx + Py·Qy = M) — the question is only how to SPLIT it. The consumer maximizes total satisfaction exactly where the two MU-per-Rupee curves cross, because moving even ₹1 away from that split takes a rupee from the good giving MORE utility per rupee and gives it to the one giving less.', ' आय खर्च करती हैं (Px·Qx + Py·Qy = M) — सवाल केवल इसे कैसे बांटा जाए, इसका है। उपभोक्ता कुल संतुष्टि को ठीक वहीं अधिकतम करता है जहाँ दोनों MU-प्रति-रुपया वक्र मिलते हैं, क्योंकि उस बंटवारे से ₹1 भी हटाने का मतलब है अधिक उपयोगिता देने वाली वस्तु से रुपया लेकर कम देने वाली वस्तु को देना।']
         ],
         'micro-producer-costs': [
+            ['MP crosses AP exactly at AP\'s maximum — never before, never after', 'MP, AP को ठीक AP के अधिकतम पर काटता है — न पहले, न बाद में'],
+            ['MC cuts AC exactly at AC\'s minimum point — never before, never after', 'MC, AC को ठीक AC के न्यूनतम बिंदु पर काटता है — न पहले, न बाद में'],
             ['Total Product (TP)', 'कुल उत्पाद (TP)'],
             ['Average Product (AP)', 'औसत उत्पाद (AP)'],
             ['Marginal Product (MP)', 'सीमांत उत्पाद (MP)'],
@@ -254,11 +256,13 @@ if (typeof READINGS_I18N_HI !== 'undefined') {
             ['Too much labour is now crowded onto fixed factors — an extra worker actually reduces Total Product.', 'अब बहुत अधिक श्रम स्थिर कारकों पर भीड़भाड़ कर रहा है — एक अतिरिक्त कार्यकर्ता वास्तव में कुल उत्पाद को कम करता है।'],
             ['Average Cost at Q', 'Q पर औसत लागत'],
             ['Marginal Cost at Q', 'Q पर सीमांत लागत'],
+            ['Minimum-AC Output (Q*)', 'न्यूनतम-AC उत्पादन (Q*)'],
             ['AC is currently', 'AC वर्तमान में'],
             ['Falling', 'घट रहा है'],
             ['Rising', 'बढ़ रहा है'],
             ["MC is below AC, so it is still pulling the average down — the firm hasn't reached its most efficient output yet.", 'MC, AC से नीचे है, इसलिए यह अभी भी औसत को नीचे खींच रहा है — फर्म अभी अपने सबसे कुशल उत्पादन तक नहीं पहुँची है।'],
-            ['MC is above AC, so it is pulling the average up — output has moved past the most efficient scale.', 'MC, AC से ऊपर है, इसलिए यह औसत को ऊपर खींच रहा है — उत्पादन सबसे कुशल पैमाने से आगे बढ़ गया है।']
+            ['MC is above AC, so it is pulling the average up — output has moved past the most efficient scale.', 'MC, AC से ऊपर है, इसलिए यह औसत को ऊपर खींच रहा है — उत्पादन सबसे कुशल पैमाने से आगे बढ़ गया है।'],
+            [' The green star marks exactly where MC crosses AC — always at AC\'s minimum.', ' हरा तारा ठीक वहीं दिखाता है जहाँ MC, AC को काटता है — हमेशा AC के न्यूनतम बिंदु पर।']
         ],
         'micro-price-controls': [
             ['Free-Market Equilibrium', 'मुक्त-बाजार संतुलन'],

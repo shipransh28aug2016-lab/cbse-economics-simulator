@@ -524,6 +524,29 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     approx(anySplit.metrics.Qx * 8 + anySplit.metrics.Qy * 4, 80, 1e-6, 'Equi-Marginal Utility: Px·Qx + Py·Qy always exhausts the fixed budget M');
 })();
 
+(function testProducerCostsCurveIntersections() {
+    const sim = findSim('micro-producer-costs');
+    // MC must cross AC exactly at AC's own algebraic minimum, for several
+    // different Fixed Cost values (not just the sim's default) — this is
+    // the specific exam-tested fact the new star marker draws on the chart.
+    [20, 100, 200].forEach(fc => {
+        const atStar = sim.compute({ view: 'costs', fc, q: 1 });
+        const { qStar, acStar } = atStar.metrics;
+        const acAtStarPlus = sim.compute({ view: 'costs', fc, q: qStar + 0.01 }).metrics.AC;
+        const acAtStarMinus = sim.compute({ view: 'costs', fc, q: Math.max(qStar - 0.01, 0.01) }).metrics.AC;
+        ok(acStar <= acAtStarPlus + 1e-6 && acStar <= acAtStarMinus + 1e-6, `Producer Costs: AC(Q*) is a genuine local minimum for FC=${fc}`);
+        const mcAtStar = sim.compute({ view: 'costs', fc, q: qStar }).metrics.MC;
+        approx(mcAtStar, acStar, 1e-6, `Producer Costs: MC(Q*) = AC(Q*) exactly at FC=${fc}`);
+    });
+    // MP must cross AP exactly at AP's maximum (L=15 for this production
+    // function), not merely "somewhere near it".
+    const atCrossing = sim.compute({ view: 'product', labor: 15 });
+    approx(atCrossing.metrics.MP, atCrossing.metrics.AP, 1e-9, 'Producer Costs: MP = AP exactly at L=15 (AP\'s maximum)');
+    const apJustBefore = sim.compute({ view: 'product', labor: 14 }).metrics.AP;
+    const apJustAfter = sim.compute({ view: 'product', labor: 16 }).metrics.AP;
+    ok(atCrossing.metrics.AP >= apJustBefore && atCrossing.metrics.AP >= apJustAfter, 'Producer Costs: AP is genuinely at its maximum where MP crosses it');
+})();
+
 (function testPriceControls() {
     const sim = findSim('micro-price-controls');
     const ceiling = sim.compute({ ctrl: 30, demandShift: 0 });
