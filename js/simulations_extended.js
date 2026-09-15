@@ -156,14 +156,33 @@ if (typeof SIMS !== 'undefined') {
                 const isCeiling = ctrl < Pe;
                 const gap = isCeiling ? qd - qs : qs - qd;
                 const qsAxis = range(101);
+                const gapLo = Math.min(qd, qs), gapHi = Math.max(qd, qs);
+                const gapLabel = isCeiling ? 'Shortage (Qd − Qs)' : 'Surplus (Qs − Qd)';
                 return {
                     traces: [
                         { x: qsAxis, y: qsAxis.map(q => a - b * q), mode: 'lines', name: 'Demand', line: { color: '#2563eb', width: 3 } },
                         { x: qsAxis, y: qsAxis.map(q => c + d * q), mode: 'lines', name: 'Supply', line: { color: '#f59e0b', width: 3 } },
                         { x: [0, 100], y: [ctrl, ctrl], mode: 'lines', name: isCeiling ? 'Price Ceiling' : 'Price Floor', line: { color: '#ef4444', width: 2, dash: 'dash' } },
-                        { x: [Qe], y: [Pe], mode: 'markers', name: 'Free-Market Equilibrium', marker: { color: '#10b981', size: 9 } }
+                        { x: [Qe, Qe], y: [0, Pe], mode: 'lines', name: 'Free-Market Q (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [0, Qe], y: [Pe, Pe], mode: 'lines', name: 'Free-Market P (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [Qe], y: [Pe], mode: 'markers', name: 'Free-Market Equilibrium', marker: { color: '#10b981', size: 9 } },
+                        // The gap itself, drawn as a thick bracket segment ON the control-price
+                        // line between Qs and Qd — the shortage/surplus is a length a student
+                        // can SEE, not just a number inferred from two crossing lines.
+                        { x: [gapLo, gapHi], y: [ctrl, ctrl], mode: 'lines+markers', name: gapLabel,
+                            line: { color: '#7c3aed', width: 7 },
+                            marker: { color: '#7c3aed', size: 9, symbol: 'line-ns-open' } },
+                        { x: [qd], y: [ctrl], mode: 'markers', name: `Qd = ${fmt(qd, 0)}`, marker: { color: '#2563eb', size: 8 } },
+                        { x: [qs], y: [ctrl], mode: 'markers', name: `Qs = ${fmt(qs, 0)}`, marker: { color: '#f59e0b', size: 8 } }
                     ],
-                    layout: { xaxis: { title: 'Quantity', range: [0, 100] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
+                    layout: {
+                        xaxis: { title: 'Quantity', range: [0, 100] }, yaxis: { title: 'Price (₹)', range: [0, 100] },
+                        annotations: gap > 0.5 ? [{
+                            x: (gapLo + gapHi) / 2, y: ctrl, yshift: 16, showarrow: false,
+                            text: `${gapLabel.split(' (')[0]}: ${fmt(gap, 0)} units`,
+                            font: { color: '#7c3aed', size: 13 }
+                        }] : []
+                    },
                     metrics: { gap: Math.max(gap, 0), isCeiling },
                     readings: `<div class="reading-row"><span>Free-Market Equilibrium</span><b>₹${fmt(Pe)} / ${fmt(Qe)} units</b></div>
                                <div class="reading-row"><span>Control Type</span><b>${isCeiling ? 'Price Ceiling' : 'Price Floor'}</b></div>
