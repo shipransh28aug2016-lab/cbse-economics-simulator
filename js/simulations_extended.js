@@ -377,13 +377,30 @@ if (typeof SIMS !== 'undefined') {
                     amt = amt * (1 - r);
                 }
                 const totalMoney = D0 / r;
+                // The per-round bars alone leave the actual claim of this topic —
+                // that the round-by-round series SUMS to a finite total, D0/r,
+                // even though lending never technically stops — something the
+                // student had to take on faith from the readings-panel number.
+                // Overlaying the running cumulative total against that asymptote
+                // line makes "it converges to D0/r" a visible curve shape, the
+                // same convergence pattern used on the Market Structures lab.
+                let running = 0;
+                const cumulative = vals.map(x => { running += x; return running; });
                 return {
-                    traces: [{ x: vals.map((_, i) => `Round ${i + 1}`), y: vals, type: 'bar', marker: { color: '#2563eb' } }],
-                    layout: { xaxis: { title: 'Successive Deposit Rounds' }, yaxis: { title: 'New Deposit (₹)' }, showlegend: false },
+                    traces: [
+                        { x: vals.map((_, i) => `Round ${i + 1}`), y: vals, type: 'bar', name: 'New Deposit This Round', marker: { color: '#2563eb' } },
+                        { x: vals.map((_, i) => `Round ${i + 1}`), y: cumulative, mode: 'lines+markers', name: 'Cumulative Money Created', line: { color: '#f59e0b', width: 3 }, yaxis: 'y2' },
+                        { x: vals.map((_, i) => `Round ${i + 1}`), y: vals.map(() => totalMoney), mode: 'lines', name: `Total Money Created (D0/LRR = ₹${fmt(totalMoney, 0)})`, line: { color: '#10b981', dash: 'dash', width: 2 }, yaxis: 'y2' }
+                    ],
+                    layout: {
+                        xaxis: { title: 'Successive Deposit Rounds' },
+                        yaxis: { title: 'New Deposit This Round (₹)' },
+                        yaxis2: { title: 'Cumulative Total (₹)', overlaying: 'y', side: 'right', range: [0, totalMoney * 1.15] }
+                    },
                     metrics: { multiplier: 1 / r, totalMoney },
                     readings: `<div class="reading-row"><span>Money Multiplier (1/LRR)</span><b>${fmt(1 / r)}</b></div>
                                <div class="reading-row"><span>Total Money Created</span><b>₹${fmt(totalMoney, 0)}</b></div>
-                               <div class="reading-row insight-row">💡 A lower Legal Reserve Ratio means banks hold back less and lend out more of every deposit — so each rupee gets re-lent more times, and the money multiplier grows larger.</div>`
+                               <div class="reading-row insight-row">💡 A lower Legal Reserve Ratio means banks hold back less and lend out more of every deposit — so each rupee gets re-lent more times, and the money multiplier grows larger. The orange cumulative line climbs toward, but never quite reaches, the green Total Money Created line — an infinite number of ever-shrinking rounds sums to a FINITE total.</div>`
                 };
             },
             practice: [
