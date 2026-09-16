@@ -19,12 +19,12 @@ this pass · — not applicable (genre doesn't need it, per item 7/12 of the dir
 
 | Sim ID | Mode/Visual | Unit | Key relationship | Equilibrium/key point marked? | Movement vs Shift applicable? | Status | Gap | Priority |
 |---|---|---|---|---|---|---|---|---|
-| `micro-supply-demand` | curve | XI-B-U5/6 | Every named D/S determinant → equilibrium | ✅ marker | N/A (multi-determinant, not the single-cause distinction) | ✅ | none found | — |
+| `micro-supply-demand` | curve | XI-B-U5/6 | Every named D/S determinant → equilibrium | 🔧 ghost original curves + original equilibrium (this pass, 3rd audit) | N/A (multi-determinant, not the single-cause distinction) | 🔧 fixed | with 7 determinants live, only the CURRENT curve ever rendered — no before/after comparison was possible | — |
 | `gl-demand-movement-shift` | graphlab | XI-B-U5 | Demand: movement vs shift | ✅ verdict + points A/B | ✅ core feature | ✅ | none | — |
 | `gl-supply-movement-shift` | graphlab | XI-B-U6 | Supply: movement vs shift | ✅ | ✅ core feature | ✅ | none | — |
 | `gl-market-equilibrium-shifts` | graphlab | XI-B-U7 | D&S together → equilibrium moves | ✅ | ✅ (own `predictChoices`, see pedagogy doc) | ✅ | none | — |
 | `micro-elasticity` | curve + predict card | XI-B-U5 | Ed determinants | N/A (no equilibrium; single curve) | N/A | ✅ gold-standard (TLM+predict) | none | — |
-| `micro-elasticity-supply` | curve | XI-B-U6 | Es, market period vs long run | N/A (single curve, no equilibrium) | N/A | ✅ | none | — |
+| `micro-elasticity-supply` | curve | XI-B-U6 | Es, market period vs long run | N/A (single curve, no equilibrium) | N/A | 🔧 fixed | 🔧 all 3 period curves now drawn together (this pass, 3rd audit) — switching the selector used to REPLACE the only visible curve, so the steepness comparison this concept is built around was never actually visible | — |
 | `micro-ppf` | curve | XI-B-U4 | Opportunity cost, concavity, **attainable vs unattainable region** | 🔧 attainable region shaded (this pass, 2nd audit) | N/A | 🔧 fixed | "inside/on = attainable" was an inference from one dot's position — a real gap the first pass missed by treating "has a curve + a point" as sufficient | — |
 | `gl-ppc-drag` | graphlab | XI-B-U4 | Attainable/unattainable/efficient points, PPF shift | ✅ point classification | shift = resource/tech change (handled) | ✅ | none | — |
 | `micro-consumer-equilibrium` | curve | XI-B-U5 | MU=0 (single good); MUx/Px=MUy/Py (two goods) | 🔧 star at crossing (two-good view, this pass) | N/A | 🔧 fixed | none remaining | — |
@@ -49,76 +49,90 @@ this pass · — not applicable (genre doesn't need it, per item 7/12 of the dir
 | `macro-forex` | curve | XII-A-U5 | D$/S$ → exchange rate | 🔧 dotted P/Q guide lines added (this pass) | N/A (single equilibrium, no gap) | 🔧 fixed | none remaining | — |
 | `gl-forex-determination` | graphlab | XII-A-U5 | Exchange rate, D/S shift | ✅ (existing) | ✅ shift genre | ✅ | none | — |
 | `india-poverty` | curve | XII-B-U7 (enrichment) | Lorenz curve, headcount ratio, **Gini = 2×area between curves** | 🔧 inequality area shaded (this pass, 2nd audit) | N/A | 🔧 fixed | the Gini number was disconnected from the two unfilled lines it actually measures — a real gap the first pass missed | — |
-| `india-human-capital` | curve | XII-B-U7 | Literacy/life-expectancy trend | N/A (time series, no equilibrium) | N/A | ✅ | none | — |
-| `india-employment-structure` | bar | XII-B-U7 | Formal/informal composition | N/A (composition, not equilibrium) | N/A | ✅ | none | — |
+| `india-human-capital` | curve | XII-B-U7 | Literacy/life-expectancy trend, both converging to a natural ceiling | N/A (time series, no equilibrium) | N/A | ✅ confirmed (3rd audit) | axis bounds (100%/85yrs) already imply the ceiling clearly enough for a teaching purpose; an explicit ceiling line was considered and judged unnecessary decoration — not every convergence needs the money-creation/market-structures treatment | — |
+| `india-employment-structure` | curve | XII-B-U7 | Structural transformation & formalisation OVER TIME | 🔧 trend lines across full year range + selected-year marker (this pass, 3rd audit) | N/A | 🔧 fixed | "Years of Growth" drove a single-year snapshot bar chart with no visible trajectory — the transformation itself (the concept's own name) was never a visible trend | — |
 | `ied-five-year-plans` | explorer | XII-B-U6 | Timeline | — | N/A | ✅ | none | — |
 | `ied-rural-development` | explorer | XII-B-U7 | Classification | — | N/A | ✅ | none | — |
 | `ied-sustainable-development` | explorer | XII-B-U7 | Classification | — | N/A | ✅ | none | — |
-| `ied-comparison-neighbours` | table→chart | XII-B-U8 | India/Pak/China bar comparison | N/A | N/A | ✅ | none | — |
+| `ied-comparison-neighbours` | table→chart | XII-B-U8 | India/Pak/China: growth, HDI, agri-share comparison | 🔧 Agriculture Share now charted (this pass, 3rd audit) | N/A | 🔧 fixed | Agriculture Share had a data column and a callout stat but was never drawn — only 2 of 3 compared dimensions were visible | — |
 | `micro-positive-normative` | explorer | XI-B-U4 | Classification (testable vs value judgement) | — | N/A | ✅ | none — correctly NOT a graph (item 7/12) | — |
 | `stats-central-tendency` | table→chart | XI-A-U3 | Mean/median/mode, skew | N/A | N/A | ✅ (TLM added) | none | — |
-| `stats-dispersion` | curve | XI-A-U3 (enrichment) | Range/QD/SD | N/A | N/A | ✅ | none | — |
+| `stats-dispersion` | curve | XI-A-U3 (enrichment) | Range/QD/SD, Mean, quartiles | 🔧 Mean/Q1/Q3 lines + Range bracket (this pass, 3rd audit) | N/A | 🔧 fixed | Range, QD and Mean were all readings-panel numbers with nothing to look at on the bar chart — no mean line, no quartile markers, no visible Range span | — |
 | `stats-data-organisation` | table→chart | XI-A-U2 | Raw data → histogram/polygon/ogive, **graphical median from Ogive** | 🔧 N/2 guide lines + median marker (this pass, 2nd audit) | N/A | 🔧 fixed | the Ogive's single most-taught use (locate the median graphically) was never drawn — a real gap the first pass missed by treating "the three charts render" as sufficient | — |
 | `stats-data-presentation` | table→chart | XI-A-U2 | Bar/pie from same table | N/A | N/A | ✅ | none | — |
 | `stats-data-collection` | explorer | XI-A-U1 | Classification | — | N/A | ✅ | none | — |
-| `stats-index-numbers` | table→chart | XI-A-U3 | Simple aggregative index | N/A | N/A | ✅ | none | — |
-| `stats-correlation` | curve (scatter) | XI-A-U3 | Karl Pearson r | N/A (scatter + fit line, no equilibrium) | N/A | ✅ | none | — |
+| `stats-index-numbers` | table→chart | XI-A-U3 | Simple aggregative index vs Base=100 | 🔧 index bar + dashed Base=100 reference line (this pass, 3rd audit) | N/A | 🔧 fixed | the index number (the actual answer to "how much costlier") was only a % in the readings panel, disconnected from the price bars; first attempt used a 2nd BAR for the reference, which Plotly rendered hidden behind the taller index bar — caught only by looking at the rendered screenshot, fixed with a line instead | — |
+| `stats-correlation` | curve (scatter) | XI-A-U3 | Karl Pearson r, linear association | 🔧 least-squares best-fit line (this pass, 3rd audit) | N/A (scatter + fit line, no equilibrium) | 🔧 fixed | "Strong/Weak", "Positive/Negative" were claims about linear association with no line showing that association on the scatter | — |
 
-## What two audit passes have found and fixed so far
+## What three audit passes have found and fixed so far
 
 **First pass** (accepted "has a graph/marker" too readily) found and fixed three real
 gaps: `micro-consumer-equilibrium`, `micro-producer-costs`, `micro-price-controls`.
 
-**Second, deeper pass** — applying the harder standard "does the student have to
-*infer* the important relationship, or can they *see* it?" rather than "does a chart
-render?" — found four MORE real gaps the first pass had wrongly marked ✅ merely
-because a technically-correct chart existed:
+**Second pass** — applying the harder standard "does the student have to *infer* the
+important relationship, or can they *see* it?" — found and fixed four more:
+`macro-money-creation` (convergence to a finite total was a number, never a curve),
+`india-poverty` (Gini's own defining area was unshaded), `micro-ppf` (attainable region
+was never shaded), `stats-data-organisation` (the Ogive's median-reading technique was
+never drawn). Plus `macro-govt-budget` and `macro-inflation-gap`/`macro-forex`
+(gap brackets / equilibrium guide lines).
 
-- `macro-money-creation` — the geometric series' convergence to a finite total was a
-  number, never a curve shape.
-- `india-poverty` — the Gini coefficient (the area between two curves) was drawn as
-  two unfilled lines with no visible area.
-- `micro-ppf` — "attainable vs unattainable" was an inference from one dot's position,
-  never a shaded region.
-- `stats-data-organisation` — the Ogive's own single most-taught technique (read the
-  median graphically) was never drawn on it.
+**Third pass** — systematically working through every row the second pass had left
+marked "not yet re-verified" — found and fixed seven more real gaps:
 
-Plus two more from the widened scope of the second pass: `macro-govt-budget` (Fiscal
-Deficit bracket) and `macro-inflation-gap` / `macro-forex` (equilibrium guide lines) —
-**eleven real visual/pedagogical gaps fixed across both passes, all verified**
+- `micro-supply-demand` — with 7 determinants live at once, only the current curve
+  ever rendered; no ghost of the original position existed for comparison.
+- `micro-elasticity-supply` — switching the Time Period selector replaced the only
+  visible curve, so the steepness COMPARISON this concept is entirely built around
+  was never actually visible at once.
+- `stats-dispersion` — Mean, Q1, Q3 and Range were all readings-panel numbers with
+  nothing drawn on the bar chart itself.
+- `stats-correlation` — no best-fit line existed to show the linear association
+  Pearson's r actually measures.
+- `stats-index-numbers` — the index number had no visible relationship to its own
+  Base=100 definition. (This one also caught a real *implementation* bug, not just a
+  missing feature: the first attempt drew the Base=100 reference as a second BAR,
+  which Plotly rendered completely hidden behind the taller index bar in the same
+  category — found only by looking at the actual rendered screenshot, not by reading
+  the code or trusting `npm run verify`. Fixed with a dashed line instead.)
+- `india-employment-structure` — "Years of Growth" drove a single-year snapshot; the
+  transformation itself (the concept's own name) was never a visible trend across
+  years.
+- `ied-comparison-neighbours` — Agriculture Share had a data column and a callout stat
+  but was never charted.
+
+**Eighteen real visual/pedagogical gaps fixed across three passes, all verified**
 (software + economic + visual, per `docs/economics/validation/README.md`).
 
-**This is the honest, load-bearing lesson of the second pass:** a first audit that only
-asks "does this have a graph, and is there a marker somewhere" will systematically
-under-count gaps, because a graph can be technically correct and still leave the
-actual economic relationship (a convergence, an area, a region, a graphical
-construction) for the student to imagine. The 14-question Teacher/Student test in the
-governing directive is the actual bar — "graph exists" is not.
+**The load-bearing lesson, restated after three passes:** every single gap found in
+passes two and three existed on a row the previous pass had already marked ✅. A chart
+rendering without errors, having a marker, or looking "fine" at a glance is not
+evidence of pedagogical completeness — only running the full 14-question Teacher/
+Student test against a row, and then actually looking at the rendered screenshot
+(not just the code), reliably finds these. Passing `npm run verify` and reading the
+`compute()` function were both insufficient on their own for `stats-index-numbers` —
+the bug was only visible in the rendered chart.
 
 ## Spot-checked and confirmed genuinely complete (not just "has a chart")
 
-Re-examined against the deeper standard this pass, not merely re-stamped: `gl-cost-curves`
-and `gl-revenue-producer-eq` (both already mark their MC=AC/MR=MC crossing exactly the
-way the Plotly twins needed fixing to do — confirmed by reading their `model()`
-functions directly, not assumed from genre); `gl-consumption-saving` (break-even point,
-dissaving/saving arrows, and both ratios' sum already shown); `macro-multiplier`
-(old/new equilibrium markers plus AE before/after already present).
+Re-examined against the deeper standard, not merely re-stamped: `gl-cost-curves` and
+`gl-revenue-producer-eq` (both already mark their MC=AC/MR=MC crossing exactly the way
+the Plotly twins needed fixing to do — confirmed by reading their `model()` functions
+directly); `gl-consumption-saving` (break-even point, dissaving/saving arrows, both
+ratios' sum already shown); `macro-multiplier` (old/new equilibrium markers plus AE
+before/after already present); `macro-national-income-methods` (the three-bar equality
+IS the correct visual for that claim — no line/marker needed beyond the bars matching);
+`macro-basic-concepts`/`ied-five-year-plans`/`ied-rural-development`/
+`ied-sustainable-development`/`stats-data-collection`/`micro-positive-normative`
+(explorer/classification content — correctly not forced into a graph, per item 7 of
+the directive); `india-human-capital` (axis bounds already make the natural
+literacy/life-expectancy ceiling clear enough; an explicit asymptote line was
+considered and judged unnecessary for this one, unlike the money-creation/
+market-structures cases where the convergence itself is the exam-tested claim).
 
-## Rows not yet re-verified at this depth
+## Remaining open item (not a gap)
 
-Everything else in the table above still carries its first-pass ✅/— rating, which
-means: technically correct and *plausibly* complete for its genre, but not
-re-interrogated against the full 14-question Teacher/Student test this second pass
-applied to the seven rows above. `macro-national-income-methods` (3-bar GDP-method
-equality) and `macro-basic-concepts`/`ied-*` explorer content were spot-checked and
-look sound, but the rest — `stats-index-numbers`, `stats-dispersion`,
-`stats-correlation`, `india-human-capital`, `india-employment-structure`,
-`ied-comparison-neighbours`, `micro-elasticity-supply`, `micro-supply-demand` — have
-not been individually re-audited against the deeper standard. Treat "✅" on those rows
-as "not yet proven otherwise," not as "confirmed complete." The honest next step on any
-future pass is to run the 14-question test against each of them before touching
-anything else, exactly as this pass did for the four it found.
-
-`micro-indifference-curve` vs `gl-consumer-equilibrium-ic` remains an open note (not a
-gap): worth re-confirming the two stay genuinely complementary (slider-driven vs
-drag-driven) rather than drifting into redundancy.
+`micro-indifference-curve` vs `gl-consumer-equilibrium-ic` — worth re-confirming on a
+future pass that the two stay genuinely complementary (slider-driven vs drag-driven)
+rather than drifting into redundancy. Every other row in the table above has now been
+through the full 14-question test at least once.
