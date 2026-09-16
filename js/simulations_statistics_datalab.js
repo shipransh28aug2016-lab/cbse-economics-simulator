@@ -75,6 +75,34 @@ if (typeof SIMS !== 'undefined') {
                     const a = metrics.mean, b = metrics.median, c = metrics.mode;
                     return Math.abs(a - b) > 0.5 && Math.abs(b - c) > 0.5 && Math.abs(a - c) > 0.5;
                 }
+            },
+            // Teaching & Learning Toolkit — see docs/economics/models/central-tendency.md
+            tlm: {
+                keyIdea: 'Mean uses every value (so outliers pull it hard); Median only uses rank order (so it resists outliers); Mode just counts frequency. When Mean and Median disagree, the gap tells you the direction of skew.',
+                commonMistakes: [
+                    'Assuming every dataset has exactly one mode — a dataset with all-unique values has NO mode, and one with two equally-frequent values is genuinely bimodal (both are the mode, not just the first one found).',
+                    'Assuming Mean is always "the best average" — for skewed data (e.g. household incomes with a few very rich outliers), Median is the more representative figure, which is why "median income" is reported in the news, not "mean income."',
+                    'Reading Mean > Median as automatically meaning "the data is wrong" rather than recognising it as the definition of positive (right) skew.'
+                ],
+                examTip: 'If asked to justify WHICH average to use for skewed/outlier-prone data (income, house prices, exam marks with a few zeros), the correct answer is Median — Mean gets pulled toward the outlier, Median does not, and this exact justification is what scores the mark.',
+                thinkQuestion: 'A company reports its "average" salary as ₹12 lakh, but most employees actually earn around ₹6 lakh. What kind of average is being quoted, and why might the company have chosen it?',
+                activity: {
+                    title: 'Find the Skew',
+                    instructions: 'Find one real published statistic (income, house prices, city population, cricket scores) where the source reports Median rather than Mean. Explain why Median was the better choice there.'
+                },
+                exitTicket: 'In one sentence: why does adding one very high outlier move the Mean a lot but barely move the Median?',
+                teacherExplain: 'Start with a symmetric dataset (Mean = Median). Add one extreme outlier live in front of the class and pause immediately after — ask students to predict which of the three figures moved before revealing the updated readings panel.',
+                quickCheck: {
+                    question: 'A dataset\'s Mean is noticeably HIGHER than its Median. What does this tell you?',
+                    options: [
+                        'The data is positively (right) skewed — a few unusually high values are pulling the Mean upward',
+                        'The data is negatively (left) skewed — a few unusually low values are pulling the Mean downward',
+                        'The data has no mode',
+                        'The calculation must contain an error, since Mean and Median should always be equal'
+                    ],
+                    correctIndex: 0,
+                    explain: 'Mean uses the actual magnitude of every value, so a few high outliers drag it above the Median, which only depends on rank/position — that gap is exactly the definition of positive skew.'
+                }
             }
         },
         {
@@ -115,11 +143,27 @@ if (typeof SIMS !== 'undefined') {
                     const polygonX = [classes[0].midpoint - classWidth, ...classes.map(c => c.midpoint), classes[numClasses - 1].midpoint + classWidth];
                     const polygonY = [0, ...freq, 0];
 
+                    // The classic textbook use of an Ogive is to locate the median
+                    // GRAPHICALLY: draw a line across at N/2, drop it down to the
+                    // curve, read the median off the X-axis. Without those two
+                    // guide lines the Ogive is just a shape — the actual technique
+                    // it's meant to teach was never drawn.
+                    const medianPos = n / 2;
+                    let medianClassIndex = cumFreq.findIndex(cf => cf >= medianPos);
+                    if (medianClassIndex === -1) medianClassIndex = numClasses - 1;
+                    const cfBefore = medianClassIndex === 0 ? 0 : cumFreq[medianClassIndex - 1];
+                    const medianClass = classes[medianClassIndex];
+                    const medianFreq = freq[medianClassIndex] || 1;
+                    const median = medianClass.lower + ((medianPos - cfBefore) / medianFreq) * classWidth;
+
                     return {
                         traces: [
                             { x: classes.map(c => c.midpoint), y: freq, type: 'bar', name: 'Histogram', marker: { color: '#93c5fd' }, width: classes.map(() => classWidth * 0.95) },
                             { x: polygonX, y: polygonY, mode: 'lines+markers', name: 'Frequency Polygon', line: { color: '#2563eb', width: 2 } },
-                            { x: classes.map(c => c.upper), y: cumFreq, mode: 'lines+markers', name: 'Ogive (Less Than)', line: { color: '#ef4444', width: 2 }, yaxis: 'y2' }
+                            { x: classes.map(c => c.upper), y: cumFreq, mode: 'lines+markers', name: 'Ogive (Less Than)', line: { color: '#ef4444', width: 2 }, yaxis: 'y2' },
+                            { x: [0, median], y: [medianPos, medianPos], mode: 'lines', name: 'N/2 (dotted)', line: { color: '#7c3aed', width: 1, dash: 'dot' }, yaxis: 'y2', showlegend: false },
+                            { x: [median, median], y: [0, medianPos], mode: 'lines', name: 'Median (dotted)', line: { color: '#7c3aed', width: 1, dash: 'dot' }, yaxis: 'y2', showlegend: false },
+                            { x: [median], y: [medianPos], mode: 'markers', name: `Median ≈ ${fmt(median, 1)} (read from Ogive)`, marker: { color: '#7c3aed', size: 10 }, yaxis: 'y2' }
                         ],
                         layout: {
                             xaxis: { title: 'Class Interval (midpoint / upper boundary)' },
@@ -130,10 +174,11 @@ if (typeof SIMS !== 'undefined') {
                             { label: 'n (observations)', value: n },
                             { label: 'Range', value: fmt(max - min, 1) },
                             { label: 'Class Width', value: fmt(classWidth, 1) },
-                            { label: 'Modal Class', value: `${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)}` }
+                            { label: 'Modal Class', value: `${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)}` },
+                            { label: 'Median (graphically, from Ogive)', value: fmt(median, 1) }
                         ],
-                        metrics: { modalClassIndex, numClasses, n },
-                        interpretation: `Most observations (${maxFreq} of ${n}) fall in the ${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)} class — the modal class. The Ogive's steepest section lines up with this same class, since that's where cumulative frequency climbs fastest.`
+                        metrics: { modalClassIndex, numClasses, n, median },
+                        interpretation: `Most observations (${maxFreq} of ${n}) fall in the ${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)} class — the modal class. The Ogive's steepest section lines up with this same class, since that's where cumulative frequency climbs fastest. The purple guide lines show the classic graphical method for reading the Median off an Ogive: draw across at N/2 = ${fmt(medianPos, 1)}, drop down to the X-axis at ≈${fmt(median, 1)}.`
                     };
                 }
             },

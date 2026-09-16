@@ -11,6 +11,36 @@ CBSE Economics (Subject Code 030), Class XI and Class XII, through interactive
 simulations, data labs, and concept explorers. There is no backend — everything runs
 client-side from `file://` or any static file server.
 
+## Operating principles (read this before touching any sim)
+
+1. **Economics correctness has priority over visual novelty.** A beautiful simulation
+   that teaches an incorrect economic relationship is a failed feature, full stop — no
+   amount of polish on `customRender`/`graphLab` art offsets a wrong slope, a wrong
+   injection/leakage direction, or a movement drawn where a shift belongs. The Circular
+   Flow lab's Export/Import direction bug (fixed in the sector-model rewrite — see
+   `js/simulations.js`'s `macro-gdp`) is the canonical example of exactly the mistake to
+   never repeat: it looked fine and was economically backwards.
+2. **Validation is two-level, and both levels are required, not either/or:**
+   - *Software* — `npm run verify` (typecheck/lint/test/build/smoke — see below). Catches
+     crashes, NaN, broken drags, console errors.
+   - *Economic* — does the model's own math actually produce the relationship the UI
+     claims? (a demand curve that doesn't slope the right way, an elasticity formula
+     that doesn't respond to its own stated determinant, an "indeterminate" claim the
+     model can actually contradict). `tools/test-curriculum.js`'s formula-correctness
+     assertions (mean/median/mode, Karl Pearson r, GDP three-method equality, elasticity
+     signs, MRT sign, etc.) are the *automated* half of this; the rest is a
+     read-the-formula-and-do-the-algebra check a human (or an agent) does before
+     shipping — see `docs/economics/` for the worked reference this project maintains
+     for exactly that purpose.
+   - A sim is not done when `npm run verify` is green. It is done when it is ALSO
+     economically correct and pedagogically honest about what it teaches (see
+     `docs/economics/validation/README.md`).
+3. **Definition of done** for any sim change: economic correctness + syllabus fidelity
+   (`enrichment`/`enrichmentNote` used honestly, see Working Convention 3) + the model
+   actually drives the visual (never a `customRender`/`graphLab` picture that implies a
+   relationship the `compute()`/`model()` function doesn't produce) + `npm run verify`
+   green + no regression in a neighbouring sim that shares engine code.
+
 ## Curriculum source of truth
 
 - `curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md` — the structured
@@ -133,6 +163,51 @@ Three points that are load-bearing rather than stylistic:
    mean — every other lab must say what *its* two groups of variables really are, or the
    headings become confidently wrong.
 
+## PREDICT, the Teaching & Learning Toolkit, and misconceptions
+
+Added on top of the Graph Lab / Quiz systems above, currently live on the 5
+"gold-standard" sims (`gl-demand-movement-shift`, `gl-supply-movement-shift`,
+`gl-market-equilibrium-shifts`, `micro-elasticity`, `micro-ppf`) and **not yet
+propagated to the other 39** — treat that as an open backlog item, not a design
+decision to leave it that way. See `docs/economics/pedagogy/README.md` for when each
+piece below is actually worth adding to a sim (none of them are mandatory the way
+`practice`/`challenge`/i18n/`QUIZ_BANK` are).
+
+- **PREDICT gate (Graph Labs)** — `graphLab.predict: true` (`js/graph-lab-engine.js`'s
+  `glOpenPredictGate`/`glComputeScenarioVerdict`). Gates a **scenario-button** click (never
+  live dragging, which must stay instant): the student picks a guess from
+  `GL_PREDICT_CHOICES` (movement/shift/both/none) — or a lab's own `predictChoices` when
+  its `verdict.kind` means something else, e.g. `gl-market-equilibrium-shifts` where
+  `'movement'` means "price away from equilibrium," not "movement along a curve" — before
+  the scenario applies. The graded answer is always `sim.graphLab.model()`'s own live
+  output for that scenario's target state, never a separately-authored answer.
+- **PREDICT card (`simulator`-mode sims)** — `sim.predict = { controlId, prompt,
+  choices, evaluate(before, after) }` (`js/sim-engine.js`'s `resetPredictCard`/
+  `checkPredictReveal`). For a *continuous* slider rather than a discrete scenario click:
+  the student guesses a trend, then the guess auto-grades the first time they actually
+  move `controlId`, comparing `sim.compute()`'s own metrics before/after.
+  `evaluate` returning `null` (e.g. a `select` control got switched to a mode the
+  question doesn't apply to) leaves the card pending rather than grading a stale
+  question — always design `evaluate` to fail this way, never to guess. Currently wired
+  only through the `sim.compute` path — a `customRender` sim's `checkPredictReveal` call
+  would need adding to `renderSimChart()`'s customRender branch before this could work
+  there too.
+- **Teaching & Learning Toolkit** — `sim.tlm = { keyIdea?, commonMistakes?:[...],
+  examTip?, thinkQuestion?, activity?:{title,instructions}, exitTicket?, teacherExplain?,
+  quickCheck?:{question,options,correctIndex,explain} }` (`js/sim-engine.js`'s
+  `renderTLM`/`renderQuickCheck`, index.html's `#tlm-card`). Mode-agnostic — wired once
+  at the shared `renderSim()` level, works identically on `simulator`/`graphlab`/
+  `datalab`/`explorer`. Every field is independent and optional; render only what a sim
+  actually declares. `quickCheck` is a single ungraded MCQ, deliberately not the full
+  Quiz modal (no pool, no score, no Bloom's tag) — don't blur that line.
+- **Misconception-tagged quiz answers** — `q.misconceptions = { <original option
+  index>: {en,hi} }` on a `QUIZ_BANK` static question (`js/quiz-engine.js`'s
+  `normalizeQuizQuestion`/`selectQuizAnswer`). Converted internally to a map keyed by the
+  option's own text (so it survives `shuffleQuizOptions()`), and shown — in addition to,
+  never instead of, `explain` — only for the specific wrong option the student picked.
+  Use it for a genuinely common, *specific* mix-up (the classic movement-vs-shift or
+  inside-vs-outside swaps), not as a second `explain` for every option.
+
 ## No build system — how "typecheck/lint/test/build" actually run here
 
 There is no `package.json`, bundler, TypeScript, or test runner in the original repo.
@@ -177,3 +252,9 @@ verification to the end of a session.
    is trying to avoid. A Graph Lab's `graphLab.model()` is swept across every variable's
    **full** declared domain (not just min/mid/max), because a drag calls it once per
    pixel and an NaN two-thirds of the way through a drag is one a student would hit.
+6. Before changing (not just adding) a sim's economics, read `docs/economics/models/`
+   first if that concept has a worked reference there — it documents the assumptions
+   the current `compute()`/`model()` relies on, so a "fix" doesn't break an assumption
+   another part of the same sim (or its quiz bank's `applyTemplates`) depends on. If the
+   concept has no reference file yet and you're touching its formula meaningfully,
+   add one — see `docs/economics/README.md` for the template and folder layout.

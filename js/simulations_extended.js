@@ -9,18 +9,79 @@ if (typeof SIMS !== 'undefined') {
             id: 'micro-consumer-equilibrium',
             module: 'micro',
             title: 'Consumer Equilibrium (Marginal Utility)',
-            desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium.',
+            desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium — single-good (MU=0) and the two-good Law of Equi-Marginal Utility (MUx/Px = MUy/Py).',
             class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topicLabel: 'Marginal Utility Analysis',
             syllabusIds: ['XI-B-U5-UTILITY'],
             mode: 'simulator',
-            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. With only one good and free disposal, a rational consumer keeps consuming until <b>MU = 0</b>. But real consumers spend limited money income across many goods, so the actual equilibrium condition compares <b>Marginal Utility per Rupee</b> (MU/P) — a consumer maximizes satisfaction by buying the good with the highest MU per rupee first, which is why price is included as its own factor here.</p>',
-            formulas: ['MU = ΔTU / ΔQ', 'TU = Σ MU', 'MU per Rupee = MU / P', 'Single-good limit: Consumer stops at MU = 0 (satiation point)'],
+            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. With only <b>one good</b> and free disposal, a rational consumer keeps consuming until <b>MU = 0</b> — the <b>Single Good</b> view below.</p><p>But a real consumer splits a <b>fixed money income</b> across <b>two (or more) goods</b>. The actual equilibrium condition — the <b>Law of Equi-Marginal Utility</b> — is reached when the last rupee spent on every good buys the same Marginal Utility: <b>MUx/Px = MUy/Py</b>. If MUx/Px is higher, the consumer is better off shifting a rupee from Y to X (and vice versa) — switch to the <b>Two Goods (Equi-Marginal)</b> view to move your budget between X and Y and watch the two MU/Rupee curves cross exactly at that equilibrium.</p>',
+            formulas: ['Single good: MU = ΔTU / ΔQ; TU = Σ MU; consumer stops at MU = 0',
+                'Two goods: Budget constraint Px·Qx + Py·Qy = M',
+                'Equi-Marginal condition: MUx / Px = MUy / Py'],
             controls: [
-                { id: 'q', label: 'Units Consumed (Q)', min: 0, max: 20, step: 1, value: 5, unit: '' },
-                { id: 'price', label: 'Price per Unit (₹)', min: 2, max: 20, step: 1, value: 5, unit: '' }
+                { id: 'view', label: 'View', type: 'select', options: [
+                    { value: 'single', label: 'Single Good (MU = 0)' },
+                    { value: 'twogood', label: 'Two Goods (Equi-Marginal)' }
+                ], value: 'single' },
+                { id: 'q', label: 'Units Consumed (Q)', min: 0, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'single' } },
+                { id: 'price', label: 'Price per Unit (₹)', min: 2, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'single' } },
+                { id: 'income', label: 'Money Income (M, ₹)', min: 20, max: 100, step: 10, value: 60, unit: '', showWhen: { id: 'view', equals: 'twogood' } },
+                { id: 'px', label: 'Price of X (₹)', min: 5, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'twogood' } },
+                { id: 'py', label: 'Price of Y (₹)', min: 5, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'twogood' } },
+                { id: 'shareX', label: 'Budget Spent on X (%)', min: 0, max: 100, step: 5, value: 50, unit: '%', showWhen: { id: 'view', equals: 'twogood' } }
             ],
             compute(v) {
-                const a = 20, b = 1, Q = v.q, P = v.price;
+                const a = 20, b = 1;
+                if (v.view === 'twogood') {
+                    const M = v.income, Px = v.px, Py = v.py;
+                    const qxMax = M / Px;
+                    const Qx = (v.shareX / 100) * qxMax;
+                    const Qy = Math.max((M - Px * Qx) / Py, 0);
+                    const MUx = a - b * Qx, MUy = a - b * Qy;
+                    const muxPerRupee = MUx / Px, muyPerRupee = MUy / Py;
+                    const diff = muxPerRupee - muyPerRupee;
+
+                    // Sweep the whole feasible Qx range to draw both MU/Rupee curves
+                    // and to locate the equi-marginal crossing by grid search — a
+                    // closed-form solve would be one more place to get the algebra
+                    // wrong; a fine grid search over the actual model is guaranteed
+                    // consistent with what the chart itself shows.
+                    const N = 200;
+                    const qxs = range(N + 1).map(i => (i / N) * qxMax);
+                    const muxSeries = qxs.map(qx => (a - b * qx) / Px);
+                    const muySeries = qxs.map(qx => (a - b * Math.max((M - Px * qx) / Py, 0)) / Py);
+                    let bestQx = 0, bestGap = Infinity;
+                    qxs.forEach((qx, i) => {
+                        const gap = Math.abs(muxSeries[i] - muySeries[i]);
+                        if (gap < bestGap) { bestGap = gap; bestQx = qx; }
+                    });
+                    const bestQy = Math.max((M - Px * bestQx) / Py, 0);
+                    const bestMuPerRupee = (a - b * bestQx) / Px;
+
+                    const TU = (a * Qx - (b * Qx * Qx) / 2) + (a * Qy - (b * Qy * Qy) / 2);
+                    const verdict = Math.abs(diff) < 0.4
+                        ? '✔ At (or very near) equilibrium — MUx/Px ≈ MUy/Py'
+                        : diff > 0 ? '→ MUx/Px is higher: shift budget from Y to X'
+                            : '→ MUy/Py is higher: shift budget from X to Y';
+
+                    return {
+                        traces: [
+                            { x: qxs, y: muxSeries, mode: 'lines', name: 'MUx / Px', line: { color: '#2563eb', width: 3 } },
+                            { x: qxs, y: muySeries, mode: 'lines', name: 'MUy / Py', line: { color: '#f59e0b', width: 3 } },
+                            { x: [bestQx], y: [bestMuPerRupee], mode: 'markers', name: 'Equi-Marginal Equilibrium', marker: { color: '#10b981', size: 13, symbol: 'star' } },
+                            { x: [Qx], y: [muxPerRupee], mode: 'markers', name: 'Your MUx/Px', marker: { color: '#2563eb', size: 10 } },
+                            { x: [Qx], y: [muyPerRupee], mode: 'markers', name: 'Your MUy/Py', marker: { color: '#f59e0b', size: 10 } }
+                        ],
+                        layout: { xaxis: { title: 'Units of X purchased (Qx)', range: [0, qxMax] }, yaxis: { title: 'Marginal Utility per Rupee' } },
+                        metrics: { Qx, Qy, muxPerRupee, muyPerRupee, diff, bestQx, bestQy, TU },
+                        readings: `<div class="reading-row"><span>Your bundle</span><b>Qx = ${fmt(Qx, 1)}, Qy = ${fmt(Qy, 1)}</b></div>
+                                   <div class="reading-row"><span>MUx / Px</span><b>${fmt(muxPerRupee)}</b></div>
+                                   <div class="reading-row"><span>MUy / Py</span><b>${fmt(muyPerRupee)}</b></div>
+                                   <div class="reading-row"><span>Equi-Marginal Bundle</span><b>Qx = ${fmt(bestQx, 1)}, Qy = ${fmt(bestQy, 1)}</b></div>
+                                   <div class="reading-row"><span>Total Utility (your bundle)</span><b>${fmt(TU)}</b></div>
+                                   <div class="reading-row insight-row">💡 ${verdict}. Both goods together always spend the full ₹${M} income (Px·Qx + Py·Qy = M) — the question is only how to SPLIT it. The consumer maximizes total satisfaction exactly where the two MU-per-Rupee curves cross, because moving even ₹1 away from that split takes a rupee from the good giving MORE utility per rupee and gives it to the one giving less.</div>`
+                    };
+                }
+                const Q = v.q, P = v.price;
                 const qs = range(21);
                 const mus = qs.map(q => a - b * q);
                 const MU = a - b * Q;
@@ -37,16 +98,21 @@ if (typeof SIMS !== 'undefined') {
                     readings: `<div class="reading-row"><span>Marginal Utility at Q</span><b>${fmt(MU)}</b></div>
                                <div class="reading-row"><span>MU per Rupee (MU/P)</span><b>${fmt(muPerRupee)}</b></div>
                                <div class="reading-row"><span>Total Utility</span><b>${fmt(TU)}</b></div>
-                               <div class="reading-row insight-row">💡 ${MU > 0 ? 'MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.' : MU < 0 ? 'MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.' : 'MU = 0 — this is the single-good equilibrium (maximum Total Utility).'} With multiple goods, the consumer instead compares MU/P across goods and buys more of whichever gives more satisfaction per rupee — at ₹${P}/unit, this good currently gives ${fmt(muPerRupee)} utils per rupee.</div>`
+                               <div class="reading-row insight-row">💡 ${MU > 0 ? 'MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.' : MU < 0 ? 'MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.' : 'MU = 0 — this is the single-good equilibrium (maximum Total Utility).'} With multiple goods, the consumer instead compares MU/P across goods and buys more of whichever gives more satisfaction per rupee — at ₹${P}/unit, this good currently gives ${fmt(muPerRupee)} utils per rupee. Switch to the "Two Goods" view above to see that comparison directly.</div>`
                 };
             },
             practice: [
                 { prompt: 'Increase Q from 0 to 20. At what point does MU hit zero?', hint: 'MU = 20 − Q, so MU = 0 exactly at Q = 20 — the single-good satiation point.' },
-                { prompt: 'Keep Q = 10. Raise the price from ₹2 to ₹20 — what happens to MU per Rupee?', hint: 'MU stays fixed at Q=10 (MU=10), but MU/P = 10/P falls as price rises — the same satisfaction costs more per rupee.' }
+                { prompt: 'Keep Q = 10. Raise the price from ₹2 to ₹20 — what happens to MU per Rupee?', hint: 'MU stays fixed at Q=10 (MU=10), but MU/P = 10/P falls as price rises — the same satisfaction costs more per rupee.' },
+                { prompt: 'Switch to Two Goods. Set Px = Py, then move the Budget slider. At what share is the consumer in equilibrium?', hint: 'Exactly 50% — with identical prices and identical MU curves, the two goods are symmetric, so an equal split is the only point where MUx/Px = MUy/Py.' },
+                { prompt: 'Now make Y more expensive than X (raise Py). Does the equilibrium share of budget on X rise or fall?', hint: 'It rises — a dearer Y means Y\'s Marginal Utility per Rupee is lower at any given physical split, so the consumer rationally shifts more of the budget toward the now-relatively-cheaper X.' }
             ],
             challenge: {
-                prompt: 'Find a Q where MU is still positive but MU per Rupee has fallen below 1.',
-                check(state, metrics) { return metrics && metrics.MU > 0 && metrics.muPerRupee < 1; }
+                prompt: 'In the Two Goods view, get within 0.3 of the Equi-Marginal Equilibrium share using the Budget slider.',
+                check(state, metrics) {
+                    if (state.view !== 'twogood' || !metrics || metrics.bestQx === undefined) return false;
+                    return Math.abs(metrics.Qx - metrics.bestQx) < 0.3;
+                }
             }
         },
         {
@@ -85,16 +151,34 @@ if (typeof SIMS !== 'undefined') {
                         : MP >= 0
                             ? 'Each extra worker adds less than before (and less than the average) — this is the normal, rational stage of production.'
                             : 'Too much labour is now crowded onto fixed factors — an extra worker actually reduces Total Product.';
+                    // Stage boundaries are exact algebraic roots of THIS production
+                    // function (30l² − l³), not eyeballed off the chart: AP is
+                    // maximised, and MP crosses it, at L=15 (solving MP=AP); MP
+                    // itself hits zero — the Stage II/III boundary — at L=20
+                    // (solving MP=0). Marking both is what makes "three stages"
+                    // an actual, visible fact on the diagram instead of a claim
+                    // only the readings-panel text makes.
+                    const lStar1 = 15, lStar2 = 20;
+                    const apAtStar1 = ap(lStar1);
                     return {
                         traces: [
                             { x: Ls, y: Ls.map(ap), mode: 'lines', name: 'Average Product (AP)', line: { color: '#2563eb', width: 3 } },
                             { x: Ls, y: Ls.map(mp), mode: 'lines', name: 'Marginal Product (MP)', line: { color: '#f59e0b', width: 3 } },
                             { x: Ls, y: Ls.map(() => 0), mode: 'lines', name: 'Zero', line: { color: '#9ca3af', dash: 'dot' } },
+                            { x: [lStar1, lStar1], y: [-60, 260], mode: 'lines', name: 'Stage I / II boundary (MP = AP, AP max)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
+                            { x: [lStar2, lStar2], y: [-60, 260], mode: 'lines', name: 'Stage II / III boundary (MP = 0)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
+                            { x: [lStar1], y: [apAtStar1], mode: 'markers', name: 'MP = AP (AP at its maximum)', marker: { color: '#10b981', size: 12, symbol: 'star' } },
                             { x: [L], y: [AP], mode: 'markers', name: 'AP at L', marker: { color: '#2563eb', size: 9 } },
                             { x: [L], y: [MP], mode: 'markers', name: 'MP at L', marker: { color: '#f59e0b', size: 9 } }
                         ],
-                        layout: { xaxis: { title: 'Labour Units (L)' }, yaxis: { title: 'Product (units)', range: [-60, 260] } },
-                        formulas: ['TP = f(L), other factors fixed', 'AP = TP / L', 'MP = ΔTP / ΔL', 'Law of Variable Proportions: MP rises, then falls, then turns negative'],
+                        layout: {
+                            xaxis: { title: 'Labour Units (L)' }, yaxis: { title: 'Product (units)', range: [-60, 260] },
+                            annotations: [
+                                { x: lStar1, y: 245, showarrow: false, text: 'Stage I | Stage II', font: { color: '#64748b', size: 11 } },
+                                { x: lStar2, y: 245, showarrow: false, text: 'Stage II | Stage III', font: { color: '#64748b', size: 11 } }
+                            ]
+                        },
+                        formulas: ['TP = f(L), other factors fixed', 'AP = TP / L', 'MP = ΔTP / ΔL', 'Law of Variable Proportions: MP rises, then falls, then turns negative', 'MP crosses AP exactly at AP\'s maximum — never before, never after'],
                         metrics: { TP, AP, MP, view: 'product' },
                         readings: `<div class="reading-row"><span>Total Product (TP)</span><b>${fmt(TP, 0)}</b></div>
                                    <div class="reading-row"><span>Average Product (AP)</span><b>${fmt(AP)}</b></div>
@@ -108,24 +192,33 @@ if (typeof SIMS !== 'undefined') {
                 const acs = qs.map(q => a / q + b + c * q);
                 const mcs = qs.map(q => b + 2 * c * q);
                 const AC = a / Q + b + c * Q, MC = b + 2 * c * Q;
+                // The AC-minimum / MC=AC crossing is an exact algebraic result for
+                // this cost function (AC' = 0 at Q* = sqrt(a/c)), not eyeballed —
+                // marking it is the single most exam-tested fact about these two
+                // curves ("MC cuts AC at AC's minimum"), so it belongs ON the
+                // chart, not only inferred from the Falling/Rising reading.
+                const qStar = Math.sqrt(a / c);
+                const acStar = a / qStar + b + c * qStar;
                 return {
                     traces: [
                         { x: qs, y: acs, mode: 'lines', name: 'Average Cost (AC)', line: { color: '#2563eb', width: 3 } },
                         { x: qs, y: mcs, mode: 'lines', name: 'Marginal Cost (MC)', line: { color: '#f59e0b', width: 3 } },
+                        { x: [qStar], y: [acStar], mode: 'markers', name: 'MC = AC (Minimum Average Cost)', marker: { color: '#10b981', size: 13, symbol: 'star' } },
                         { x: [Q], y: [AC], mode: 'markers', name: 'AC at Q', marker: { color: '#2563eb', size: 9 } },
                         { x: [Q], y: [MC], mode: 'markers', name: 'MC at Q', marker: { color: '#f59e0b', size: 9 } }
                     ],
                     layout: { xaxis: { title: 'Output (Q)' }, yaxis: { title: 'Cost (₹)' } },
-                    formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ', `Fixed Cost = ₹${a} (raises AC at every Q, but never changes MC)`],
-                    metrics: { AC, MC, view: 'costs' },
+                    formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ', `Fixed Cost = ₹${a} (raises AC at every Q, but never changes MC)`, 'MC cuts AC exactly at AC\'s minimum point — never before, never after'],
+                    metrics: { AC, MC, view: 'costs', qStar, acStar },
                     readings: `<div class="reading-row"><span>Average Cost at Q</span><b>₹${fmt(AC)}</b></div>
                                <div class="reading-row"><span>Marginal Cost at Q</span><b>₹${fmt(MC)}</b></div>
+                               <div class="reading-row"><span>Minimum-AC Output (Q*)</span><b>${fmt(qStar, 1)} units (AC = ₹${fmt(acStar)})</b></div>
                                <div class="reading-row"><span>AC is currently</span><b>${MC < AC ? 'Falling' : 'Rising'}</b></div>
-                               <div class="reading-row insight-row">💡 ${MC < AC ? 'MC is below AC, so it is still pulling the average down — the firm hasn\'t reached its most efficient output yet.' : 'MC is above AC, so it is pulling the average up — output has moved past the most efficient scale.'}</div>`
+                               <div class="reading-row insight-row">💡 ${MC < AC ? 'MC is below AC, so it is still pulling the average down — the firm hasn\'t reached its most efficient output yet.' : 'MC is above AC, so it is pulling the average up — output has moved past the most efficient scale.'} The green star marks exactly where MC crosses AC — always at AC's minimum.</div>`
                 };
             },
             practice: [
-                { prompt: 'Switch to the Product view and increase Labour from 1 to 24. Find the L where MP crosses AP.', hint: 'MP crosses AP exactly at AP\'s maximum — around L=15 with this production function.' },
+                { prompt: 'Switch to the Product view and increase Labour from 1 to 24. Find the L where MP crosses AP.', hint: 'MP crosses AP exactly at AP\'s maximum — exactly L=15 with this production function (marked with a green star on the chart).' },
                 { prompt: 'Switch to Cost view and raise Fixed Cost. Does Marginal Cost change?', hint: 'No — MC = b + 2cQ has no FC term. Only AC (which divides FC by Q) shifts up.' }
             ],
             challenge: {
@@ -156,14 +249,33 @@ if (typeof SIMS !== 'undefined') {
                 const isCeiling = ctrl < Pe;
                 const gap = isCeiling ? qd - qs : qs - qd;
                 const qsAxis = range(101);
+                const gapLo = Math.min(qd, qs), gapHi = Math.max(qd, qs);
+                const gapLabel = isCeiling ? 'Shortage (Qd − Qs)' : 'Surplus (Qs − Qd)';
                 return {
                     traces: [
                         { x: qsAxis, y: qsAxis.map(q => a - b * q), mode: 'lines', name: 'Demand', line: { color: '#2563eb', width: 3 } },
                         { x: qsAxis, y: qsAxis.map(q => c + d * q), mode: 'lines', name: 'Supply', line: { color: '#f59e0b', width: 3 } },
                         { x: [0, 100], y: [ctrl, ctrl], mode: 'lines', name: isCeiling ? 'Price Ceiling' : 'Price Floor', line: { color: '#ef4444', width: 2, dash: 'dash' } },
-                        { x: [Qe], y: [Pe], mode: 'markers', name: 'Free-Market Equilibrium', marker: { color: '#10b981', size: 9 } }
+                        { x: [Qe, Qe], y: [0, Pe], mode: 'lines', name: 'Free-Market Q (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [0, Qe], y: [Pe, Pe], mode: 'lines', name: 'Free-Market P (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [Qe], y: [Pe], mode: 'markers', name: 'Free-Market Equilibrium', marker: { color: '#10b981', size: 9 } },
+                        // The gap itself, drawn as a thick bracket segment ON the control-price
+                        // line between Qs and Qd — the shortage/surplus is a length a student
+                        // can SEE, not just a number inferred from two crossing lines.
+                        { x: [gapLo, gapHi], y: [ctrl, ctrl], mode: 'lines+markers', name: gapLabel,
+                            line: { color: '#7c3aed', width: 7 },
+                            marker: { color: '#7c3aed', size: 9, symbol: 'line-ns-open' } },
+                        { x: [qd], y: [ctrl], mode: 'markers', name: `Qd = ${fmt(qd, 0)}`, marker: { color: '#2563eb', size: 8 } },
+                        { x: [qs], y: [ctrl], mode: 'markers', name: `Qs = ${fmt(qs, 0)}`, marker: { color: '#f59e0b', size: 8 } }
                     ],
-                    layout: { xaxis: { title: 'Quantity', range: [0, 100] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
+                    layout: {
+                        xaxis: { title: 'Quantity', range: [0, 100] }, yaxis: { title: 'Price (₹)', range: [0, 100] },
+                        annotations: gap > 0.5 ? [{
+                            x: (gapLo + gapHi) / 2, y: ctrl, yshift: 16, showarrow: false,
+                            text: `${gapLabel.split(' (')[0]}: ${fmt(gap, 0)} units`,
+                            font: { color: '#7c3aed', size: 13 }
+                        }] : []
+                    },
                     metrics: { gap: Math.max(gap, 0), isCeiling },
                     readings: `<div class="reading-row"><span>Free-Market Equilibrium</span><b>₹${fmt(Pe)} / ${fmt(Qe)} units</b></div>
                                <div class="reading-row"><span>Control Type</span><b>${isCeiling ? 'Price Ceiling' : 'Price Floor'}</b></div>
@@ -198,26 +310,38 @@ if (typeof SIMS !== 'undefined') {
             ],
             compute(v) {
                 const mc = v.mc, N = v.n;
-                const P = (100 + N * mc) / (N + 1);
+                const priceAt = n => (100 + n * mc) / (n + 1);
+                const P = priceAt(N);
                 const Q = 100 - P;
                 const Pc = mc, Qc = 100 - mc; // perfect-competition benchmark (P = MC)
                 const structure = N === 1 ? 'Monopoly' : N <= 4 ? 'Oligopoly' : N <= 15 ? 'Monopolistic Competition' : 'Near-Perfect Competition';
+                // The two isolated "current vs benchmark" bars used to leave the
+                // ACTUAL convergence — price falling continuously as N rises —
+                // something the student had to imagine. Drawing P(N) as a real
+                // curve, against the MC line it approaches but never crosses,
+                // makes "N → ∞ ⇒ P → MC" a visible fact rather than an inference
+                // from two disconnected snapshots.
+                const Ns = range(30).map(i => i + 1);
+                const ps = Ns.map(priceAt);
+                const qs = Ns.map(n => 100 - priceAt(n));
                 return {
                     traces: [
-                        { x: ['Current (N=' + N + ')', 'Perfect Competition'], y: [P, Pc], name: 'Price (₹)', type: 'bar', marker: { color: '#2563eb' } },
-                        { x: ['Current (N=' + N + ')', 'Perfect Competition'], y: [Q, Qc], name: 'Quantity', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' }
+                        { x: Ns, y: ps, mode: 'lines', name: 'Price P(N)', line: { color: '#2563eb', width: 3 } },
+                        { x: Ns, y: qs, mode: 'lines', name: 'Quantity Q(N)', line: { color: '#f59e0b', width: 3 }, yaxis: 'y2' },
+                        { x: [1, 30], y: [mc, mc], mode: 'lines', name: 'Marginal Cost (perfect-competition benchmark)', line: { color: '#10b981', dash: 'dash', width: 2 } },
+                        { x: [N], y: [P], mode: 'markers', name: `Current (N=${N})`, marker: { color: '#2563eb', size: 11 } },
+                        { x: [N], y: [Q], mode: 'markers', name: `Current Quantity`, marker: { color: '#f59e0b', size: 11 }, yaxis: 'y2', showlegend: false }
                     ],
                     layout: {
-                        xaxis: { title: 'Market Structure' },
+                        xaxis: { title: 'Number of Firms (N)', range: [1, 30] },
                         yaxis: { title: 'Price (₹)', range: [0, 100] },
-                        yaxis2: { title: 'Quantity', overlaying: 'y', side: 'right', range: [0, 100] },
-                        barmode: 'group'
+                        yaxis2: { title: 'Quantity', overlaying: 'y', side: 'right', range: [0, 100] }
                     },
                     metrics: { P, Q, N, structure },
                     readings: `<div class="reading-row"><span>Market Structure (at N=${N})</span><b>${structure}</b></div>
                                <div class="reading-row"><span>Current Price / Qty</span><b>₹${fmt(P)} / ${fmt(Q)}</b></div>
                                <div class="reading-row"><span>Perfect-Competition Benchmark</span><b>₹${fmt(Pc)} / ${fmt(Qc)}</b></div>
-                               <div class="reading-row insight-row">💡 As N rises, each firm has less market power and undercutting rivals matters more — price is pushed down toward marginal cost. At N=1 (monopoly) price is highest and output lowest; the gap closes steadily as more firms enter.</div>`
+                               <div class="reading-row insight-row">💡 As N rises, each firm has less market power and undercutting rivals matters more — price is pushed down toward marginal cost. At N=1 (monopoly) price is highest and output lowest; the blue P(N) curve approaches, but never touches, the green MC line — it gets arbitrarily close only in the limit N→∞.</div>`
                 };
             },
             practice: [
@@ -253,13 +377,30 @@ if (typeof SIMS !== 'undefined') {
                     amt = amt * (1 - r);
                 }
                 const totalMoney = D0 / r;
+                // The per-round bars alone leave the actual claim of this topic —
+                // that the round-by-round series SUMS to a finite total, D0/r,
+                // even though lending never technically stops — something the
+                // student had to take on faith from the readings-panel number.
+                // Overlaying the running cumulative total against that asymptote
+                // line makes "it converges to D0/r" a visible curve shape, the
+                // same convergence pattern used on the Market Structures lab.
+                let running = 0;
+                const cumulative = vals.map(x => { running += x; return running; });
                 return {
-                    traces: [{ x: vals.map((_, i) => `Round ${i + 1}`), y: vals, type: 'bar', marker: { color: '#2563eb' } }],
-                    layout: { xaxis: { title: 'Successive Deposit Rounds' }, yaxis: { title: 'New Deposit (₹)' }, showlegend: false },
+                    traces: [
+                        { x: vals.map((_, i) => `Round ${i + 1}`), y: vals, type: 'bar', name: 'New Deposit This Round', marker: { color: '#2563eb' } },
+                        { x: vals.map((_, i) => `Round ${i + 1}`), y: cumulative, mode: 'lines+markers', name: 'Cumulative Money Created', line: { color: '#f59e0b', width: 3 }, yaxis: 'y2' },
+                        { x: vals.map((_, i) => `Round ${i + 1}`), y: vals.map(() => totalMoney), mode: 'lines', name: `Total Money Created (D0/LRR = ₹${fmt(totalMoney, 0)})`, line: { color: '#10b981', dash: 'dash', width: 2 }, yaxis: 'y2' }
+                    ],
+                    layout: {
+                        xaxis: { title: 'Successive Deposit Rounds' },
+                        yaxis: { title: 'New Deposit This Round (₹)' },
+                        yaxis2: { title: 'Cumulative Total (₹)', overlaying: 'y', side: 'right', range: [0, totalMoney * 1.15] }
+                    },
                     metrics: { multiplier: 1 / r, totalMoney },
                     readings: `<div class="reading-row"><span>Money Multiplier (1/LRR)</span><b>${fmt(1 / r)}</b></div>
                                <div class="reading-row"><span>Total Money Created</span><b>₹${fmt(totalMoney, 0)}</b></div>
-                               <div class="reading-row insight-row">💡 A lower Legal Reserve Ratio means banks hold back less and lend out more of every deposit — so each rupee gets re-lent more times, and the money multiplier grows larger.</div>`
+                               <div class="reading-row insight-row">💡 A lower Legal Reserve Ratio means banks hold back less and lend out more of every deposit — so each rupee gets re-lent more times, and the money multiplier grows larger. The orange cumulative line climbs toward, but never quite reaches, the green Total Money Created line — an infinite number of ever-shrinking rounds sums to a FINITE total.</div>`
                 };
             },
             practice: [
@@ -291,14 +432,33 @@ if (typeof SIMS !== 'undefined') {
                 const revenueDeficit = revenueExp - revenueReceipts;
                 const fiscalDeficit = totalExp - totalReceipts;
                 const primaryDeficit = fiscalDeficit - interest;
+                const deficitTop = Math.max(totalReceipts, totalExp);
                 return {
-                    traces: [{
-                        x: ['Revenue Receipts', 'Capital Receipts', 'Revenue Exp.', 'Capital Exp.'],
-                        y: [revenueReceipts, capitalReceipts, revenueExp, capitalExp],
-                        type: 'bar',
-                        marker: { color: ['#10b981', '#34d399', '#f87171', '#f97316'] }
-                    }],
-                    layout: { xaxis: { title: 'Budget Component' }, yaxis: { title: '₹ Billion' }, showlegend: false },
+                    traces: [
+                        {
+                            x: ['Revenue Receipts', 'Capital Receipts', 'Revenue Exp.', 'Capital Exp.', 'Total Receipts', 'Total Expenditure'],
+                            y: [revenueReceipts, capitalReceipts, revenueExp, capitalExp, totalReceipts, totalExp],
+                            type: 'bar',
+                            marker: { color: ['#10b981', '#34d399', '#f87171', '#f97316', '#059669', '#dc2626'] }
+                        }
+                    ],
+                    layout: {
+                        xaxis: { title: 'Budget Component' }, yaxis: { title: '₹ Billion', range: [0, deficitTop * 1.25] }, showlegend: false,
+                        // The Fiscal Deficit is the syllabus's own named headline
+                        // number — drawing it as a visible bracket between the two
+                        // TOTAL bars (not just the four components) is the same
+                        // "make the gap a length, not an inferred subtraction"
+                        // pattern used on the Price Ceiling/Floor lab.
+                        shapes: fiscalDeficit > 0.5 ? [{
+                            type: 'line', x0: 'Total Receipts', x1: 'Total Expenditure',
+                            y0: deficitTop * 1.1, y1: deficitTop * 1.1,
+                            line: { color: '#7c3aed', width: 5 }
+                        }] : [],
+                        annotations: fiscalDeficit > 0.5 ? [{
+                            x: 'Total Receipts', xshift: 60, y: deficitTop * 1.1, yshift: 14, showarrow: false,
+                            text: `Fiscal Deficit: ₹${fmt(fiscalDeficit, 0)}B`, font: { color: '#7c3aed', size: 13 }
+                        }] : []
+                    },
                     metrics: { revenueDeficit, fiscalDeficit, primaryDeficit },
                     readings: `<div class="reading-row"><span>Total Receipts</span><b>₹${fmt(totalReceipts, 0)}B</b></div>
                                <div class="reading-row"><span>Total Expenditure</span><b>₹${fmt(totalExp, 0)}B</b></div>
@@ -344,6 +504,8 @@ if (typeof SIMS !== 'undefined') {
                     traces: [
                         { x: qs, y: qs.map(q => a - b * q), mode: 'lines', name: 'Demand for $', line: { color: '#2563eb', width: 3 } },
                         { x: qs, y: qs.map(q => c + d * q), mode: 'lines', name: 'Supply of $', line: { color: '#f59e0b', width: 3 } },
+                        { x: [Q, Q], y: [0, P], mode: 'lines', name: 'Equilibrium Q (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [0, Q], y: [P, P], mode: 'lines', name: 'Equilibrium P (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
                         { x: [Q], y: [P], mode: 'markers', name: 'Equilibrium Rate', marker: { color: '#ef4444', size: 10 } }
                     ],
                     layout: { xaxis: { title: 'Quantity of US$ (millions)', range: [0, 100] }, yaxis: { title: 'Exchange Rate (₹/$)', range: [0, 100] } },
@@ -395,14 +557,34 @@ if (typeof SIMS !== 'undefined') {
                     { label: 'Govt. Spending (G)', d: v.dg }, { label: 'Net Exports (X−M)', d: v.dnx }
                 ].filter(p => p.d !== 0);
                 const biggest = parts.length ? parts.reduce((m, p) => Math.abs(p.d) > Math.abs(m.d) ? p : m) : null;
+                const gapLo = Math.min(Ystar, Yfe), gapHi = Math.max(Ystar, Yfe);
+                const gapBracketY = 140;
                 return {
                     traces: [
                         { x: ys, y: ys.map(y => adA - adB * y), mode: 'lines', name: 'Aggregate Demand', line: { color: '#2563eb', width: 3 } },
                         { x: ys, y: ys.map(y => asA + asB * y), mode: 'lines', name: 'Aggregate Supply', line: { color: '#f59e0b', width: 3 } },
                         { x: [Yfe, Yfe], y: [0, 150], mode: 'lines', name: 'Full Employment (Yfe)', line: { color: '#10b981', dash: 'dash' } },
-                        { x: [Ystar], y: [Pstar], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 9 } }
+                        { x: [Ystar, Ystar], y: [0, Pstar], mode: 'lines', name: 'Equilibrium Y (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [0, Ystar], y: [Pstar, Pstar], mode: 'lines', name: 'Equilibrium P (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [Ystar], y: [Pstar], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 9 } },
+                        // The inflationary/deflationary GAP is the syllabus's own
+                        // named headline quantity (Y* vs Yfe) — draw it as a visible
+                        // bracket the same way the shortage/surplus bracket now
+                        // works on the Price Ceiling/Floor lab, instead of leaving
+                        // it inferable only from two vertical lines' separation.
+                        ...(gapType !== 'No Gap' ? [{
+                            x: [gapLo, gapHi], y: [gapBracketY, gapBracketY], mode: 'lines+markers',
+                            name: gapType, line: { color: '#7c3aed', width: 7 },
+                            marker: { color: '#7c3aed', size: 9, symbol: 'line-ns-open' }
+                        }] : [])
                     ],
-                    layout: { xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Price Level', range: [0, 150] } },
+                    layout: {
+                        xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Price Level', range: [0, 150] },
+                        annotations: gapType !== 'No Gap' ? [{
+                            x: (gapLo + gapHi) / 2, y: gapBracketY, yshift: 14, showarrow: false,
+                            text: `${gapType}: ${fmt(Math.abs(Ystar - Yfe), 0)} units`, font: { color: '#7c3aed', size: 13 }
+                        }] : []
+                    },
                     metrics: { Ystar, Yfe, gapType, gapSize: Math.abs(Ystar - Yfe) },
                     readings: `<div class="reading-row"><span>Net AD Shift (ΔC+ΔI+ΔG+ΔNX)</span><b>${adShift >= 0 ? '+' : ''}${adShift}</b></div>
                                <div class="reading-row"><span>Equilibrium Income</span><b>${fmt(Ystar)}</b></div>
@@ -456,9 +638,27 @@ if (typeof SIMS !== 'undefined') {
                 const q1 = quartile(0.25), q3 = quartile(0.75);
                 const qd = (q3 - q1) / 2;
                 const coeffRange = ((sorted[sorted.length - 1] - sorted[0]) / (sorted[sorted.length - 1] + sorted[0])) * 100;
+                // Range and QD were previously numbers in the readings panel with
+                // nothing to look at on the bar chart itself — no mean line, no
+                // quartile markers, no visible span for the Range they're computed
+                // from. Drawing all three directly on the chart makes "half the
+                // distance between Q1 and Q3" and "max minus min" visible spans,
+                // not numbers a student has to take on faith.
+                const labels = data.map((_, i) => `X${i + 1}`);
+                const minIdx = data.indexOf(sorted[0]);
                 return {
-                    traces: [{ x: data.map((_, i) => `X${i + 1}`), y: data, type: 'bar', marker: { color: '#2563eb' } }],
-                    layout: { xaxis: { title: 'Data Point' }, yaxis: { title: 'Value', range: [0, 100] }, showlegend: false },
+                    traces: [
+                        { x: labels, y: data, type: 'bar', name: 'Data', marker: { color: '#2563eb' } },
+                        { x: [labels[0], labels[labels.length - 1]], y: [mean, mean], mode: 'lines', name: `Mean (${fmt(mean)})`, line: { color: '#10b981', width: 2 } },
+                        { x: [labels[0], labels[labels.length - 1]], y: [q1, q1], mode: 'lines', name: `Q1 (${fmt(q1)})`, line: { color: '#7c3aed', width: 1.5, dash: 'dot' } },
+                        { x: [labels[0], labels[labels.length - 1]], y: [q3, q3], mode: 'lines', name: `Q3 (${fmt(q3)})`, line: { color: '#7c3aed', width: 1.5, dash: 'dot' } },
+                        // Range is a Y-axis (value) distance, not an X-axis one — the
+                        // bracket is drawn VERTICALLY, anchored just beside the
+                        // minimum bar, spanning from the minimum value up to the
+                        // maximum value, so its length is the actual span it names.
+                        { x: [labels[minIdx], labels[minIdx]], y: [sorted[0], sorted[sorted.length - 1]], mode: 'lines+markers', name: `Range (${fmt(range_)})`, line: { color: '#dc2626', width: 5 }, marker: { color: '#dc2626', size: 8, symbol: 'line-ew-open' } }
+                    ],
+                    layout: { xaxis: { title: 'Data Point' }, yaxis: { title: 'Value', range: [0, 110] } },
                     metrics: { sd, cv, range: range_, qd },
                     readings: `<div class="reading-row"><span>Range</span><b>${fmt(range_)}</b></div>
                                <div class="reading-row"><span>Coefficient of Range</span><b>${fmt(coeffRange)}%</b></div>
@@ -508,12 +708,29 @@ if (typeof SIMS !== 'undefined') {
                     const sumP1 = rows.reduce((s, r) => s + r.p1, 0);
                     const index = sumP0 > 0 ? (sumP1 / sumP0) * 100 : 100;
                     const inflation = index - 100;
+                    const categories = [...rows.map(r => r.commodity), 'Price Index'];
                     return {
                         traces: [
                             { x: rows.map(r => r.commodity), y: rows.map(r => r.p0), name: 'Base Year Price', type: 'bar', marker: { color: '#9ca3af' } },
-                            { x: rows.map(r => r.commodity), y: rows.map(r => r.p1), name: 'Current Year Price', type: 'bar', marker: { color: '#2563eb' } }
+                            { x: rows.map(r => r.commodity), y: rows.map(r => r.p1), name: 'Current Year Price', type: 'bar', marker: { color: '#2563eb' } },
+                            // The index number itself — the actual answer to "how much
+                            // costlier is the basket?" — was previously only a % in the
+                            // readings panel, disconnected from the price bars above it.
+                            // Plotting it against its own fixed Base=100 reference line
+                            // (on a secondary axis, since 100-ish index points and
+                            // rupee prices are different scales) makes "how far above/
+                            // below 100" a visible distance, not just a percentage to
+                            // read and mentally relate back to the bars. The reference
+                            // is a LINE, not a second bar in the same category, so it
+                            // can never end up hidden behind the index bar it's meant
+                            // to be compared against.
+                            { x: [categories[0], categories[categories.length - 1]], y: [100, 100], name: 'Base Year (= 100)', mode: 'lines', line: { color: '#6b7280', dash: 'dash', width: 2 }, yaxis: 'y2' },
+                            { x: ['Price Index'], y: [index], name: `Current Index (${fmt(index)})`, type: 'bar', marker: { color: inflation >= 0 ? '#dc2626' : '#16a34a' }, yaxis: 'y2' }
                         ],
-                        layout: { xaxis: { title: 'Commodity' }, yaxis: { title: 'Price (₹)' }, barmode: 'group' },
+                        layout: {
+                            xaxis: { title: 'Commodity' }, yaxis: { title: 'Price (₹)' }, barmode: 'group',
+                            yaxis2: { title: 'Price Index (Base = 100)', overlaying: 'y', side: 'right', range: [0, Math.max(200, index * 1.2)] }
+                        },
                         stats: [
                             { label: 'ΣP₀ (Base Year Total)', value: '₹' + fmt(sumP0, 0) },
                             { label: 'ΣP₁ (Current Year Total)', value: '₹' + fmt(sumP1, 0) },
@@ -608,17 +825,29 @@ if (typeof SIMS !== 'undefined') {
             ],
             compute(v) {
                 const t = v.yr / 30;
+                // "Structural Transformation" and "rising formal share" are both
+                // claims about a TRAJECTORY over years, but a bar chart driven
+                // by a single "Years of Growth" slider only ever showed one
+                // year's snapshot — switching the slider replaced the bars
+                // entirely, so the actual transformation (the thing the topic
+                // is named for) was never visible as a trend, only inferable by
+                // remembering what the previous snapshot looked like. Plotting
+                // every series across the full 0–30 year range, with a vertical
+                // marker at the selected year, makes the transformation itself
+                // a visible curve.
+                const yrs = range(16).map(i => i * 2);
                 if (v.view === 'formality') {
-                    const formal = 10 + 40 * t;
-                    const informal = 100 - formal;
+                    const formalAt = yr => 10 + 40 * (yr / 30);
+                    const formal = formalAt(v.yr), informal = 100 - formal;
                     return {
-                        traces: [{
-                            x: ['Informal Sector', 'Formal Sector'],
-                            y: [informal, formal],
-                            type: 'bar',
-                            marker: { color: ['#f97316', '#3b82f6'] }
-                        }],
-                        layout: { xaxis: { title: 'Employment Category' }, yaxis: { title: 'Share of Workforce (%)', range: [0, 100] }, showlegend: false },
+                        traces: [
+                            { x: yrs, y: yrs.map(y => 100 - formalAt(y)), mode: 'lines', name: 'Informal Sector (%)', line: { color: '#f97316', width: 3 } },
+                            { x: yrs, y: yrs.map(formalAt), mode: 'lines', name: 'Formal Sector (%)', line: { color: '#3b82f6', width: 3 } },
+                            { x: [v.yr, v.yr], y: [0, 100], mode: 'lines', name: `Selected Year (+${v.yr}yrs)`, line: { color: '#6b7280', width: 1, dash: 'dot' }, showlegend: false },
+                            { x: [v.yr], y: [informal], mode: 'markers', name: 'Informal now', marker: { color: '#f97316', size: 10 }, showlegend: false },
+                            { x: [v.yr], y: [formal], mode: 'markers', name: 'Formal now', marker: { color: '#3b82f6', size: 10 }, showlegend: false }
+                        ],
+                        layout: { xaxis: { title: 'Years of Growth' }, yaxis: { title: 'Share of Workforce (%)', range: [0, 100] } },
                         formulas: ['Informal Sector: no job/social security, often self-employed or casual labour', 'Formal Sector: registered enterprises, regular wages, legal & social protection'],
                         metrics: { formal, informal, view: 'formality' },
                         readings: `<div class="reading-row"><span>Informal Sector</span><b>${fmt(informal)}%</b></div>
@@ -626,17 +855,21 @@ if (typeof SIMS !== 'undefined') {
                                    <div class="reading-row insight-row">💡 India's workforce has historically been overwhelmingly informal. A rising formal share means more workers gaining job security, social security and legal protection — this shift has been slow and uneven, which is the central concern of this topic.</div>`
                     };
                 }
-                const agri = 50 - 30 * t;
-                const services = 25 + 25 * t;
-                const industry = 100 - agri - services;
+                const agriAt = yr => 50 - 30 * (yr / 30);
+                const servicesAt = yr => 25 + 25 * (yr / 30);
+                const industryAt = yr => 100 - agriAt(yr) - servicesAt(yr);
+                const agri = agriAt(v.yr), services = servicesAt(v.yr), industry = industryAt(v.yr);
                 return {
-                    traces: [{
-                        x: ['Agriculture', 'Industry', 'Services'],
-                        y: [agri, industry, services],
-                        type: 'bar',
-                        marker: { color: ['#84cc16', '#f59e0b', '#3b82f6'] }
-                    }],
-                    layout: { xaxis: { title: 'Sector' }, yaxis: { title: 'Share of Employment (%)', range: [0, 100] }, showlegend: false },
+                    traces: [
+                        { x: yrs, y: yrs.map(agriAt), mode: 'lines', name: 'Agriculture (%)', line: { color: '#84cc16', width: 3 } },
+                        { x: yrs, y: yrs.map(industryAt), mode: 'lines', name: 'Industry (%)', line: { color: '#f59e0b', width: 3 } },
+                        { x: yrs, y: yrs.map(servicesAt), mode: 'lines', name: 'Services (%)', line: { color: '#3b82f6', width: 3 } },
+                        { x: [v.yr, v.yr], y: [0, 100], mode: 'lines', name: `Selected Year (+${v.yr}yrs)`, line: { color: '#6b7280', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [v.yr], y: [agri], mode: 'markers', marker: { color: '#84cc16', size: 10 }, showlegend: false },
+                        { x: [v.yr], y: [industry], mode: 'markers', marker: { color: '#f59e0b', size: 10 }, showlegend: false },
+                        { x: [v.yr], y: [services], mode: 'markers', marker: { color: '#3b82f6', size: 10 }, showlegend: false }
+                    ],
+                    layout: { xaxis: { title: 'Years of Growth' }, yaxis: { title: 'Share of Employment (%)', range: [0, 100] } },
                     formulas: ['Structural Transformation: labour shifts from Agriculture → Industry & Services as the economy develops'],
                     metrics: { agri, industry, services, view: 'sector' },
                     readings: `<div class="reading-row"><span>Agriculture</span><b>${fmt(agri)}%</b></div>

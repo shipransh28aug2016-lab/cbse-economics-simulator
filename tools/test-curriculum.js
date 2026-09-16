@@ -423,12 +423,29 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     approx(r.metrics.mode, 4, 1e-9, 'Central Tendency: mode of [2,4,4,6] is 4');
 })();
 
+(function testOgiveMedian() {
+    const sim = findSim('stats-data-organisation');
+    const values = [12, 15, 18, 21, 22, 25, 27, 28, 30, 31, 33, 35, 36, 38, 40, 42, 44, 47, 50, 55];
+    const rows = values.map(value => ({ value }));
+    const r = sim.dataLab.calculate(rows);
+    // Hand-derived with the standard grouped-median formula (l + ((N/2-cf)/f)*h):
+    // 5 classes of width 8.6 over [12,55]; class boundaries 12/20.6/29.2/37.8/46.4/55;
+    // frequencies 3,5,5,4,3, cumulative 3,8,13,17,20; N/2=10 falls in the third
+    // class [29.2,37.8) with cf=8, f=5, h=8.6 => median = 29.2+((10-8)/5)*8.6 = 32.64.
+    approx(r.metrics.median, 32.64, 0.01, 'Ogive Median: matches the standard grouped-data median formula by hand');
+    ok(r.metrics.median >= 12 && r.metrics.median <= 55, 'Ogive Median: falls within the data range');
+})();
+
 (function testCorrelation() {
     const sim = findSim('stats-correlation');
     const perfect = range8().map(i => ({ x: i + 1, y: 2 * (i + 1) }));
     const r = sim.dataLab.calculate(perfect);
     approx(r.metrics.pearsonR, 1, 1e-6, "Correlation: perfectly linear data gives Pearson r = 1");
     approx(r.metrics.spearmanR, 1, 1e-6, "Correlation: perfectly monotonic data gives Spearman r = 1");
+    // y = 2x exactly ⇒ the least-squares best-fit line drawn on the scatter
+    // must recover slope=2, intercept=0 exactly, not merely "close to r=1".
+    approx(r.metrics.slope, 2, 1e-9, 'Correlation: best-fit line slope matches y=2x exactly');
+    approx(r.metrics.intercept, 0, 1e-9, 'Correlation: best-fit line intercept matches y=2x exactly');
     function range8() { return Array.from({ length: 8 }, (_, i) => i); }
 })();
 
@@ -496,6 +513,55 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     const long = sim.compute({ period: 'long', price: 40 });
     const market = sim.compute({ period: 'market', price: 40 });
     ok(long.metrics.Es > market.metrics.Es, 'Elasticity of Supply: long run is more elastic than the market period at the same price');
+})();
+
+(function testEquiMarginalUtility() {
+    const sim = findSim('micro-consumer-equilibrium');
+    // Symmetric prices (Px = Py) with identical MU curves for X and Y ⇒
+    // the equi-marginal split must be exactly 50/50 by symmetry.
+    const symmetric = sim.compute({ view: 'twogood', income: 60, px: 5, py: 5, shareX: 50 });
+    approx(symmetric.metrics.bestQx, symmetric.metrics.Qx, 0.2, 'Equi-Marginal Utility: with Px = Py, the 50/50 split IS the equilibrium');
+    approx(symmetric.metrics.diff, 0, 0.05, 'Equi-Marginal Utility: at the symmetric split, MUx/Px = MUy/Py');
+    // At the numerically-located equilibrium itself, the two MU-per-Rupee
+    // values must actually be equal (not just "close to the student's guess").
+    const eqQy = symmetric.metrics.bestQy;
+    const eqMUx = (20 - symmetric.metrics.bestQx) / 5;
+    const eqMUy = (20 - eqQy) / 5;
+    approx(eqMUx, eqMUy, 0.1, 'Equi-Marginal Utility: at the located equilibrium, MUx/Px actually equals MUy/Py');
+    // A dearer Y should pull the equilibrium share of the budget on X UP —
+    // this is the Law of Equi-Marginal Utility's actual comparative-statics
+    // prediction, not just "the model runs without crashing".
+    const cheapY = sim.compute({ view: 'twogood', income: 60, px: 5, py: 5, shareX: 50 });
+    const dearY = sim.compute({ view: 'twogood', income: 60, px: 5, py: 15, shareX: 50 });
+    const cheapYShareAtEq = cheapY.metrics.bestQx * 5 / 60;
+    const dearYShareAtEq = dearY.metrics.bestQx * 5 / 60;
+    ok(dearYShareAtEq > cheapYShareAtEq, 'Equi-Marginal Utility: making Y more expensive raises the equilibrium budget share spent on X');
+    // Budget is always exhausted regardless of the split chosen.
+    const anySplit = sim.compute({ view: 'twogood', income: 80, px: 8, py: 4, shareX: 30 });
+    approx(anySplit.metrics.Qx * 8 + anySplit.metrics.Qy * 4, 80, 1e-6, 'Equi-Marginal Utility: Px·Qx + Py·Qy always exhausts the fixed budget M');
+})();
+
+(function testProducerCostsCurveIntersections() {
+    const sim = findSim('micro-producer-costs');
+    // MC must cross AC exactly at AC's own algebraic minimum, for several
+    // different Fixed Cost values (not just the sim's default) — this is
+    // the specific exam-tested fact the new star marker draws on the chart.
+    [20, 100, 200].forEach(fc => {
+        const atStar = sim.compute({ view: 'costs', fc, q: 1 });
+        const { qStar, acStar } = atStar.metrics;
+        const acAtStarPlus = sim.compute({ view: 'costs', fc, q: qStar + 0.01 }).metrics.AC;
+        const acAtStarMinus = sim.compute({ view: 'costs', fc, q: Math.max(qStar - 0.01, 0.01) }).metrics.AC;
+        ok(acStar <= acAtStarPlus + 1e-6 && acStar <= acAtStarMinus + 1e-6, `Producer Costs: AC(Q*) is a genuine local minimum for FC=${fc}`);
+        const mcAtStar = sim.compute({ view: 'costs', fc, q: qStar }).metrics.MC;
+        approx(mcAtStar, acStar, 1e-6, `Producer Costs: MC(Q*) = AC(Q*) exactly at FC=${fc}`);
+    });
+    // MP must cross AP exactly at AP's maximum (L=15 for this production
+    // function), not merely "somewhere near it".
+    const atCrossing = sim.compute({ view: 'product', labor: 15 });
+    approx(atCrossing.metrics.MP, atCrossing.metrics.AP, 1e-9, 'Producer Costs: MP = AP exactly at L=15 (AP\'s maximum)');
+    const apJustBefore = sim.compute({ view: 'product', labor: 14 }).metrics.AP;
+    const apJustAfter = sim.compute({ view: 'product', labor: 16 }).metrics.AP;
+    ok(atCrossing.metrics.AP >= apJustBefore && atCrossing.metrics.AP >= apJustAfter, 'Producer Costs: AP is genuinely at its maximum where MP crosses it');
 })();
 
 (function testPriceControls() {
