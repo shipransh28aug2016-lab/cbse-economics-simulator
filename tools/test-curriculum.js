@@ -423,6 +423,19 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     approx(r.metrics.mode, 4, 1e-9, 'Central Tendency: mode of [2,4,4,6] is 4');
 })();
 
+(function testOgiveMedian() {
+    const sim = findSim('stats-data-organisation');
+    const values = [12, 15, 18, 21, 22, 25, 27, 28, 30, 31, 33, 35, 36, 38, 40, 42, 44, 47, 50, 55];
+    const rows = values.map(value => ({ value }));
+    const r = sim.dataLab.calculate(rows);
+    // Hand-derived with the standard grouped-median formula (l + ((N/2-cf)/f)*h):
+    // 5 classes of width 8.6 over [12,55]; class boundaries 12/20.6/29.2/37.8/46.4/55;
+    // frequencies 3,5,5,4,3, cumulative 3,8,13,17,20; N/2=10 falls in the third
+    // class [29.2,37.8) with cf=8, f=5, h=8.6 => median = 29.2+((10-8)/5)*8.6 = 32.64.
+    approx(r.metrics.median, 32.64, 0.01, 'Ogive Median: matches the standard grouped-data median formula by hand');
+    ok(r.metrics.median >= 12 && r.metrics.median <= 55, 'Ogive Median: falls within the data range');
+})();
+
 (function testCorrelation() {
     const sim = findSim('stats-correlation');
     const perfect = range8().map(i => ({ x: i + 1, y: 2 * (i + 1) }));

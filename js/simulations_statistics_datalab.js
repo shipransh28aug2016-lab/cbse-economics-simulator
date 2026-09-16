@@ -143,11 +143,27 @@ if (typeof SIMS !== 'undefined') {
                     const polygonX = [classes[0].midpoint - classWidth, ...classes.map(c => c.midpoint), classes[numClasses - 1].midpoint + classWidth];
                     const polygonY = [0, ...freq, 0];
 
+                    // The classic textbook use of an Ogive is to locate the median
+                    // GRAPHICALLY: draw a line across at N/2, drop it down to the
+                    // curve, read the median off the X-axis. Without those two
+                    // guide lines the Ogive is just a shape — the actual technique
+                    // it's meant to teach was never drawn.
+                    const medianPos = n / 2;
+                    let medianClassIndex = cumFreq.findIndex(cf => cf >= medianPos);
+                    if (medianClassIndex === -1) medianClassIndex = numClasses - 1;
+                    const cfBefore = medianClassIndex === 0 ? 0 : cumFreq[medianClassIndex - 1];
+                    const medianClass = classes[medianClassIndex];
+                    const medianFreq = freq[medianClassIndex] || 1;
+                    const median = medianClass.lower + ((medianPos - cfBefore) / medianFreq) * classWidth;
+
                     return {
                         traces: [
                             { x: classes.map(c => c.midpoint), y: freq, type: 'bar', name: 'Histogram', marker: { color: '#93c5fd' }, width: classes.map(() => classWidth * 0.95) },
                             { x: polygonX, y: polygonY, mode: 'lines+markers', name: 'Frequency Polygon', line: { color: '#2563eb', width: 2 } },
-                            { x: classes.map(c => c.upper), y: cumFreq, mode: 'lines+markers', name: 'Ogive (Less Than)', line: { color: '#ef4444', width: 2 }, yaxis: 'y2' }
+                            { x: classes.map(c => c.upper), y: cumFreq, mode: 'lines+markers', name: 'Ogive (Less Than)', line: { color: '#ef4444', width: 2 }, yaxis: 'y2' },
+                            { x: [0, median], y: [medianPos, medianPos], mode: 'lines', name: 'N/2 (dotted)', line: { color: '#7c3aed', width: 1, dash: 'dot' }, yaxis: 'y2', showlegend: false },
+                            { x: [median, median], y: [0, medianPos], mode: 'lines', name: 'Median (dotted)', line: { color: '#7c3aed', width: 1, dash: 'dot' }, yaxis: 'y2', showlegend: false },
+                            { x: [median], y: [medianPos], mode: 'markers', name: `Median ≈ ${fmt(median, 1)} (read from Ogive)`, marker: { color: '#7c3aed', size: 10 }, yaxis: 'y2' }
                         ],
                         layout: {
                             xaxis: { title: 'Class Interval (midpoint / upper boundary)' },
@@ -158,10 +174,11 @@ if (typeof SIMS !== 'undefined') {
                             { label: 'n (observations)', value: n },
                             { label: 'Range', value: fmt(max - min, 1) },
                             { label: 'Class Width', value: fmt(classWidth, 1) },
-                            { label: 'Modal Class', value: `${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)}` }
+                            { label: 'Modal Class', value: `${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)}` },
+                            { label: 'Median (graphically, from Ogive)', value: fmt(median, 1) }
                         ],
-                        metrics: { modalClassIndex, numClasses, n },
-                        interpretation: `Most observations (${maxFreq} of ${n}) fall in the ${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)} class — the modal class. The Ogive's steepest section lines up with this same class, since that's where cumulative frequency climbs fastest.`
+                        metrics: { modalClassIndex, numClasses, n, median },
+                        interpretation: `Most observations (${maxFreq} of ${n}) fall in the ${fmt(classes[modalClassIndex].lower, 1)}–${fmt(classes[modalClassIndex].upper, 1)} class — the modal class. The Ogive's steepest section lines up with this same class, since that's where cumulative frequency climbs fastest. The purple guide lines show the classic graphical method for reading the Median off an Ogive: draw across at N/2 = ${fmt(medianPos, 1)}, drop down to the X-axis at ≈${fmt(median, 1)}.`
                     };
                 }
             },

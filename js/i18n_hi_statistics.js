@@ -150,10 +150,13 @@ if (typeof READINGS_I18N_HI !== 'undefined') {
             ['Range', 'परिसर'],
             ['Class Width', 'वर्ग चौड़ाई'],
             ['Modal Class', 'बहुलक वर्ग'],
+            ['Median (graphically, from Ogive)', 'माध्यिका (तोरण से आलेखीय रूप से)'],
             ['Most observations (', 'अधिकांश अवलोकन ('],
             [' of ', ' में से '],
             [') fall in the ', ') '],
-            [" class — the modal class. The Ogive's steepest section lines up with this same class, since that's where cumulative frequency climbs fastest.", ' वर्ग में आते हैं — बहुलक वर्ग। तोरण का सबसे तीव्र खंड इसी वर्ग से मेल खाता है, क्योंकि यहीं संचयी आवृत्ति सबसे तेज़ी से बढ़ती है।']
+            [" class — the modal class. The Ogive's steepest section lines up with this same class, since that's where cumulative frequency climbs fastest.", ' वर्ग में आते हैं — बहुलक वर्ग। तोरण का सबसे तीव्र खंड इसी वर्ग से मेल खाता है, क्योंकि यहीं संचयी आवृत्ति सबसे तेज़ी से बढ़ती है।'],
+            [' The purple guide lines show the classic graphical method for reading the Median off an Ogive: draw across at N/2 = ', ' बैंगनी मार्गदर्शक रेखाएँ तोरण से माध्यिका पढ़ने की पारंपरिक आलेखीय विधि दिखाती हैं: N/2 = '],
+            [', drop down to the X-axis at ≈', ' पर आर-पार रेखा खींचें, फिर X-अक्ष पर ≈']
         ],
         'stats-data-presentation': [
             ['Total', 'कुल'],
