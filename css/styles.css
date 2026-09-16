@@ -1611,12 +1611,21 @@ header, .sim-topbar {
 .explorer-dot.active { background: var(--india-grad); }
 
 /* ── Concept Explorer: classification cards ──────────────────────── */
-/* height:100% + overflow-y:auto (matching the timeline/scenario cards
-   below) keeps this contained within #sim-dom-overlay's fixed-size box
-   (sized to fit a Plotly chart) — without it, more than a couple of
-   cards would silently render UNDER the controls panel beneath it,
-   since the overlay is position:absolute and doesn't grow the page. */
-.explorer-cards-list { display: flex; flex-direction: column; gap: 14px; padding: 4px; height: 100%; overflow-y: auto; }
+/* .explorer-cards-stage is a flex column filling #sim-dom-overlay's
+   fixed-size box (sized to fit a Plotly chart). The score ring keeps its
+   natural height (flex-shrink: 0); the card list gets whatever space is
+   LEFT OVER (flex: 1; min-height: 0, not height: 100%) and scrolls
+   internally within that. A previous version gave the list height: 100%
+   directly — 100% of the *whole* overlay, on top of the space the score
+   ring above it already consumed in normal flow — so on a sim with
+   enough cards to need scrolling (6, here), the list's own box ran past
+   the overlay's bottom edge and visibly overlapped the controls panel
+   underneath it. min-height: 0 is required alongside flex: 1 because a
+   flex child's default min-height is auto (its content size), which
+   would otherwise let it grow past its flex-basis anyway. */
+.explorer-cards-stage { display: flex; flex-direction: column; height: 100%; }
+.explorer-cards-stage .explorer-score-ring { flex-shrink: 0; }
+.explorer-cards-list { display: flex; flex-direction: column; gap: 14px; padding: 4px; flex: 1; min-height: 0; overflow-y: auto; }
 .explorer-card {
   border-radius: 14px;
   padding: 16px 18px;
