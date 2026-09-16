@@ -67,7 +67,11 @@ if (typeof SIMS !== 'undefined') {
                 const mrt = (2 * X) / C; // slope magnitude of the PPF at X — opportunity cost of X in terms of Y
                 return {
                     traces: [
-                        { x: xsAxis, y: frontierY, mode: 'lines', name: 'PPF (Efficient Frontier)', line: { color: '#2563eb', width: 3 } },
+                        // Shading the ATTAINABLE region (on or inside the frontier)
+                        // makes "inside/on = attainable, outside = unattainable" a
+                        // visible area distinction, not something inferred only
+                        // from where one point happens to sit relative to a line.
+                        { x: xsAxis, y: frontierY, mode: 'lines', name: 'PPF (Efficient Frontier)', line: { color: '#2563eb', width: 3 }, fill: 'tozeroy', fillcolor: 'rgba(37, 99, 235, 0.08)' },
                         { x: [X], y: [Y], mode: 'markers', name: 'Chosen Point', marker: { color: v.pointType === 'unattainable' ? '#ef4444' : v.pointType === 'inefficient' ? '#f59e0b' : '#10b981', size: 12 } }
                     ],
                     layout: { xaxis: { title: 'Good X (units)', range: [0, 32] }, yaxis: { title: 'Good Y (units)', range: [0, 32] } },
