@@ -202,15 +202,23 @@ if (typeof SIMS !== 'undefined') {
                 calculate(rows) {
                     const byHDI = [...rows].sort((a, b) => b.hdi - a.hdi);
                     const byGrowth = [...rows].sort((a, b) => b.growth - a.growth);
+                    // Agriculture Share had its own column and its own callout
+                    // stat ("Most Agriculture-Dependent") but was never actually
+                    // charted — a student could read the winner's name but never
+                    // SEE how the three countries compare on this axis the way
+                    // they can for Growth and HDI. Both HDI×100 and Agriculture
+                    // Share are naturally 0–100 percentage-like scales, so they
+                    // share one secondary axis without a confusing rescale.
                     return {
                         traces: [
                             { x: rows.map(r => r.country), y: rows.map(r => r.growth), name: 'GDP Growth Rate (%)', type: 'bar', marker: { color: '#2563eb' } },
-                            { x: rows.map(r => r.country), y: rows.map(r => r.hdi * 100), name: 'HDI (×100, right axis)', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' }
+                            { x: rows.map(r => r.country), y: rows.map(r => r.hdi * 100), name: 'HDI (×100, right axis)', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' },
+                            { x: rows.map(r => r.country), y: rows.map(r => r.agriShare), name: 'Agriculture Share of GDP (%, right axis)', type: 'bar', marker: { color: '#84cc16' }, yaxis: 'y2' }
                         ],
                         layout: {
                             xaxis: { title: 'Country' },
                             yaxis: { title: 'GDP Growth Rate (%)' },
-                            yaxis2: { title: 'HDI (× 100)', overlaying: 'y', side: 'right', range: [0, 100] },
+                            yaxis2: { title: 'HDI (×100) / Agriculture Share (%)', overlaying: 'y', side: 'right', range: [0, 100] },
                             barmode: 'group'
                         },
                         stats: [
