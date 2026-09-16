@@ -647,15 +647,28 @@ const SIMS = [
                 const strength = r => Math.abs(r) > 0.7 ? 'Strong' : Math.abs(r) > 0.3 ? 'Moderate' : 'Weak';
                 const direction = r => r >= 0 ? 'Positive' : 'Negative';
 
+                // A scatter plot alone leaves "strong/moderate/weak" and
+                // "positive/negative" as claims the student has to take on
+                // trust from a coefficient. The least-squares line makes the
+                // linear association Pearson's r actually measures a visible
+                // line through the same points, the same way macro-propensity
+                // already fits a line through its (Y, C) scatter.
+                const slope = dx2 === 0 ? 0 : num / dx2;
+                const intercept = ybar - slope * xbar;
+                const xMin = Math.min(...xs), xMax = Math.max(...xs);
+
                 return {
-                    traces: [{ x: xs, y: ys, mode: 'markers', name: 'Data', marker: { color: '#2563eb', size: 9 } }],
-                    layout: { xaxis: { title: 'Study Hours / Week' }, yaxis: { title: 'Test Score (%)' }, showlegend: false },
+                    traces: [
+                        { x: xs, y: ys, mode: 'markers', name: 'Data', marker: { color: '#2563eb', size: 9 } },
+                        { x: [xMin, xMax], y: [intercept + slope * xMin, intercept + slope * xMax], mode: 'lines', name: `Best-fit line (r = ${fmt(pearsonR)})`, line: { color: '#f59e0b', width: 2, dash: 'dash' } }
+                    ],
+                    layout: { xaxis: { title: 'Study Hours / Week' }, yaxis: { title: 'Test Score (%)' } },
                     stats: [
                         { label: 'n (data points)', value: n },
                         { label: "Karl Pearson's r", value: fmt(pearsonR) },
                         { label: "Spearman's Rank r", value: fmt(spearmanR) + (hasTies ? ' (ties averaged)' : '') }
                     ],
-                    metrics: { pearsonR, spearmanR, n },
+                    metrics: { pearsonR, spearmanR, n, slope, intercept },
                     interpretation: `${strength(pearsonR)} ${direction(pearsonR)} correlation (Pearson r = ${fmt(pearsonR)}). Spearman's rank r (${fmt(spearmanR)}) is close to it here because the data has few reversals in rank order — the two methods can diverge more with outliers or non-linear patterns, which is exactly why NCERT teaches both. Correlation never proves that one variable causes the other.`
                 };
             }

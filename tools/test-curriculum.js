@@ -442,6 +442,10 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
     const r = sim.dataLab.calculate(perfect);
     approx(r.metrics.pearsonR, 1, 1e-6, "Correlation: perfectly linear data gives Pearson r = 1");
     approx(r.metrics.spearmanR, 1, 1e-6, "Correlation: perfectly monotonic data gives Spearman r = 1");
+    // y = 2x exactly ⇒ the least-squares best-fit line drawn on the scatter
+    // must recover slope=2, intercept=0 exactly, not merely "close to r=1".
+    approx(r.metrics.slope, 2, 1e-9, 'Correlation: best-fit line slope matches y=2x exactly');
+    approx(r.metrics.intercept, 0, 1e-9, 'Correlation: best-fit line intercept matches y=2x exactly');
     function range8() { return Array.from({ length: 8 }, (_, i) => i); }
 })();
 
