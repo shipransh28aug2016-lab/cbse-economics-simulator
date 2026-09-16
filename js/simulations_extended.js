@@ -825,17 +825,29 @@ if (typeof SIMS !== 'undefined') {
             ],
             compute(v) {
                 const t = v.yr / 30;
+                // "Structural Transformation" and "rising formal share" are both
+                // claims about a TRAJECTORY over years, but a bar chart driven
+                // by a single "Years of Growth" slider only ever showed one
+                // year's snapshot — switching the slider replaced the bars
+                // entirely, so the actual transformation (the thing the topic
+                // is named for) was never visible as a trend, only inferable by
+                // remembering what the previous snapshot looked like. Plotting
+                // every series across the full 0–30 year range, with a vertical
+                // marker at the selected year, makes the transformation itself
+                // a visible curve.
+                const yrs = range(16).map(i => i * 2);
                 if (v.view === 'formality') {
-                    const formal = 10 + 40 * t;
-                    const informal = 100 - formal;
+                    const formalAt = yr => 10 + 40 * (yr / 30);
+                    const formal = formalAt(v.yr), informal = 100 - formal;
                     return {
-                        traces: [{
-                            x: ['Informal Sector', 'Formal Sector'],
-                            y: [informal, formal],
-                            type: 'bar',
-                            marker: { color: ['#f97316', '#3b82f6'] }
-                        }],
-                        layout: { xaxis: { title: 'Employment Category' }, yaxis: { title: 'Share of Workforce (%)', range: [0, 100] }, showlegend: false },
+                        traces: [
+                            { x: yrs, y: yrs.map(y => 100 - formalAt(y)), mode: 'lines', name: 'Informal Sector (%)', line: { color: '#f97316', width: 3 } },
+                            { x: yrs, y: yrs.map(formalAt), mode: 'lines', name: 'Formal Sector (%)', line: { color: '#3b82f6', width: 3 } },
+                            { x: [v.yr, v.yr], y: [0, 100], mode: 'lines', name: `Selected Year (+${v.yr}yrs)`, line: { color: '#6b7280', width: 1, dash: 'dot' }, showlegend: false },
+                            { x: [v.yr], y: [informal], mode: 'markers', name: 'Informal now', marker: { color: '#f97316', size: 10 }, showlegend: false },
+                            { x: [v.yr], y: [formal], mode: 'markers', name: 'Formal now', marker: { color: '#3b82f6', size: 10 }, showlegend: false }
+                        ],
+                        layout: { xaxis: { title: 'Years of Growth' }, yaxis: { title: 'Share of Workforce (%)', range: [0, 100] } },
                         formulas: ['Informal Sector: no job/social security, often self-employed or casual labour', 'Formal Sector: registered enterprises, regular wages, legal & social protection'],
                         metrics: { formal, informal, view: 'formality' },
                         readings: `<div class="reading-row"><span>Informal Sector</span><b>${fmt(informal)}%</b></div>
@@ -843,17 +855,21 @@ if (typeof SIMS !== 'undefined') {
                                    <div class="reading-row insight-row">💡 India's workforce has historically been overwhelmingly informal. A rising formal share means more workers gaining job security, social security and legal protection — this shift has been slow and uneven, which is the central concern of this topic.</div>`
                     };
                 }
-                const agri = 50 - 30 * t;
-                const services = 25 + 25 * t;
-                const industry = 100 - agri - services;
+                const agriAt = yr => 50 - 30 * (yr / 30);
+                const servicesAt = yr => 25 + 25 * (yr / 30);
+                const industryAt = yr => 100 - agriAt(yr) - servicesAt(yr);
+                const agri = agriAt(v.yr), services = servicesAt(v.yr), industry = industryAt(v.yr);
                 return {
-                    traces: [{
-                        x: ['Agriculture', 'Industry', 'Services'],
-                        y: [agri, industry, services],
-                        type: 'bar',
-                        marker: { color: ['#84cc16', '#f59e0b', '#3b82f6'] }
-                    }],
-                    layout: { xaxis: { title: 'Sector' }, yaxis: { title: 'Share of Employment (%)', range: [0, 100] }, showlegend: false },
+                    traces: [
+                        { x: yrs, y: yrs.map(agriAt), mode: 'lines', name: 'Agriculture (%)', line: { color: '#84cc16', width: 3 } },
+                        { x: yrs, y: yrs.map(industryAt), mode: 'lines', name: 'Industry (%)', line: { color: '#f59e0b', width: 3 } },
+                        { x: yrs, y: yrs.map(servicesAt), mode: 'lines', name: 'Services (%)', line: { color: '#3b82f6', width: 3 } },
+                        { x: [v.yr, v.yr], y: [0, 100], mode: 'lines', name: `Selected Year (+${v.yr}yrs)`, line: { color: '#6b7280', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [v.yr], y: [agri], mode: 'markers', marker: { color: '#84cc16', size: 10 }, showlegend: false },
+                        { x: [v.yr], y: [industry], mode: 'markers', marker: { color: '#f59e0b', size: 10 }, showlegend: false },
+                        { x: [v.yr], y: [services], mode: 'markers', marker: { color: '#3b82f6', size: 10 }, showlegend: false }
+                    ],
+                    layout: { xaxis: { title: 'Years of Growth' }, yaxis: { title: 'Share of Employment (%)', range: [0, 100] } },
                     formulas: ['Structural Transformation: labour shifts from Agriculture → Industry & Services as the economy develops'],
                     metrics: { agri, industry, services, view: 'sector' },
                     readings: `<div class="reading-row"><span>Agriculture</span><b>${fmt(agri)}%</b></div>
