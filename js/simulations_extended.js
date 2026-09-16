@@ -690,12 +690,29 @@ if (typeof SIMS !== 'undefined') {
                     const sumP1 = rows.reduce((s, r) => s + r.p1, 0);
                     const index = sumP0 > 0 ? (sumP1 / sumP0) * 100 : 100;
                     const inflation = index - 100;
+                    const categories = [...rows.map(r => r.commodity), 'Price Index'];
                     return {
                         traces: [
                             { x: rows.map(r => r.commodity), y: rows.map(r => r.p0), name: 'Base Year Price', type: 'bar', marker: { color: '#9ca3af' } },
-                            { x: rows.map(r => r.commodity), y: rows.map(r => r.p1), name: 'Current Year Price', type: 'bar', marker: { color: '#2563eb' } }
+                            { x: rows.map(r => r.commodity), y: rows.map(r => r.p1), name: 'Current Year Price', type: 'bar', marker: { color: '#2563eb' } },
+                            // The index number itself — the actual answer to "how much
+                            // costlier is the basket?" — was previously only a % in the
+                            // readings panel, disconnected from the price bars above it.
+                            // Plotting it against its own fixed Base=100 reference line
+                            // (on a secondary axis, since 100-ish index points and
+                            // rupee prices are different scales) makes "how far above/
+                            // below 100" a visible distance, not just a percentage to
+                            // read and mentally relate back to the bars. The reference
+                            // is a LINE, not a second bar in the same category, so it
+                            // can never end up hidden behind the index bar it's meant
+                            // to be compared against.
+                            { x: [categories[0], categories[categories.length - 1]], y: [100, 100], name: 'Base Year (= 100)', mode: 'lines', line: { color: '#6b7280', dash: 'dash', width: 2 }, yaxis: 'y2' },
+                            { x: ['Price Index'], y: [index], name: `Current Index (${fmt(index)})`, type: 'bar', marker: { color: inflation >= 0 ? '#dc2626' : '#16a34a' }, yaxis: 'y2' }
                         ],
-                        layout: { xaxis: { title: 'Commodity' }, yaxis: { title: 'Price (₹)' }, barmode: 'group' },
+                        layout: {
+                            xaxis: { title: 'Commodity' }, yaxis: { title: 'Price (₹)' }, barmode: 'group',
+                            yaxis2: { title: 'Price Index (Base = 100)', overlaying: 'y', side: 'right', range: [0, Math.max(200, index * 1.2)] }
+                        },
                         stats: [
                             { label: 'ΣP₀ (Base Year Total)', value: '₹' + fmt(sumP0, 0) },
                             { label: 'ΣP₁ (Current Year Total)', value: '₹' + fmt(sumP1, 0) },
