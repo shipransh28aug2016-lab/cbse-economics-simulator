@@ -487,6 +487,8 @@ if (typeof SIMS !== 'undefined') {
                     traces: [
                         { x: qs, y: qs.map(q => a - b * q), mode: 'lines', name: 'Demand for $', line: { color: '#2563eb', width: 3 } },
                         { x: qs, y: qs.map(q => c + d * q), mode: 'lines', name: 'Supply of $', line: { color: '#f59e0b', width: 3 } },
+                        { x: [Q, Q], y: [0, P], mode: 'lines', name: 'Equilibrium Q (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [0, Q], y: [P, P], mode: 'lines', name: 'Equilibrium P (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
                         { x: [Q], y: [P], mode: 'markers', name: 'Equilibrium Rate', marker: { color: '#ef4444', size: 10 } }
                     ],
                     layout: { xaxis: { title: 'Quantity of US$ (millions)', range: [0, 100] }, yaxis: { title: 'Exchange Rate (₹/$)', range: [0, 100] } },

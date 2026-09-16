@@ -35,7 +35,7 @@ this pass · — not applicable (genre doesn't need it, per item 7/12 of the dir
 | `micro-revenue-producer-equilibrium` | curve | XI-B-U6 | AR/MR/MC, MR=MC | ✅ marker | N/A | ✅ | none | — |
 | `gl-revenue-producer-eq` | graphlab | XI-B-U6 | Revenue/producer equilibrium, drag-based | ✅ (existing) | N/A | ✅ | none | — |
 | `micro-price-controls` | curve | XI-B-U7 | Ceiling/floor → shortage/surplus | 🔧 bracket + on-chart annotation (this pass) | N/A | 🔧 fixed | none remaining | — |
-| `micro-market-structures` | bar (before/after) | XI-B-U7 (enrichment) | N firms → P→MC | ✅ paired bar (current vs PC benchmark) | N/A | 🟡 | bar comparison works but doesn't show the *curve* of P falling continuously as N rises — a line trace of P(N) would show the convergence directly, current bar only shows two snapshots | medium |
+| `micro-market-structures` | curve | XI-B-U7 (enrichment) | N firms → P→MC | 🔧 continuous P(N) curve approaching MC asymptote (this pass) | N/A | 🔧 fixed | none remaining | — |
 | `macro-gdp` | custom (SVG) | XII-A-U1 | Circular flow, injections/leakages | N/A (flow diagram, not curve equilibrium) | N/A | ✅ (TLM added prior pass) | none | — |
 | `macro-multiplier` | curve | XII-A-U3 | ΔG/ΔT → ΔY via multiplier | ✅ old/new equilibrium markers + AE before/after | N/A | ✅ | none | — |
 | `macro-propensity` | table→chart | XII-A-U3 | MPC/MPS from C,Y data | ✅ fitted line + 45° line | N/A | ✅ | none | — |
@@ -46,7 +46,7 @@ this pass · — not applicable (genre doesn't need it, per item 7/12 of the dir
 | `macro-national-income-methods` | table→chart | XII-A-U1 | 3-method GDP equality | N/A (bar comparison of 3 methods) | N/A | ✅ | none | — |
 | `macro-basic-concepts` | explorer | XII-A-U1 | Stock/flow, final/intermediate | — (classificatory) | N/A | ✅ | none | — |
 | `macro-govt-budget` | bar | XII-A-U4 | Receipts vs Expenditure → deficits | 🔧 fixed this pass (see commit) | N/A | 🔧 fixed | — | — |
-| `macro-forex` | curve | XII-A-U5 | D$/S$ → exchange rate | ✅ marker, no guide lines | N/A (single equilibrium, no gap) | 🟡 | equilibrium point marked but no dotted P/Q guide lines down to axes (the price-controls pattern) — minor, lower value than the AD-AS gap fix since there's no second quantity to compare against | low-medium |
+| `macro-forex` | curve | XII-A-U5 | D$/S$ → exchange rate | 🔧 dotted P/Q guide lines added (this pass) | N/A (single equilibrium, no gap) | 🔧 fixed | none remaining | — |
 | `gl-forex-determination` | graphlab | XII-A-U5 | Exchange rate, D/S shift | ✅ (existing) | ✅ shift genre | ✅ | none | — |
 | `india-poverty` | curve | XII-B-U7 (enrichment) | Lorenz curve, headcount ratio | ✅ headcount cutoff line | N/A | ✅ | none | — |
 | `india-human-capital` | curve | XII-B-U7 | Literacy/life-expectancy trend | N/A (time series, no equilibrium) | N/A | ✅ | none | — |
@@ -66,21 +66,20 @@ this pass · — not applicable (genre doesn't need it, per item 7/12 of the dir
 
 ## What this table already changed about the work order
 
-Before this pass, `micro-consumer-equilibrium`, `micro-producer-costs` and
-`micro-price-controls` were the top three rows with a real, load-bearing visual gap
-(equilibrium/crossing/gap implied but never drawn) — all three are now fixed (🔧) and
-verified. The next two real gaps, in priority order, are:
+Six sims had a real, load-bearing visual gap when this audit was first written —
+`micro-consumer-equilibrium`, `micro-producer-costs`, `micro-price-controls`,
+`macro-govt-budget`, `macro-inflation-gap`, `micro-market-structures` — plus one minor
+one (`macro-forex`'s missing guide lines). **All seven are now fixed (🔧) and verified**
+(software + economic + visual, per `docs/economics/validation/README.md`).
 
-1. **`macro-inflation-gap`** (🟡, priority *high*) — the inflationary/deflationary GAP
-   itself (the actual named syllabus quantity — `Y* − Yfe`) is not bracketed on the
-   chart the same way the price-control shortage/surplus now is. This is the same
-   pattern as the fixed `micro-price-controls` gap, on a macro concept that is
-   currently missing it.
-2. **`micro-market-structures`** (🟡, priority *medium*) — a continuous `P(N)` curve
-   would show the "price converges to MC as N grows" relationship directly, instead of
-   two isolated bars.
+Every remaining row in this table is either already visually complete for its genre,
+or correctly has no equilibrium/movement-shift concept to visualize (explorer/
+timeline/classification content, per item 7 of the directive: don't force a graph onto
+content that's fundamentally classificatory). The one open, lower-value note left in
+the table is `micro-indifference-curve` vs `gl-consumer-equilibrium-ic` — not a gap,
+just worth re-checking on a future pass that the two remain genuinely complementary
+(slider-driven vs drag-driven) rather than drifting into redundancy.
 
-Everything else audited is either already visually complete for its genre, or
-correctly has no equilibrium/movement-shift concept to visualize (explorer/timeline/
-classification content, per item 7 of the directive: don't force a graph onto content
-that's fundamentally classificatory).
+Next time this table is revisited, re-derive the priority queue from scratch against
+the current repository state rather than assuming this list is still accurate — a
+sim touched by an unrelated change could regress a fix recorded here.
