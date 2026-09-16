@@ -301,19 +301,32 @@ if (typeof SIMS !== 'undefined') {
             ],
             compute(v) {
                 const slopes = { market: 0.05, short: 0.5, long: 2 };
+                const labels = { market: 'Market Period', short: 'Short Run', long: 'Long Run' };
+                const colors = { market: '#dc2626', short: '#f59e0b', long: '#16a34a' };
                 const d = slopes[v.period];
                 const c = 5;
                 const P = v.price;
                 const Q = Math.max(0.01, c + d * P);
                 const Es = d * (P / Q);
                 const ps = range(20).map(i => i * 5);
-                const qs = ps.map(p => c + d * p);
                 const label = Es > 1 ? 'Elastic' : Es < 1 ? 'Inelastic' : 'Unit Elastic';
+                // The whole teaching point of this concept is a COMPARISON —
+                // "the same price change gets a bigger quantity response the
+                // more time producers have" — which a single curve that gets
+                // replaced every time the selector changes can never show. All
+                // three period curves are drawn together, always, so the
+                // difference in STEEPNESS (the actual visual signature of
+                // elasticity) is something the student can see directly rather
+                // than remember from a previous selector state.
+                const traces = ['market', 'short', 'long'].map(period => {
+                    const dp = slopes[period];
+                    const isActive = period === v.period;
+                    return { x: ps.map(p => c + dp * p), y: ps, mode: 'lines', name: `${labels[period]} Supply`,
+                        line: { color: colors[period], width: isActive ? 3.5 : 1.5, dash: isActive ? 'solid' : 'dot' } };
+                });
+                traces.push({ x: [Q], y: [P], mode: 'markers', name: 'Current Point', marker: { color: colors[v.period], size: 11 } });
                 return {
-                    traces: [
-                        { x: qs, y: ps, mode: 'lines', name: 'Supply', line: { color: '#f59e0b', width: 3 } },
-                        { x: [Q], y: [P], mode: 'markers', name: 'Current Point', marker: { color: '#ef4444', size: 10 } }
-                    ],
+                    traces,
                     layout: { xaxis: { title: 'Quantity Supplied', range: [0, 200] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
                     metrics: { Es, period: v.period },
                     readings: `<div class="reading-row"><span>Quantity Supplied</span><b>${fmt(Q)}</b></div>
