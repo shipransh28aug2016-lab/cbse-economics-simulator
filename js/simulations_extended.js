@@ -310,26 +310,38 @@ if (typeof SIMS !== 'undefined') {
             ],
             compute(v) {
                 const mc = v.mc, N = v.n;
-                const P = (100 + N * mc) / (N + 1);
+                const priceAt = n => (100 + n * mc) / (n + 1);
+                const P = priceAt(N);
                 const Q = 100 - P;
                 const Pc = mc, Qc = 100 - mc; // perfect-competition benchmark (P = MC)
                 const structure = N === 1 ? 'Monopoly' : N <= 4 ? 'Oligopoly' : N <= 15 ? 'Monopolistic Competition' : 'Near-Perfect Competition';
+                // The two isolated "current vs benchmark" bars used to leave the
+                // ACTUAL convergence — price falling continuously as N rises —
+                // something the student had to imagine. Drawing P(N) as a real
+                // curve, against the MC line it approaches but never crosses,
+                // makes "N → ∞ ⇒ P → MC" a visible fact rather than an inference
+                // from two disconnected snapshots.
+                const Ns = range(30).map(i => i + 1);
+                const ps = Ns.map(priceAt);
+                const qs = Ns.map(n => 100 - priceAt(n));
                 return {
                     traces: [
-                        { x: ['Current (N=' + N + ')', 'Perfect Competition'], y: [P, Pc], name: 'Price (₹)', type: 'bar', marker: { color: '#2563eb' } },
-                        { x: ['Current (N=' + N + ')', 'Perfect Competition'], y: [Q, Qc], name: 'Quantity', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' }
+                        { x: Ns, y: ps, mode: 'lines', name: 'Price P(N)', line: { color: '#2563eb', width: 3 } },
+                        { x: Ns, y: qs, mode: 'lines', name: 'Quantity Q(N)', line: { color: '#f59e0b', width: 3 }, yaxis: 'y2' },
+                        { x: [1, 30], y: [mc, mc], mode: 'lines', name: 'Marginal Cost (perfect-competition benchmark)', line: { color: '#10b981', dash: 'dash', width: 2 } },
+                        { x: [N], y: [P], mode: 'markers', name: `Current (N=${N})`, marker: { color: '#2563eb', size: 11 } },
+                        { x: [N], y: [Q], mode: 'markers', name: `Current Quantity`, marker: { color: '#f59e0b', size: 11 }, yaxis: 'y2', showlegend: false }
                     ],
                     layout: {
-                        xaxis: { title: 'Market Structure' },
+                        xaxis: { title: 'Number of Firms (N)', range: [1, 30] },
                         yaxis: { title: 'Price (₹)', range: [0, 100] },
-                        yaxis2: { title: 'Quantity', overlaying: 'y', side: 'right', range: [0, 100] },
-                        barmode: 'group'
+                        yaxis2: { title: 'Quantity', overlaying: 'y', side: 'right', range: [0, 100] }
                     },
                     metrics: { P, Q, N, structure },
                     readings: `<div class="reading-row"><span>Market Structure (at N=${N})</span><b>${structure}</b></div>
                                <div class="reading-row"><span>Current Price / Qty</span><b>₹${fmt(P)} / ${fmt(Q)}</b></div>
                                <div class="reading-row"><span>Perfect-Competition Benchmark</span><b>₹${fmt(Pc)} / ${fmt(Qc)}</b></div>
-                               <div class="reading-row insight-row">💡 As N rises, each firm has less market power and undercutting rivals matters more — price is pushed down toward marginal cost. At N=1 (monopoly) price is highest and output lowest; the gap closes steadily as more firms enter.</div>`
+                               <div class="reading-row insight-row">💡 As N rises, each firm has less market power and undercutting rivals matters more — price is pushed down toward marginal cost. At N=1 (monopoly) price is highest and output lowest; the blue P(N) curve approaches, but never touches, the green MC line — it gets arbitrarily close only in the limit N→∞.</div>`
                 };
             },
             practice: [
