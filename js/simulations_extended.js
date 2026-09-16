@@ -638,9 +638,27 @@ if (typeof SIMS !== 'undefined') {
                 const q1 = quartile(0.25), q3 = quartile(0.75);
                 const qd = (q3 - q1) / 2;
                 const coeffRange = ((sorted[sorted.length - 1] - sorted[0]) / (sorted[sorted.length - 1] + sorted[0])) * 100;
+                // Range and QD were previously numbers in the readings panel with
+                // nothing to look at on the bar chart itself — no mean line, no
+                // quartile markers, no visible span for the Range they're computed
+                // from. Drawing all three directly on the chart makes "half the
+                // distance between Q1 and Q3" and "max minus min" visible spans,
+                // not numbers a student has to take on faith.
+                const labels = data.map((_, i) => `X${i + 1}`);
+                const minIdx = data.indexOf(sorted[0]);
                 return {
-                    traces: [{ x: data.map((_, i) => `X${i + 1}`), y: data, type: 'bar', marker: { color: '#2563eb' } }],
-                    layout: { xaxis: { title: 'Data Point' }, yaxis: { title: 'Value', range: [0, 100] }, showlegend: false },
+                    traces: [
+                        { x: labels, y: data, type: 'bar', name: 'Data', marker: { color: '#2563eb' } },
+                        { x: [labels[0], labels[labels.length - 1]], y: [mean, mean], mode: 'lines', name: `Mean (${fmt(mean)})`, line: { color: '#10b981', width: 2 } },
+                        { x: [labels[0], labels[labels.length - 1]], y: [q1, q1], mode: 'lines', name: `Q1 (${fmt(q1)})`, line: { color: '#7c3aed', width: 1.5, dash: 'dot' } },
+                        { x: [labels[0], labels[labels.length - 1]], y: [q3, q3], mode: 'lines', name: `Q3 (${fmt(q3)})`, line: { color: '#7c3aed', width: 1.5, dash: 'dot' } },
+                        // Range is a Y-axis (value) distance, not an X-axis one — the
+                        // bracket is drawn VERTICALLY, anchored just beside the
+                        // minimum bar, spanning from the minimum value up to the
+                        // maximum value, so its length is the actual span it names.
+                        { x: [labels[minIdx], labels[minIdx]], y: [sorted[0], sorted[sorted.length - 1]], mode: 'lines+markers', name: `Range (${fmt(range_)})`, line: { color: '#dc2626', width: 5 }, marker: { color: '#dc2626', size: 8, symbol: 'line-ew-open' } }
+                    ],
+                    layout: { xaxis: { title: 'Data Point' }, yaxis: { title: 'Value', range: [0, 110] } },
                     metrics: { sd, cv, range: range_, qd },
                     readings: `<div class="reading-row"><span>Range</span><b>${fmt(range_)}</b></div>
                                <div class="reading-row"><span>Coefficient of Range</span><b>${fmt(coeffRange)}%</b></div>
