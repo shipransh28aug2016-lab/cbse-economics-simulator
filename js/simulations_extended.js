@@ -403,14 +403,33 @@ if (typeof SIMS !== 'undefined') {
                 const revenueDeficit = revenueExp - revenueReceipts;
                 const fiscalDeficit = totalExp - totalReceipts;
                 const primaryDeficit = fiscalDeficit - interest;
+                const deficitTop = Math.max(totalReceipts, totalExp);
                 return {
-                    traces: [{
-                        x: ['Revenue Receipts', 'Capital Receipts', 'Revenue Exp.', 'Capital Exp.'],
-                        y: [revenueReceipts, capitalReceipts, revenueExp, capitalExp],
-                        type: 'bar',
-                        marker: { color: ['#10b981', '#34d399', '#f87171', '#f97316'] }
-                    }],
-                    layout: { xaxis: { title: 'Budget Component' }, yaxis: { title: '₹ Billion' }, showlegend: false },
+                    traces: [
+                        {
+                            x: ['Revenue Receipts', 'Capital Receipts', 'Revenue Exp.', 'Capital Exp.', 'Total Receipts', 'Total Expenditure'],
+                            y: [revenueReceipts, capitalReceipts, revenueExp, capitalExp, totalReceipts, totalExp],
+                            type: 'bar',
+                            marker: { color: ['#10b981', '#34d399', '#f87171', '#f97316', '#059669', '#dc2626'] }
+                        }
+                    ],
+                    layout: {
+                        xaxis: { title: 'Budget Component' }, yaxis: { title: '₹ Billion', range: [0, deficitTop * 1.25] }, showlegend: false,
+                        // The Fiscal Deficit is the syllabus's own named headline
+                        // number — drawing it as a visible bracket between the two
+                        // TOTAL bars (not just the four components) is the same
+                        // "make the gap a length, not an inferred subtraction"
+                        // pattern used on the Price Ceiling/Floor lab.
+                        shapes: fiscalDeficit > 0.5 ? [{
+                            type: 'line', x0: 'Total Receipts', x1: 'Total Expenditure',
+                            y0: deficitTop * 1.1, y1: deficitTop * 1.1,
+                            line: { color: '#7c3aed', width: 5 }
+                        }] : [],
+                        annotations: fiscalDeficit > 0.5 ? [{
+                            x: 'Total Receipts', xshift: 60, y: deficitTop * 1.1, yshift: 14, showarrow: false,
+                            text: `Fiscal Deficit: ₹${fmt(fiscalDeficit, 0)}B`, font: { color: '#7c3aed', size: 13 }
+                        }] : []
+                    },
                     metrics: { revenueDeficit, fiscalDeficit, primaryDeficit },
                     readings: `<div class="reading-row"><span>Total Receipts</span><b>₹${fmt(totalReceipts, 0)}B</b></div>
                                <div class="reading-row"><span>Total Expenditure</span><b>₹${fmt(totalExp, 0)}B</b></div>
@@ -507,14 +526,34 @@ if (typeof SIMS !== 'undefined') {
                     { label: 'Govt. Spending (G)', d: v.dg }, { label: 'Net Exports (X−M)', d: v.dnx }
                 ].filter(p => p.d !== 0);
                 const biggest = parts.length ? parts.reduce((m, p) => Math.abs(p.d) > Math.abs(m.d) ? p : m) : null;
+                const gapLo = Math.min(Ystar, Yfe), gapHi = Math.max(Ystar, Yfe);
+                const gapBracketY = 140;
                 return {
                     traces: [
                         { x: ys, y: ys.map(y => adA - adB * y), mode: 'lines', name: 'Aggregate Demand', line: { color: '#2563eb', width: 3 } },
                         { x: ys, y: ys.map(y => asA + asB * y), mode: 'lines', name: 'Aggregate Supply', line: { color: '#f59e0b', width: 3 } },
                         { x: [Yfe, Yfe], y: [0, 150], mode: 'lines', name: 'Full Employment (Yfe)', line: { color: '#10b981', dash: 'dash' } },
-                        { x: [Ystar], y: [Pstar], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 9 } }
+                        { x: [Ystar, Ystar], y: [0, Pstar], mode: 'lines', name: 'Equilibrium Y (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [0, Ystar], y: [Pstar, Pstar], mode: 'lines', name: 'Equilibrium P (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
+                        { x: [Ystar], y: [Pstar], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 9 } },
+                        // The inflationary/deflationary GAP is the syllabus's own
+                        // named headline quantity (Y* vs Yfe) — draw it as a visible
+                        // bracket the same way the shortage/surplus bracket now
+                        // works on the Price Ceiling/Floor lab, instead of leaving
+                        // it inferable only from two vertical lines' separation.
+                        ...(gapType !== 'No Gap' ? [{
+                            x: [gapLo, gapHi], y: [gapBracketY, gapBracketY], mode: 'lines+markers',
+                            name: gapType, line: { color: '#7c3aed', width: 7 },
+                            marker: { color: '#7c3aed', size: 9, symbol: 'line-ns-open' }
+                        }] : [])
                     ],
-                    layout: { xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Price Level', range: [0, 150] } },
+                    layout: {
+                        xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Price Level', range: [0, 150] },
+                        annotations: gapType !== 'No Gap' ? [{
+                            x: (gapLo + gapHi) / 2, y: gapBracketY, yshift: 14, showarrow: false,
+                            text: `${gapType}: ${fmt(Math.abs(Ystar - Yfe), 0)} units`, font: { color: '#7c3aed', size: 13 }
+                        }] : []
+                    },
                     metrics: { Ystar, Yfe, gapType, gapSize: Math.abs(Ystar - Yfe) },
                     readings: `<div class="reading-row"><span>Net AD Shift (ΔC+ΔI+ΔG+ΔNX)</span><b>${adShift >= 0 ? '+' : ''}${adShift}</b></div>
                                <div class="reading-row"><span>Equilibrium Income</span><b>${fmt(Ystar)}</b></div>
