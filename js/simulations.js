@@ -57,6 +57,15 @@ const SIMS = [
             const qs = range(81);
             const demand = qs.map(q => a - b * q);
             const supply = qs.map(q => c + d * q);
+            const shifted = demandShift !== 0 || supplyShift !== 0;
+            // With SEVEN determinants live at once, a teacher pointing at "watch
+            // demand shift right" has nothing to point AWAY from — only the
+            // current curve, no visible original position to compare against.
+            // Drawing the all-factors-zero baseline as a dashed ghost (same
+            // technique as gl-demand-movement-shift's glShowGhost) turns "the
+            // curve moved" into something the student can actually see, not
+            // just infer from the equilibrium numbers changing.
+            const { Q: Q0, P: P0 } = lineIntersect(100, 1.2, 20, 0.8);
 
             const factors = [
                 { label: 'Income', v: v.income, effect: v.income },
@@ -73,6 +82,11 @@ const SIMS = [
 
             return {
                 traces: [
+                    ...(shifted ? [
+                        { x: qs, y: qs.map(q => 100 - 1.2 * q), mode: 'lines', name: 'Demand (original)', line: { color: '#94a3b8', width: 2, dash: '5 4' } },
+                        { x: qs, y: qs.map(q => 20 + 0.8 * q), mode: 'lines', name: 'Supply (original)', line: { color: '#d1d5db', width: 2, dash: '5 4' } },
+                        { x: [Q0], y: [P0], mode: 'markers', name: 'Original Equilibrium', marker: { color: '#9ca3af', size: 8 } }
+                    ] : []),
                     { x: qs, y: demand, mode: 'lines', name: 'Demand', line: { color: '#2563eb', width: 3 } },
                     { x: qs, y: supply, mode: 'lines', name: 'Supply', line: { color: '#f59e0b', width: 3 } },
                     { x: [Q], y: [P], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 10 } }
