@@ -75,10 +75,32 @@ why getting the *payment* direction right — not the goods direction — is the
 
 Real flow (dashed wire, square markers: Factor Services HH→Firm, Goods & Services
 Firm→HH) always drawn opposite in direction to the money flow that pays for it (solid
-wire, round markers: Factor Payments Firm→HH, Consumption Firm←HH). Node layout adapts:
-Government always top-center when present; Banks and Foreign Sector share the bottom of
-the diagram, splitting left/right when both exist, otherwise the one present takes the
-bottom-center spot.
+wire, round markers: Factor Payments Firm→HH, Consumption Firm←HH).
+
+**Node layout — one fixed 5-point ring, never recomputed from which other sectors are
+active.** Households (9 o'clock), Firms (3 o'clock), Government (12 o'clock), Financial
+Market (roughly 8 o'clock), Foreign Sector (roughly 4 o'clock) each own a single,
+permanent `(x, y)` anchor. Toggling the sector selector or the Financial Market switch
+only ever adds or removes *that sector's own* node and flows — it must never recompute
+another node's position.
+
+**The bug this replaced:** Financial Market and Foreign Sector used to *share* two
+conditional slots — `x: has4 && hasBank ? 370 : 250` for one, the mirror-image
+expression for the other. Whichever of the two was on screen alone sat at the shared
+bottom-center spot (`x=250`); the instant the other sector was also switched on, BOTH
+nodes' x-coordinates were recomputed and the one already visible visibly slid sideways
+(bottom-center → bottom-left or bottom-right). That silent jump — a node moving purely
+because an *unrelated* sector was toggled, not because its own sector was — is exactly
+the failure mode a circular-flow diagram cannot have: a teacher mid-explanation would
+watch a node the class was already looking at relocate for no economic reason. Fixed by
+giving Financial Market a fixed `(130, 344)` and Foreign Sector a fixed `(370, 344)`
+unconditionally — the same coordinate pair that already rendered correctly in the
+"both present" case, now used whether or not the other sector is present. Verified both
+by screenshot (before/after every 2→3→4-sector and bank on/off transition) and by an
+automated regression, `testCircularFlowTopology()` in `tools/test-curriculum.js`, which
+renders every combination and asserts every node shared between two states has
+byte-identical coordinates, plus a pairwise-distance check that no two simultaneously
+visible nodes ever land within 60px of each other.
 
 ## Comparative statics
 

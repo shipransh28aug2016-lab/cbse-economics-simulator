@@ -346,15 +346,26 @@ const SIMS = [
             const nx = has4 ? v.nx : 0;
             const exportsVal = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
 
+            // CANONICAL LAYOUT — one fixed ring, never recomputed from which
+            // OTHER sectors happen to be active. Every node owns a single,
+            // permanent anchor point (a 5-point circular arrangement around
+            // the centre of the Households–Firms axis: Households at 9
+            // o'clock, Firms at 3 o'clock, Government at 12, Financial
+            // Market at roughly 8, Foreign Sector at roughly 4). Toggling a
+            // sector only ever adds/removes ITS OWN node+flows from the
+            // `nodes`/`flows` objects below — it must never change another
+            // node's (x, y), or a node already on screen visibly jumps when
+            // an unrelated sector is toggled. That silent jump (Financial
+            // Market sliding from bottom-centre to bottom-left the instant
+            // Foreign Sector was added) was the exact bug this comment is
+            // guarding against — verified by screenshot, not just by reading
+            // the code, since a "close enough" hard-coded number is exactly
+            // the kind of thing that reads fine and renders wrong.
             const hh = { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' };
             const firm = { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' };
             const gov = { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' };
-            // Foreign Sector and Banks share the bottom of the diagram —
-            // spread to bottom-left/right when both are present, otherwise
-            // whichever one exists alone takes the bottom-center spot the
-            // other would have used.
-            const foreign = { x: has4 && hasBank ? 370 : 250, y: 344, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
-            const bank = { x: has4 && hasBank ? 130 : 250, y: 344, label: 'Financial Market (Banks)', icon: '🏦', color: '#0891b2' };
+            const bank = { x: 130, y: 344, label: 'Financial Market (Banks)', icon: '🏦', color: '#0891b2' };
+            const foreign = { x: 370, y: 344, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
 
             const nodes = { hh, firm };
             if (has3) nodes.gov = gov;

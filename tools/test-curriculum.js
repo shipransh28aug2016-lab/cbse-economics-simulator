@@ -414,6 +414,77 @@ function checkExplorer(sim) {
 function findSim(id) { return SIMS.find(s => s.id === id); }
 function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (got ${a}, expected ≈${b})`); }
 
+// Regression guard for the circular-flow layout-jump bug: switching the
+// Economy Model (2/3/4-Sector) or the Financial Market toggle must never
+// move a node that was ALREADY visible before the toggle. The bug this
+// guards against was Financial Market silently sliding from bottom-centre
+// to bottom-left the instant Foreign Sector was added (each sector's node
+// must own one permanent (x, y) anchor, never a slot shared/recomputed
+// from which OTHER sectors happen to be active) — see
+// docs/economics/models/circular-flow.md.
+function extractNodePos(html, label) {
+    const re = new RegExp(`<circle cx="([\\d.]+)" cy="([\\d.]+)"[^>]*><\\/circle>\\s*<text[^>]*>[^<]*<\\/text>\\s*<text[^>]*>${label}<\\/text>`);
+    const m = html.match(re);
+    return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : null;
+}
+(function testCircularFlowTopology() {
+    const sim = findSim('macro-gdp');
+    const render = (sector, bank) => {
+        const el = stubEl();
+        sim.customRender(el, Object.assign(collectDefaults(sim), { sector, bank }));
+        return el._html;
+    };
+
+    const html2 = render('2', 'no');
+    const html3 = render('3', 'no');
+    const html3bank = render('3', 'yes');
+    const html4bank = render('4', 'yes');
+    const html4nobank = render('4', 'no');
+
+    const hh2 = extractNodePos(html2, 'Households'), firm2 = extractNodePos(html2, 'Firms');
+    const hh3 = extractNodePos(html3, 'Households'), firm3 = extractNodePos(html3, 'Firms');
+    ok(hh2 && firm2 && hh3 && firm3, 'Circular Flow: Households/Firms nodes are present in 2- and 3-sector renders');
+    approx(hh2.x, hh3.x, 0.01, 'Circular Flow: Households.x unchanged 2-Sector -> 3-Sector');
+    approx(hh2.y, hh3.y, 0.01, 'Circular Flow: Households.y unchanged 2-Sector -> 3-Sector');
+    approx(firm2.x, firm3.x, 0.01, 'Circular Flow: Firms.x unchanged 2-Sector -> 3-Sector');
+    approx(firm2.y, firm3.y, 0.01, 'Circular Flow: Firms.y unchanged 2-Sector -> 3-Sector');
+
+    // The actual bug: Financial Market's anchor must be IDENTICAL whether
+    // or not Foreign Sector also happens to be on screen.
+    const bank3 = extractNodePos(html3bank, 'Financial Market \\(Banks\\)');
+    const bank4 = extractNodePos(html4bank, 'Financial Market \\(Banks\\)');
+    ok(bank3 && bank4, 'Circular Flow: Financial Market node is present with the bank ON in both 3- and 4-sector');
+    approx(bank3.x, bank4.x, 0.01, 'Circular Flow: Financial Market.x does NOT move when Foreign Sector is added (the regression this guards)');
+    approx(bank3.y, bank4.y, 0.01, 'Circular Flow: Financial Market.y does NOT move when Foreign Sector is added');
+
+    // Symmetrically: Foreign Sector's anchor must be identical whether or
+    // not the Financial Market is also switched on.
+    const foreign4bank = extractNodePos(html4bank, 'Foreign Sector');
+    const foreign4nobank = extractNodePos(html4nobank, 'Foreign Sector');
+    ok(foreign4bank && foreign4nobank, 'Circular Flow: Foreign Sector node is present with and without the Financial Market');
+    approx(foreign4bank.x, foreign4nobank.x, 0.01, 'Circular Flow: Foreign Sector.x does NOT move when Financial Market is toggled off');
+    approx(foreign4bank.y, foreign4nobank.y, 0.01, 'Circular Flow: Foreign Sector.y does NOT move when Financial Market is toggled off');
+
+    // Government's anchor must also survive every combination untouched.
+    const gov3 = extractNodePos(html3, 'Government');
+    const gov4 = extractNodePos(html4bank, 'Government');
+    ok(gov3 && gov4, 'Circular Flow: Government node is present in 3-sector and 4-sector+bank');
+    approx(gov3.x, gov4.x, 0.01, 'Circular Flow: Government.x unchanged across every combination');
+    approx(gov3.y, gov4.y, 0.01, 'Circular Flow: Government.y unchanged across every combination');
+
+    // No two simultaneously-visible nodes may collide (a hard-coded anchor
+    // typo could silently overlap two nodes at the same point).
+    const allNodes4 = ['Households', 'Firms', 'Government', 'Financial Market \\(Banks\\)', 'Foreign Sector']
+        .map(l => ({ l, p: extractNodePos(html4bank, l) }));
+    for (let i = 0; i < allNodes4.length; i++) {
+        for (let j = i + 1; j < allNodes4.length; j++) {
+            const a = allNodes4[i].p, b = allNodes4[j].p;
+            const dist = Math.hypot(a.x - b.x, a.y - b.y);
+            ok(dist > 60, `Circular Flow: ${allNodes4[i].l} and ${allNodes4[j].l} nodes do not overlap (distance ${dist.toFixed(0)})`);
+        }
+    }
+})();
+
 (function testCentralTendency() {
     const sim = findSim('stats-central-tendency');
     const rows = [{ label: 'a', value: 2 }, { label: 'b', value: 4 }, { label: 'c', value: 4 }, { label: 'd', value: 6 }];
