@@ -710,7 +710,12 @@ const SIMS = [
             return {
                 traces: [
                     { x: ps, y: ps, mode: 'lines', name: 'Line of Equality', line: { color: '#9ca3af', dash: 'dot' } },
-                    { x: ps, y: Ls, mode: 'lines', name: 'Lorenz Curve', line: { color: '#ef4444', width: 3 } },
+                    // The Gini coefficient IS (approximately) twice the area
+                    // between these two curves — shading that area, instead of
+                    // leaving the student to relate a number in the readings
+                    // panel to two unfilled lines, makes the actual definition
+                    // of the statistic visible on the chart itself.
+                    { x: ps, y: Ls, mode: 'lines', name: 'Lorenz Curve (Area of Inequality shaded)', line: { color: '#ef4444', width: 3 }, fill: 'tonexty', fillcolor: 'rgba(239, 68, 68, 0.15)' },
                     { x: [headcount / 100, headcount / 100], y: [0, 1], mode: 'lines', name: 'Headcount Cutoff', line: { color: '#f59e0b', dash: 'dash', width: 2 } }
                 ],
                 layout: { xaxis: { title: 'Cumulative % of Population' }, yaxis: { title: 'Cumulative % of Income' } },
