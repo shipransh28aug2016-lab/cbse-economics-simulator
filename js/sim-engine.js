@@ -249,6 +249,12 @@ function tEngine(key, fallback) {
 let simEngineState = {};
 let prevSimEngineState = {};
 let suppressNextWhatChanged = true;
+// The previous render's MODEL OUTPUT (compute()'s traces + metrics), not
+// just its inputs. Retaining it is what lets js/transition-layer.js name
+// the effect a change caused, and draw where a curve was a moment ago —
+// see that file's header for why this one object closes the cause→effect
+// loop for every simulator-mode sim at once.
+let prevSimResult = null;
 
 function clamp(v, min, max) {
     return Math.min(max, Math.max(min, v));
@@ -283,6 +289,16 @@ function displayValue(sim, ctl, raw) {
 // returns a short "🔄 What changed" line naming exactly the field(s) the
 // student just touched. Returns '' when nothing differs (or on the very
 // first render of a simulation, where "changed" has no meaning yet).
+// The ids of the controls the student just moved. js/transition-layer.js
+// uses these to keep the effect line free of metrics that merely echo
+// the control that caused them.
+function changedControlIds(sim, prev, next) {
+    if (!sim || !sim.controls) return [];
+    return sim.controls
+        .filter(c => prev[c.id] !== undefined && next[c.id] !== undefined && String(prev[c.id]) !== String(next[c.id]))
+        .map(c => c.id);
+}
+
 function describeWhatChanged(sim, prev, next) {
     if (!sim || !sim.controls || !sim.controls.length) return '';
     const changes = [];
@@ -731,7 +747,8 @@ function renderSimChart(sim) {
 
     // Snapshot the diff line BEFORE recording this render's state as
     // "previous" — it names exactly what the student just moved.
-    const whatChangedHTML = suppressNextWhatChanged ? '' : describeWhatChanged(sim, prevSimEngineState, simEngineState);
+    const suppressedThisRender = suppressNextWhatChanged;
+    const whatChangedHTML = suppressedThisRender ? '' : describeWhatChanged(sim, prevSimEngineState, simEngineState);
     suppressNextWhatChanged = false;
 
     let result;
@@ -755,8 +772,18 @@ function renderSimChart(sim) {
         // bar chart) isn't covered by the shared defaults above, but its
         // title still needs the same bold-legible treatment.
         if (layout.yaxis2) layout.yaxis2 = styledAxisTitle(layout.yaxis2);
+        // Ghosts are drawn FIRST so the live curves sit on top of them,
+        // and only on a real transition (never the first render of a sim,
+        // and never a repaint with unchanged controls such as a language
+        // toggle). A sim that already draws its own before/after geometry
+        // opts out with `autoGhost: false` rather than stacking two
+        // different "previous" references on one chart.
+        const isTransition = !suppressedThisRender && prevSimResult && whatChangedHTML;
+        const ghosts = (isTransition && sim.autoGhost !== false && typeof buildGhostTraces === 'function')
+            ? buildGhostTraces(prevSimResult.traces, result.traces || [])
+            : [];
         if (typeof Plotly !== 'undefined') {
-            Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
+            Plotly.react(overlay, ghosts.concat(result.traces || []), layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
         if (sim.predict) checkPredictReveal(sim, result);
     } else {
@@ -769,8 +796,17 @@ function renderSimChart(sim) {
     void overlay.offsetWidth; // force reflow to restart the animation
     overlay.classList.add('chart-fresh');
 
+    // The effect half of the causal chain. `whatChangedHTML` names what the
+    // student moved; this names what the MODEL did about it — the two
+    // together are the cause→effect statement the app could not make while
+    // the previous result was being discarded.
+    const effectsHTML = (!suppressedThisRender && whatChangedHTML && prevSimResult && typeof diffMetrics === 'function')
+        ? describeEffects(sim, diffMetrics(sim, prevSimResult.metrics, result.metrics, 3,
+            changedControlIds(sim, prevSimEngineState, simEngineState)))
+        : '';
+
     if (readingsBody) {
-        readingsBody.innerHTML = whatChangedHTML + translateReadings(sim, result.readings || '');
+        readingsBody.innerHTML = whatChangedHTML + effectsHTML + translateReadings(sim, result.readings || '');
         // Restart the highlight animation on every recompute so students
         // notice the readings actually changed.
         readingsBody.classList.remove('pulse');
@@ -792,6 +828,10 @@ function renderSimChart(sim) {
 
     refreshChallenge(sim, result.metrics);
     prevSimEngineState = Object.assign({}, simEngineState);
+    // Retain the model's own output, not just the inputs that produced it.
+    // Traces are kept by reference: compute() rebuilds them fresh on every
+    // call, so the retained arrays are never mutated behind our back.
+    prevSimResult = { traces: (result.traces || []).slice(), metrics: Object.assign({}, result.metrics) };
 }
 
 function renderSim(sim) {
@@ -856,6 +896,7 @@ function renderSim(sim) {
 
     simEngineState = {};
     prevSimEngineState = {};
+    prevSimResult = null;
     suppressNextWhatChanged = true;
     renderPractice(sim);
     renderChallengeShell(sim);

@@ -163,6 +163,45 @@ Three points that are load-bearing rather than stylistic:
    mean — every other lab must say what *its* two groups of variables really are, or the
    headings become confidently wrong.
 
+## The transition layer (`js/transition-layer.js`) — cause → effect
+
+`renderSimChart()` used to retain only the previous **control** state and discard the
+model's own output after one render. So the app could name what the student moved and
+never what the model did about it — cause without effect — and every before/after
+visual in the app was a per-sim hand re-derivation of a previous state the engine
+already had and dropped.
+
+The engine now also retains `prevSimResult` (the previous `compute()`'s traces +
+metrics). From that one retained object, two shared capabilities fall out with **no
+per-sim code**:
+
+- **The effect line** (`diffMetrics` → `describeEffects`) — the `⚡ Resulting effect`
+  row under `🔄 What changed`. Reports only numeric metrics that actually moved, ranked
+  by relative size, capped at 3. Metrics that merely echo a control the student just
+  moved are suppressed (reporting "Consumption 90 → 130" as the *result* of moving the
+  Consumption slider is circular) — but a metric the student did *not* touch stays in
+  even if some other control shares its name, because a model forcing wages to follow
+  consumption (the `Y = C` identity) is a real effect and one of the more interesting
+  ones. Labels come from `sim.metricLabels`, then a shared glossary of standard
+  economics abbreviations, then camelCase humanisation.
+- **Auto-ghosting** (`buildGhostTraces`) — the previous positions of **only the curves
+  that actually moved**, drawn dimmed beneath the live ones. This is the
+  movement-vs-shift distinction generalised to every simulator-mode sim, derived from
+  the model rather than authored: raising Fixed Cost ghosts AC and leaves MC alone
+  (fixed cost cannot move marginal cost); raising autonomous consumption ghosts
+  Aggregate Demand and leaves Aggregate Supply alone. Bars, markers and short traces
+  are never ghosted. A sim that already draws its own before/after geometry opts out
+  with `autoGhost: false` (`micro-supply-demand`, `macro-multiplier`) rather than
+  stacking two different "previous" references on one chart.
+
+The rule this layer must keep: **it contains no economic logic of its own.** A ghost
+curve's coordinates ARE the previous `compute()`'s coordinates; an effect's numbers ARE
+the model's metrics. It decides what is worth *showing*, never what is *true*. Direction
+arrows are literal numeric direction (Ed −0.47 → −1.78 shows ▼, the number falling) and
+deliberately do not editorialise ("more elastic") — that would be the layer inventing
+economics. Covered by `testTransitionLayer*` in `tools/test-curriculum.js`, including
+the AD-AS case asserted against the real model.
+
 ## PREDICT, the Teaching & Learning Toolkit, and misconceptions
 
 Added on top of the Graph Lab / Quiz systems above, currently live on the 5

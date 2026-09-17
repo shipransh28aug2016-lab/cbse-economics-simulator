@@ -1,5 +1,17 @@
 # Visual Teaching Audit — all 44 sims
 
+> **Architectural note (4th pass, supersedes the per-sim framing below).**
+> The first three passes fixed 18 real gaps one sim at a time — each defensible, but
+> all of them treating a missing *annotation* as the unit of work. The structural
+> question went unasked until an architecture audit: `renderSimChart()` retained the
+> previous **inputs** and discarded the model's **output**, so the app could state a
+> cause and never an effect, and every before/after visual had to be hand-derived per
+> sim. Retaining one object (`prevSimResult`) turned that into a shared capability —
+> see `js/transition-layer.js` and CLAUDE.md's "transition layer" section. The rows
+> below still record per-sim visual state, but the **default** for cause→effect and
+> for before/after geometry is now the shared layer, not per-sim authoring. Prefer
+> extending that layer over adding another one-off annotation.
+
 This is the machine-usable audit the L99/"Teach-by-Visualization" directive asked for.
 It is a **living tracking table**, not a one-time report — update a row's Status/Gap
 whenever you touch that sim's visual layer, and re-derive Priority from

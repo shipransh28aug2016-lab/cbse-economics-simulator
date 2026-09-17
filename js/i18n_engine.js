@@ -90,6 +90,7 @@ if (typeof I18N_HI === 'undefined') {
         // and not simple textContent in static markup (so can't use
         // index.html's data-i18n mechanism either).
         'engine.whatChanged': 'बदलाव:',
+        'engine.resultingEffect': 'परिणामी प्रभाव:',
         'challenge.notYet': 'अभी नहीं — मान समायोजित करते रहें।',
         'challenge.workItOut': 'इसे हल करें, फिर अपने तर्क की जाँच रीडिंग्स पैनल से करें।',
         'challenge.solved': '✅ चुनौती पूरी — बढ़िया काम!',

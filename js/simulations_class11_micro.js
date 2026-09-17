@@ -145,6 +145,7 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'micro-indifference-curve',
+            metricLabels: { X: 'Good X at Equilibrium', Y: 'Good Y at Equilibrium', priceRatio: 'Price Ratio (Px/Py)' },
             module: 'micro',
             title: "Consumer Equilibrium: Indifference Curve Analysis",
             desc: 'Budget line meets the highest attainable indifference curve — drag Income and Prices and watch the tangency point move.',
@@ -209,6 +210,7 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'micro-revenue-producer-equilibrium',
+            metricLabels: { Qstar: 'Equilibrium Output (Q*)', profit: 'Profit', MRatQstar: 'MR at Q*', MCatQstar: 'MC at Q*' },
             module: 'micro',
             title: 'Revenue Curves (TR/AR/MR) & Producer Equilibrium',
             desc: 'See how Total/Average/Marginal Revenue relate, and find the profit-maximising output where MR = MC.',

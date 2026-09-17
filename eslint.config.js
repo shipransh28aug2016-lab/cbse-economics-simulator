@@ -15,7 +15,10 @@ const appGlobals = {
     styledAxisTitle: 'readonly', clamp: 'readonly', buildControls: 'readonly',
     applyControlVisibility: 'readonly', renderSimChart: 'readonly', renderSim: 'readonly',
     refreshChallenge: 'readonly', renderPractice: 'readonly', renderChallengeShell: 'readonly',
-    describeWhatChanged: 'readonly',
+    describeWhatChanged: 'readonly', changedControlIds: 'readonly',
+    // js/transition-layer.js — the shared cause→effect layer, loaded
+    // before sim-engine.js so the engine can call into it.
+    diffMetrics: 'readonly', describeEffects: 'readonly', buildGhostTraces: 'readonly',
     renderDataLab: 'readonly', renderExplorer: 'readonly',
     // js/graph-lab-engine.js (mode: 'graphlab') + the Graph Lab sim files.
     renderGraphLab: 'readonly', glShowGhost: 'writable', glState: 'writable',

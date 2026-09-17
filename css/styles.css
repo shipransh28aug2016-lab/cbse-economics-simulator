@@ -1385,6 +1385,25 @@ header, .sim-topbar {
 }
 .reading-row.whatchanged-row span { color: var(--text2); font-weight: 700; }
 
+/* The effect half of the cause→effect pair (js/transition-layer.js).
+   Deliberately styled as a sibling of, not a variant of, the cause row:
+   the student should read them as two steps of one chain, with the cause
+   row's indigo giving way to the effect row's amber. */
+.reading-row.causal-row {
+  display: block;
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  color: var(--text1);
+  font-size: 12px;
+  border-top: none !important;
+}
+.reading-row.causal-row > span { color: var(--text2); font-weight: 700; }
+.causal-effect { white-space: nowrap; }
+.causal-effect.effect-up { color: #047857; }
+.causal-effect.effect-down { color: #b91c1c; }
+
 /* ── Guided Practice + Challenge sidebar cards ───────────────────── */
 .practice-item {
   border: 1px solid var(--border2);

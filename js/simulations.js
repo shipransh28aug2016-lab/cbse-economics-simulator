@@ -25,6 +25,11 @@ const _corrNoise = range(30).map(() => _corrRandN());
 const SIMS = [
     {
         id: 'micro-supply-demand',
+        // Draws its own baseline ("original") curves, which are
+        // all-determinants-zero relative rather than previous-step
+        // relative. Two different "before" references on one chart would
+        // read as clutter, so the shared auto-ghost stands down here.
+        autoGhost: false,
         module: 'micro',
         title: 'Supply & Demand: Every Determinant',
         desc: 'Every named CBSE determinant of demand and supply as its own live control, changed together to see equilibrium move — not just one abstract "shift". For the exam-precise movement-vs-shift distinction on demand alone, see "Demand: Movement vs Shift (Drag the Curve)" instead.',
@@ -260,6 +265,7 @@ const SIMS = [
     },
     {
         id: 'macro-gdp',
+        metricLabels: { gdpExp: 'GDP (Expenditure Method)', totalInjections: 'Total Injections', totalLeakages: 'Total Leakages', wages: 'Factor Payments', consumption: 'Consumption Expenditure', investment: 'Investment (I)', saving: 'Savings (S)', taxes: 'Taxes (T)', exportsVal: 'Exports (X)', imports: 'Imports (M)' },
         module: 'macro',
         title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector + Financial Market)',
         desc: 'Choose 2-Sector, 3-Sector or 4-Sector, and optionally switch on the Financial Market (Banks) — the diagram draws ONLY the sectors and flows that exist in your choice, correctly split into injections and leakages.',
@@ -558,6 +564,12 @@ const SIMS = [
     },
     {
         id: 'macro-multiplier',
+        metricLabels: { k: 'Spending Multiplier (k)', kt: 'Tax Multiplier (kt)', Y1: 'New Equilibrium Income', dySpending: 'ΔY from Spending', dyTax: 'ΔY from Tax' },
+        // Already plots AE-before and AE-after as two explicit, named
+        // curves — that IS its before/after, authored as economics rather
+        // than as a transition artefact. Adding a third dotted "previous"
+        // line on top would confuse which comparison is the lesson.
+        autoGhost: false,
         module: 'macro',
         title: 'The Multiplier Effect: Investment, Government Spending & Tax',
         desc: 'The named Investment Multiplier, plus Government Spending and Tax multipliers as extra contrast.',

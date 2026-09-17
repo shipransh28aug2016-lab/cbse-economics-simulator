@@ -117,6 +117,7 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'micro-producer-costs',
+            metricLabels: { qStar: 'Minimum-AC Output (Q*)', acStar: 'AC at its Minimum' },
             module: 'micro',
             title: 'Producer Behaviour: Product & Cost Curves',
             desc: 'Explore Total/Average/Marginal Product (Returns to a Factor) and Average/Marginal Cost curves.',
@@ -228,6 +229,7 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'micro-price-controls',
+            metricLabels: { gap: 'Shortage / Surplus' },
             module: 'micro',
             title: 'Price Ceiling & Price Floor',
             desc: 'See how government price controls create shortages or surpluses.',
@@ -294,6 +296,7 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'micro-market-structures',
+            metricLabels: { P: 'Market Price', Q: 'Market Quantity', N: 'Number of Firms' },
             module: 'micro',
             title: 'Forms of Market: Monopoly → Oligopoly → Perfect Competition',
             desc: 'Slide the Number of Firms to move continuously across every named market structure.',
@@ -478,6 +481,7 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'macro-forex',
+            metricLabels: { P: 'Exchange Rate (₹/$)', Q: 'Quantity of US$ Traded' },
             module: 'macro',
             title: 'Balance of Payments & Exchange Rate',
             desc: 'Current Account (Exports/Imports) and Capital Account (flows) each drive the exchange rate separately.',

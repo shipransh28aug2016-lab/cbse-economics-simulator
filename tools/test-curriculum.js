@@ -38,6 +38,7 @@ const ROOT = path.join(__dirname, '..');
 const FILES = [
     'js/curriculum-data.js',
     'js/panel-collapse.js',
+    'js/transition-layer.js',
     'js/sim-engine.js',
     'js/datalab-engine.js',
     'js/explorer-engine.js',
@@ -126,6 +127,8 @@ const QUIZ_BANK = vm.runInContext('QUIZ_BANK', context);
 const SIM_I18N_HI = vm.runInContext('SIM_I18N_HI', context);
 const READINGS_I18N_HI = vm.runInContext('READINGS_I18N_HI', context);
 const translateReadings = context.translateReadings;
+const diffMetrics = vm.runInContext('diffMetrics', context);
+const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -483,6 +486,76 @@ function extractNodePos(html, label) {
             ok(dist > 60, `Circular Flow: ${allNodes4[i].l} and ${allNodes4[j].l} nodes do not overlap (distance ${dist.toFixed(0)})`);
         }
     }
+})();
+
+// ── Shared transition layer (js/transition-layer.js) ─────────────
+// The cause→effect half of the learning loop. These assert the layer's
+// two load-bearing properties: it names only effects that are real
+// economic quantities that really moved, and it ghosts only the curves
+// that actually moved — the second is the movement-vs-shift distinction
+// generalised, so it is tested against a real model, not a fixture.
+(function testTransitionLayerMetricDiff() {
+    const sim = { id: 'fixture' };
+    const changes = diffMetrics(sim,
+        { price: 10, qty: 100, mode: 'a', flag: true, untouched: 5 },
+        { price: 11, qty: 250, mode: 'b', flag: false, untouched: 5 }, 3);
+    const keys = changes.map(c => c.key);
+    ok(keys.indexOf('mode') === -1, 'Transition layer: string metrics (mode flags) are never reported as effects');
+    ok(keys.indexOf('flag') === -1, 'Transition layer: boolean metrics are never reported as effects');
+    ok(keys.indexOf('untouched') === -1, 'Transition layer: unchanged metrics are not reported as effects');
+    ok(keys.indexOf('price') !== -1 && keys.indexOf('qty') !== -1, 'Transition layer: numeric metrics that moved ARE reported');
+    ok(keys[0] === 'qty', 'Transition layer: effects are ranked by relative move, so the biggest mover is named first');
+    ok(changes.find(c => c.key === 'price').rose === true, 'Transition layer: direction is recorded correctly for a rise');
+
+    const capped = diffMetrics(sim, { a: 1, b: 1, c: 1, d: 1 }, { a: 2, b: 3, c: 4, d: 5 }, 2);
+    ok(capped.length === 2, 'Transition layer: effect list is capped so one change cannot print a wall of numbers');
+
+    // A move far below display precision would show as an identical
+    // before → after pair in the readings, which reads as a bug.
+    const noise = diffMetrics(sim, { x: 1000 }, { x: 1000.0001 }, 3);
+    ok(noise.length === 0, 'Transition layer: sub-display-precision noise is not reported as an effect');
+})();
+
+(function testTransitionLayerGhostGeometry() {
+    const line = (name, ys) => ({ name, mode: 'lines', x: ys.map((_, i) => i), y: ys });
+    const prev = [line('Moved', [1, 2, 3, 4]), line('Stayed', [9, 9, 9, 9]), { name: 'Bars', type: 'bar', y: [1, 2, 3, 4] }];
+    const next = [line('Moved', [5, 6, 7, 8]), line('Stayed', [9, 9, 9, 9]), { name: 'Bars', type: 'bar', y: [5, 6, 7, 8] }];
+    const ghosts = buildGhostTraces(prev, next);
+    ok(ghosts.length === 1, 'Transition layer: only the curve that MOVED gets a ghost (movement-vs-shift, generalised)');
+    ok(ghosts[0].name.indexOf('Moved') === 0, 'Transition layer: the ghost belongs to the curve that moved');
+    ok(JSON.stringify(ghosts[0].y) === JSON.stringify([1, 2, 3, 4]), 'Transition layer: ghost geometry IS the previous model output, not a re-derivation');
+    ok(ghosts[0].showlegend === false, 'Transition layer: ghosts stay out of the legend so they read as subordinate');
+
+    const axisPrev = [Object.assign(line('Secondary', [1, 2, 3, 4]), { yaxis: 'y2' })];
+    const axisNext = [Object.assign(line('Secondary', [5, 6, 7, 8]), { yaxis: 'y2' })];
+    ok(buildGhostTraces(axisPrev, axisNext)[0].yaxis === 'y2', 'Transition layer: a secondary-axis curve ghosts onto its own axis, not the primary one');
+})();
+
+(function testTransitionLayerOnRealModel() {
+    // Raising the price control from equilibrium (60) to a floor (80)
+    // must be reported as a real, correctly-directed economic effect.
+    const pc = findSim('micro-price-controls');
+    const before = pc.compute({ ctrl: 60, demandShift: 0 });
+    const after = pc.compute({ ctrl: 80, demandShift: 0 });
+    const effects = diffMetrics(pc, before.metrics, after.metrics, 3);
+    const gapEffect = effects.find(e => e.key === 'gap');
+    ok(!!gapEffect, 'Transition layer: a price floor is reported as moving the shortage/surplus metric');
+    ok(gapEffect.rose === true, 'Transition layer: imposing a floor above equilibrium is reported as the surplus RISING');
+    ok(gapEffect.label === 'Shortage / Surplus', "Transition layer: the sim's own metricLabels name the effect in economics terms");
+
+    // The AD-AS lab is the sharpest test of the ghost rule: raising
+    // autonomous consumption shifts AGGREGATE DEMAND and must leave
+    // AGGREGATE SUPPLY exactly where it was. The layer has to work that
+    // out from the model's output alone, with no per-sim hint.
+    const adas = findSim('macro-inflation-gap');
+    const base = { dc: 0, di: 0, dg: 0, dnx: 0 };
+    const adasGhosts = buildGhostTraces(
+        adas.compute(base).traces,
+        adas.compute(Object.assign({}, base, { dc: 10 })).traces
+    );
+    const ghostNames = adasGhosts.map(g => g.name);
+    ok(ghostNames.some(n => n.indexOf('Aggregate Demand') === 0), 'Transition layer: raising autonomous consumption ghosts the Aggregate Demand curve (it moved)');
+    ok(!ghostNames.some(n => n.indexOf('Aggregate Supply') === 0), 'Transition layer: Aggregate Supply gets NO ghost, because a demand-side change leaves it in place');
 })();
 
 (function testCentralTendency() {
