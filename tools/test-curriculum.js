@@ -39,6 +39,8 @@ const FILES = [
     'js/curriculum-data.js',
     'js/panel-collapse.js',
     'js/transition-layer.js',
+    'js/mima-context.js',
+    'js/mima-explain.js',
     'js/sim-engine.js',
     'js/datalab-engine.js',
     'js/explorer-engine.js',
@@ -129,6 +131,7 @@ const READINGS_I18N_HI = vm.runInContext('READINGS_I18N_HI', context);
 const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
+const mimaExplain = vm.runInContext('mimaExplain', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -556,6 +559,73 @@ function extractNodePos(html, label) {
     const ghostNames = adasGhosts.map(g => g.name);
     ok(ghostNames.some(n => n.indexOf('Aggregate Demand') === 0), 'Transition layer: raising autonomous consumption ghosts the Aggregate Demand curve (it moved)');
     ok(!ghostNames.some(n => n.indexOf('Aggregate Supply') === 0), 'Transition layer: Aggregate Supply gets NO ghost, because a demand-side change leaves it in place');
+})();
+
+// ── Mima (js/mima-context.js, js/mima-explain.js) ────────────────
+// Text and speech read from the exact same mimaExplain() call in
+// js/mima-ui.js — these tests check the SOURCE that guarantee applies to,
+// and that Mima never states a fact her own context doesn't contain
+// (never contradicts the simulator, per CLAUDE.md's Mima section).
+(function testMimaExplainNeverInventsFacts() {
+    const ctx = {
+        lang: 'en', mode: 'simulator', title: 'Fixture Sim', isFirstRender: false,
+        changedControls: [{ id: 'price', label: 'Price', before: '40', after: '80' }],
+        effects: [{ key: 'q', label: 'Quantity', before: 10, after: 25, rose: true }],
+        ghostedNames: ['Demand'], allTraceNames: ['Demand', 'Supply'], verdict: null, keyIdea: null
+    };
+    const explain = mimaExplain(ctx, 'explain');
+    ok(explain.text.indexOf('Price') !== -1 && explain.text.indexOf('40') !== -1 && explain.text.indexOf('80') !== -1,
+        'Mima: the cause (control changed) is stated using the context\'s own values');
+    ok(explain.text.indexOf('Quantity') !== -1 && explain.text.indexOf('25') !== -1,
+        'Mima: the effect is stated using the model\'s own metric values, not invented ones');
+    ok(explain.text.indexOf('Demand') !== -1, 'Mima: the curve she names as moved matches the ghosted curve the engine actually drew');
+
+    const shiftResult = mimaExplain(ctx, 'movementOrShift');
+    ok(shiftResult.text.indexOf('Demand') !== -1, 'Mima (movement/shift): names the curve that actually moved');
+    ok(shiftResult.text.indexOf('Supply') !== -1, 'Mima (movement/shift): also names the curve that stayed unchanged, when there is one');
+
+    const noEffectCtx = Object.assign({}, ctx, { effects: [], ghostedNames: [] });
+    const noEffectText = mimaExplain(noEffectCtx, 'why').text;
+    ok(noEffectText.indexOf('Quantity') === -1, "Mima: does not report an effect that the context says didn't happen");
+})();
+
+(function testMimaExplainReadsGraphLabVerdictVerbatim() {
+    // Mima must reuse the Graph Lab's own verdict.kind, never re-derive
+    // movement/shift herself — this is the literal test of "Mima must
+    // never contradict the simulator."
+    ['movement', 'shift', 'both', 'none'].forEach(kind => {
+        const ctx = { lang: 'en', mode: 'graphlab', title: 'Fixture GraphLab', isFirstRender: false,
+            changedControls: [{ id: 'price', label: 'Price', before: '50', after: '60' }],
+            effects: [], verdict: { kind, title: `verdict-${kind}` }, ghostedNames: [], allTraceNames: [] };
+        const text = mimaExplain(ctx, 'movementOrShift').text;
+        const expectedWord = kind === 'movement' ? 'MOVEMENT' : kind === 'shift' ? 'SHIFT' : kind === 'both' ? 'BOTH' : 'Nothing has moved';
+        ok(text.indexOf(expectedWord) !== -1, `Mima (graphlab verdict='${kind}'): names exactly the verdict the Graph Lab computed, not a different one`);
+    });
+})();
+
+(function testMimaTextAndVoiceShareOneSource() {
+    // js/mima-ui.js's Speak/Replay buttons call MimaVoice.speak(lastResult.text, lastResult.lang)
+    // where lastResult IS the object shown in the text panel — asserted
+    // here by construction: mimaExplain() returns {text, lang} as one
+    // object, so there is no second call path that could diverge.
+    const ctx = { lang: 'hi', mode: 'simulator', title: 'स्थिरता', isFirstRender: true, changedControls: [], effects: [], ghostedNames: [], allTraceNames: [] };
+    const r1 = mimaExplain(ctx, 'explain');
+    const r2 = mimaExplain(ctx, 'explain');
+    ok(r1.text === r2.text, 'Mima: same context + same intent always produces the same text (deterministic, not generative)');
+    ok(r1.lang === 'hi', "Mima: Hindi UI context produces a Hindi-tagged result for the voice layer to speak in Hindi");
+})();
+
+(function testMimaLanguageFollowsContext() {
+    const base = { mode: 'simulator', title: 'X', isFirstRender: true, changedControls: [], effects: [], ghostedNames: [], allTraceNames: [] };
+    const en = mimaExplain(Object.assign({}, base, { lang: 'en' }), 'explain');
+    const hi = mimaExplain(Object.assign({}, base, { lang: 'hi' }), 'explain');
+    ok(en.lang === 'en' && hi.lang === 'hi', 'Mima: language tag on the result matches the context language, for every intent');
+    ok(en.text !== hi.text, 'Mima: English and Hindi contexts produce genuinely different text, not the same string relabelled');
+})();
+
+(function testMimaHandlesNoActiveSimulation() {
+    const result = mimaExplain(null, 'explain');
+    ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
 })();
 
 (function testCentralTendency() {

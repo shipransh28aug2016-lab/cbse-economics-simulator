@@ -202,6 +202,61 @@ deliberately do not editorialise ("more elastic") — that would be the layer in
 economics. Covered by `testTransitionLayer*` in `tools/test-curriculum.js`, including
 the AD-AS case asserted against the real model.
 
+## MIMA — the voice-and-text teaching assistant
+
+```
+Economics Model → Simulation State → Visual State ─┬→ Visualizer (Plotly/SVG)
+                                                     └→ Mima → Explanation → Text / Voice
+```
+
+Four files, each with exactly one job, none containing economic logic of its own:
+
+- **`js/mima-context.js`** — `mimaSetSnapshot(sim, mode, data)` / `getMimaContext()`.
+  Written once per render by `sim-engine.js`'s `renderSimChart()` (mode `'simulator'`/
+  `'customRender'`) and `graph-lab-engine.js`'s `glRender()` (mode `'graphlab'`), from
+  data those functions **already computed** for the readings panel
+  (`structuredWhatChanged`, `diffMetrics`, `buildGhostTraces`, or — for Graph Labs — the
+  lab's own `model()` `verdict`). Mima never recomputes an economic fact; she reads the
+  same structured data the UI already rendered.
+- **`js/mima-explain.js`** — `mimaExplain(context, intent) → {text, lang}`. Pure,
+  deterministic template filling (no AI backend exists in this project — confirmed by
+  inspection before building this — so this is the explanation layer itself, not a
+  placeholder for one). `intent` is one of `'explain' | 'whatChanged' | 'why' |
+  'movementOrShift' | 'graph'`. For Graph Labs, `movementOrShift` reads `verdict.kind`
+  **verbatim** — it is not re-derived. For simulator/customRender sims, it reads which
+  curve names got a ghost from `buildGhostTraces` (a moved curve = shift of a curve or
+  a shifted metric; an unmoved curve stays named as unchanged) — the same
+  movement-vs-shift generalisation the transition layer already made, now spoken.
+- **`js/mima-voice.js`** — `MimaVoice.speak(text, lang)` / `.stop()` / `.isSpeaking()` /
+  `.isSupported()`. Wraps the browser's native `speechSynthesis` (this project has no
+  server, so there is no existing paid TTS to reuse). Picks an `hi-IN`/`en-IN` voice
+  when the browser offers one, never fabricates an accent. The four-function interface
+  is the entire contract a future paid provider would need to satisfy to replace this
+  file without touching `mima-ui.js`.
+- **`js/mima-ui.js`** — the draggable floating widget (bubble + panel), built once by
+  `mimaInitUI()` on `DOMContentLoaded`. Every quick-action button calls
+  `mimaExplain(getMimaContext(), intent)` and stores the result as `lastResult`; the
+  Speak/Replay buttons pass that **same** `{text, lang}` object to `MimaVoice.speak()` —
+  there is no second, independently-authored path from state to speech. Position
+  persists per session via `sessionStorage`; voice is **never** triggered except from a
+  click inside this file.
+
+**Non-negotiable rule, enforced by construction, not just by convention:** Mima cannot
+contradict the simulator, because she has no independent economic model to contradict
+it *with* — every fact in her explanation is read from `mimaSnapshot`, which is written
+by the same code that renders the readings panel and verdict banner. If a bug ever makes
+Mima say something the visible UI doesn't also show, the bug is in whichever engine
+*wrote* the snapshot (`renderSimChart()` or `glRender()`), never in
+`mima-explain.js`/`mima-ui.js`.
+
+**Scope of this pass:** wired through `simulator`, `customRender`, and `graphlab`
+modes — covering the multi-determinant Demand & Supply lab, both movement/shift Graph
+Labs, the Circular Flow diagram, and every Plotly `compute()` sim. `datalab` and
+`explorer` modes do not yet write a Mima snapshot (open backlog item, not a design
+decision to leave it that way — the same `structuredWhatChanged`-shaped data exists in
+those engines too and would wire in the same way). Covered by
+`testMima*` in `tools/test-curriculum.js`.
+
 ## PREDICT, the Teaching & Learning Toolkit, and misconceptions
 
 Added on top of the Graph Lab / Quiz systems above, currently live on the 5
