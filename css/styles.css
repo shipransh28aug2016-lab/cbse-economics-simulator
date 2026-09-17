@@ -1385,6 +1385,25 @@ header, .sim-topbar {
 }
 .reading-row.whatchanged-row span { color: var(--text2); font-weight: 700; }
 
+/* The effect half of the cause→effect pair (js/transition-layer.js).
+   Deliberately styled as a sibling of, not a variant of, the cause row:
+   the student should read them as two steps of one chain, with the cause
+   row's indigo giving way to the effect row's amber. */
+.reading-row.causal-row {
+  display: block;
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  color: var(--text1);
+  font-size: 12px;
+  border-top: none !important;
+}
+.reading-row.causal-row > span { color: var(--text2); font-weight: 700; }
+.causal-effect { white-space: nowrap; }
+.causal-effect.effect-up { color: #047857; }
+.causal-effect.effect-down { color: #b91c1c; }
+
 /* ── Guided Practice + Challenge sidebar cards ───────────────────── */
 .practice-item {
   border: 1px solid var(--border2);
@@ -1611,12 +1630,21 @@ header, .sim-topbar {
 .explorer-dot.active { background: var(--india-grad); }
 
 /* ── Concept Explorer: classification cards ──────────────────────── */
-/* height:100% + overflow-y:auto (matching the timeline/scenario cards
-   below) keeps this contained within #sim-dom-overlay's fixed-size box
-   (sized to fit a Plotly chart) — without it, more than a couple of
-   cards would silently render UNDER the controls panel beneath it,
-   since the overlay is position:absolute and doesn't grow the page. */
-.explorer-cards-list { display: flex; flex-direction: column; gap: 14px; padding: 4px; height: 100%; overflow-y: auto; }
+/* .explorer-cards-stage is a flex column filling #sim-dom-overlay's
+   fixed-size box (sized to fit a Plotly chart). The score ring keeps its
+   natural height (flex-shrink: 0); the card list gets whatever space is
+   LEFT OVER (flex: 1; min-height: 0, not height: 100%) and scrolls
+   internally within that. A previous version gave the list height: 100%
+   directly — 100% of the *whole* overlay, on top of the space the score
+   ring above it already consumed in normal flow — so on a sim with
+   enough cards to need scrolling (6, here), the list's own box ran past
+   the overlay's bottom edge and visibly overlapped the controls panel
+   underneath it. min-height: 0 is required alongside flex: 1 because a
+   flex child's default min-height is auto (its content size), which
+   would otherwise let it grow past its flex-basis anyway. */
+.explorer-cards-stage { display: flex; flex-direction: column; height: 100%; }
+.explorer-cards-stage .explorer-score-ring { flex-shrink: 0; }
+.explorer-cards-list { display: flex; flex-direction: column; gap: 14px; padding: 4px; flex: 1; min-height: 0; overflow-y: auto; }
 .explorer-card {
   border-radius: 14px;
   padding: 16px 18px;
@@ -2113,4 +2141,134 @@ header, .sim-topbar {
   .gl-verdict-detail { font-size: 11.5px; }
   .screen-sim-graphlab .canvas-shell { min-height: 720px; }
   .gl-canvas-wrap { max-height: 44vh; }
+}
+
+/* ── Mima — draggable teaching-assistant widget (js/mima-ui.js) ─── */
+.mima-bubble {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  background: var(--micro-grad);
+  box-shadow: var(--glass-shadow);
+  z-index: 850;
+  transition: transform 0.15s ease;
+}
+.mima-bubble:hover { transform: scale(1.06); }
+.mima-bubble--active { outline: 2px solid rgba(255, 255, 255, 0.7); }
+.mima-bubble--has-update::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+}
+
+.mima-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 86px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  border-radius: 18px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(14px);
+  z-index: 950;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.mima-panel.hidden { display: none; }
+
+.mima-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--micro-grad);
+  color: #fff;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.mima-header:active { cursor: grabbing; }
+.mima-title { font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.mima-lang-tag {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+.mima-header-actions { display: flex; gap: 4px; }
+.mima-icon-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+.mima-icon-btn:hover { background: rgba(255, 255, 255, 0.35); }
+
+.mima-body { padding: 12px; }
+.mima-panel.mima-minimized .mima-body,
+.mima-panel.mima-minimized .mima-footer { display: none; }
+
+.mima-text {
+  margin: 0 0 10px 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text1);
+  max-height: 160px;
+  overflow-y: auto;
+}
+.mima-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.mima-action-btn {
+  font-size: 11px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--border1);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text1);
+  cursor: pointer;
+}
+.mima-action-btn:hover { background: rgba(255, 255, 255, 0.85); }
+
+.mima-footer {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--border1);
+}
+.mima-voice-btn {
+  flex: 1;
+  font-size: 11px;
+  padding: 7px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border1);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text1);
+  cursor: pointer;
+}
+.mima-voice-btn:hover { background: rgba(255, 255, 255, 0.85); }
+.mima-voice-btn--active { background: var(--micro-grad); color: #fff; border-color: transparent; }
+
+@media (max-width: 720px) {
+  .mima-bubble { right: 14px; bottom: 14px; width: 46px; height: 46px; font-size: 20px; }
+  .mima-panel { right: 12px; left: 12px; width: auto; bottom: 74px; }
 }

@@ -38,6 +38,9 @@ const ROOT = path.join(__dirname, '..');
 const FILES = [
     'js/curriculum-data.js',
     'js/panel-collapse.js',
+    'js/transition-layer.js',
+    'js/mima-context.js',
+    'js/mima-explain.js',
     'js/sim-engine.js',
     'js/datalab-engine.js',
     'js/explorer-engine.js',
@@ -126,6 +129,9 @@ const QUIZ_BANK = vm.runInContext('QUIZ_BANK', context);
 const SIM_I18N_HI = vm.runInContext('SIM_I18N_HI', context);
 const READINGS_I18N_HI = vm.runInContext('READINGS_I18N_HI', context);
 const translateReadings = context.translateReadings;
+const diffMetrics = vm.runInContext('diffMetrics', context);
+const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
+const mimaExplain = vm.runInContext('mimaExplain', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -413,6 +419,214 @@ function checkExplorer(sim) {
 // ── 4. Targeted formula-correctness spot checks ─────────────────
 function findSim(id) { return SIMS.find(s => s.id === id); }
 function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (got ${a}, expected ≈${b})`); }
+
+// Regression guard for the circular-flow layout-jump bug: switching the
+// Economy Model (2/3/4-Sector) or the Financial Market toggle must never
+// move a node that was ALREADY visible before the toggle. The bug this
+// guards against was Financial Market silently sliding from bottom-centre
+// to bottom-left the instant Foreign Sector was added (each sector's node
+// must own one permanent (x, y) anchor, never a slot shared/recomputed
+// from which OTHER sectors happen to be active) — see
+// docs/economics/models/circular-flow.md.
+function extractNodePos(html, label) {
+    const re = new RegExp(`<circle cx="([\\d.]+)" cy="([\\d.]+)"[^>]*><\\/circle>\\s*<text[^>]*>[^<]*<\\/text>\\s*<text[^>]*>${label}<\\/text>`);
+    const m = html.match(re);
+    return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : null;
+}
+(function testCircularFlowTopology() {
+    const sim = findSim('macro-gdp');
+    const render = (sector, bank) => {
+        const el = stubEl();
+        sim.customRender(el, Object.assign(collectDefaults(sim), { sector, bank }));
+        return el._html;
+    };
+
+    const html2 = render('2', 'no');
+    const html3 = render('3', 'no');
+    const html3bank = render('3', 'yes');
+    const html4bank = render('4', 'yes');
+    const html4nobank = render('4', 'no');
+
+    const hh2 = extractNodePos(html2, 'Households'), firm2 = extractNodePos(html2, 'Firms');
+    const hh3 = extractNodePos(html3, 'Households'), firm3 = extractNodePos(html3, 'Firms');
+    ok(hh2 && firm2 && hh3 && firm3, 'Circular Flow: Households/Firms nodes are present in 2- and 3-sector renders');
+    approx(hh2.x, hh3.x, 0.01, 'Circular Flow: Households.x unchanged 2-Sector -> 3-Sector');
+    approx(hh2.y, hh3.y, 0.01, 'Circular Flow: Households.y unchanged 2-Sector -> 3-Sector');
+    approx(firm2.x, firm3.x, 0.01, 'Circular Flow: Firms.x unchanged 2-Sector -> 3-Sector');
+    approx(firm2.y, firm3.y, 0.01, 'Circular Flow: Firms.y unchanged 2-Sector -> 3-Sector');
+
+    // The actual bug: Financial Market's anchor must be IDENTICAL whether
+    // or not Foreign Sector also happens to be on screen.
+    const bank3 = extractNodePos(html3bank, 'Financial Market \\(Banks\\)');
+    const bank4 = extractNodePos(html4bank, 'Financial Market \\(Banks\\)');
+    ok(bank3 && bank4, 'Circular Flow: Financial Market node is present with the bank ON in both 3- and 4-sector');
+    approx(bank3.x, bank4.x, 0.01, 'Circular Flow: Financial Market.x does NOT move when Foreign Sector is added (the regression this guards)');
+    approx(bank3.y, bank4.y, 0.01, 'Circular Flow: Financial Market.y does NOT move when Foreign Sector is added');
+
+    // Symmetrically: Foreign Sector's anchor must be identical whether or
+    // not the Financial Market is also switched on.
+    const foreign4bank = extractNodePos(html4bank, 'Foreign Sector');
+    const foreign4nobank = extractNodePos(html4nobank, 'Foreign Sector');
+    ok(foreign4bank && foreign4nobank, 'Circular Flow: Foreign Sector node is present with and without the Financial Market');
+    approx(foreign4bank.x, foreign4nobank.x, 0.01, 'Circular Flow: Foreign Sector.x does NOT move when Financial Market is toggled off');
+    approx(foreign4bank.y, foreign4nobank.y, 0.01, 'Circular Flow: Foreign Sector.y does NOT move when Financial Market is toggled off');
+
+    // Government's anchor must also survive every combination untouched.
+    const gov3 = extractNodePos(html3, 'Government');
+    const gov4 = extractNodePos(html4bank, 'Government');
+    ok(gov3 && gov4, 'Circular Flow: Government node is present in 3-sector and 4-sector+bank');
+    approx(gov3.x, gov4.x, 0.01, 'Circular Flow: Government.x unchanged across every combination');
+    approx(gov3.y, gov4.y, 0.01, 'Circular Flow: Government.y unchanged across every combination');
+
+    // No two simultaneously-visible nodes may collide (a hard-coded anchor
+    // typo could silently overlap two nodes at the same point).
+    const allNodes4 = ['Households', 'Firms', 'Government', 'Financial Market \\(Banks\\)', 'Foreign Sector']
+        .map(l => ({ l, p: extractNodePos(html4bank, l) }));
+    for (let i = 0; i < allNodes4.length; i++) {
+        for (let j = i + 1; j < allNodes4.length; j++) {
+            const a = allNodes4[i].p, b = allNodes4[j].p;
+            const dist = Math.hypot(a.x - b.x, a.y - b.y);
+            ok(dist > 60, `Circular Flow: ${allNodes4[i].l} and ${allNodes4[j].l} nodes do not overlap (distance ${dist.toFixed(0)})`);
+        }
+    }
+})();
+
+// ── Shared transition layer (js/transition-layer.js) ─────────────
+// The cause→effect half of the learning loop. These assert the layer's
+// two load-bearing properties: it names only effects that are real
+// economic quantities that really moved, and it ghosts only the curves
+// that actually moved — the second is the movement-vs-shift distinction
+// generalised, so it is tested against a real model, not a fixture.
+(function testTransitionLayerMetricDiff() {
+    const sim = { id: 'fixture' };
+    const changes = diffMetrics(sim,
+        { price: 10, qty: 100, mode: 'a', flag: true, untouched: 5 },
+        { price: 11, qty: 250, mode: 'b', flag: false, untouched: 5 }, 3);
+    const keys = changes.map(c => c.key);
+    ok(keys.indexOf('mode') === -1, 'Transition layer: string metrics (mode flags) are never reported as effects');
+    ok(keys.indexOf('flag') === -1, 'Transition layer: boolean metrics are never reported as effects');
+    ok(keys.indexOf('untouched') === -1, 'Transition layer: unchanged metrics are not reported as effects');
+    ok(keys.indexOf('price') !== -1 && keys.indexOf('qty') !== -1, 'Transition layer: numeric metrics that moved ARE reported');
+    ok(keys[0] === 'qty', 'Transition layer: effects are ranked by relative move, so the biggest mover is named first');
+    ok(changes.find(c => c.key === 'price').rose === true, 'Transition layer: direction is recorded correctly for a rise');
+
+    const capped = diffMetrics(sim, { a: 1, b: 1, c: 1, d: 1 }, { a: 2, b: 3, c: 4, d: 5 }, 2);
+    ok(capped.length === 2, 'Transition layer: effect list is capped so one change cannot print a wall of numbers');
+
+    // A move far below display precision would show as an identical
+    // before → after pair in the readings, which reads as a bug.
+    const noise = diffMetrics(sim, { x: 1000 }, { x: 1000.0001 }, 3);
+    ok(noise.length === 0, 'Transition layer: sub-display-precision noise is not reported as an effect');
+})();
+
+(function testTransitionLayerGhostGeometry() {
+    const line = (name, ys) => ({ name, mode: 'lines', x: ys.map((_, i) => i), y: ys });
+    const prev = [line('Moved', [1, 2, 3, 4]), line('Stayed', [9, 9, 9, 9]), { name: 'Bars', type: 'bar', y: [1, 2, 3, 4] }];
+    const next = [line('Moved', [5, 6, 7, 8]), line('Stayed', [9, 9, 9, 9]), { name: 'Bars', type: 'bar', y: [5, 6, 7, 8] }];
+    const ghosts = buildGhostTraces(prev, next);
+    ok(ghosts.length === 1, 'Transition layer: only the curve that MOVED gets a ghost (movement-vs-shift, generalised)');
+    ok(ghosts[0].name.indexOf('Moved') === 0, 'Transition layer: the ghost belongs to the curve that moved');
+    ok(JSON.stringify(ghosts[0].y) === JSON.stringify([1, 2, 3, 4]), 'Transition layer: ghost geometry IS the previous model output, not a re-derivation');
+    ok(ghosts[0].showlegend === false, 'Transition layer: ghosts stay out of the legend so they read as subordinate');
+
+    const axisPrev = [Object.assign(line('Secondary', [1, 2, 3, 4]), { yaxis: 'y2' })];
+    const axisNext = [Object.assign(line('Secondary', [5, 6, 7, 8]), { yaxis: 'y2' })];
+    ok(buildGhostTraces(axisPrev, axisNext)[0].yaxis === 'y2', 'Transition layer: a secondary-axis curve ghosts onto its own axis, not the primary one');
+})();
+
+(function testTransitionLayerOnRealModel() {
+    // Raising the price control from equilibrium (60) to a floor (80)
+    // must be reported as a real, correctly-directed economic effect.
+    const pc = findSim('micro-price-controls');
+    const before = pc.compute({ ctrl: 60, demandShift: 0 });
+    const after = pc.compute({ ctrl: 80, demandShift: 0 });
+    const effects = diffMetrics(pc, before.metrics, after.metrics, 3);
+    const gapEffect = effects.find(e => e.key === 'gap');
+    ok(!!gapEffect, 'Transition layer: a price floor is reported as moving the shortage/surplus metric');
+    ok(gapEffect.rose === true, 'Transition layer: imposing a floor above equilibrium is reported as the surplus RISING');
+    ok(gapEffect.label === 'Shortage / Surplus', "Transition layer: the sim's own metricLabels name the effect in economics terms");
+
+    // The AD-AS lab is the sharpest test of the ghost rule: raising
+    // autonomous consumption shifts AGGREGATE DEMAND and must leave
+    // AGGREGATE SUPPLY exactly where it was. The layer has to work that
+    // out from the model's output alone, with no per-sim hint.
+    const adas = findSim('macro-inflation-gap');
+    const base = { dc: 0, di: 0, dg: 0, dnx: 0 };
+    const adasGhosts = buildGhostTraces(
+        adas.compute(base).traces,
+        adas.compute(Object.assign({}, base, { dc: 10 })).traces
+    );
+    const ghostNames = adasGhosts.map(g => g.name);
+    ok(ghostNames.some(n => n.indexOf('Aggregate Demand') === 0), 'Transition layer: raising autonomous consumption ghosts the Aggregate Demand curve (it moved)');
+    ok(!ghostNames.some(n => n.indexOf('Aggregate Supply') === 0), 'Transition layer: Aggregate Supply gets NO ghost, because a demand-side change leaves it in place');
+})();
+
+// ── Mima (js/mima-context.js, js/mima-explain.js) ────────────────
+// Text and speech read from the exact same mimaExplain() call in
+// js/mima-ui.js — these tests check the SOURCE that guarantee applies to,
+// and that Mima never states a fact her own context doesn't contain
+// (never contradicts the simulator, per CLAUDE.md's Mima section).
+(function testMimaExplainNeverInventsFacts() {
+    const ctx = {
+        lang: 'en', mode: 'simulator', title: 'Fixture Sim', isFirstRender: false,
+        changedControls: [{ id: 'price', label: 'Price', before: '40', after: '80' }],
+        effects: [{ key: 'q', label: 'Quantity', before: 10, after: 25, rose: true }],
+        ghostedNames: ['Demand'], allTraceNames: ['Demand', 'Supply'], verdict: null, keyIdea: null
+    };
+    const explain = mimaExplain(ctx, 'explain');
+    ok(explain.text.indexOf('Price') !== -1 && explain.text.indexOf('40') !== -1 && explain.text.indexOf('80') !== -1,
+        'Mima: the cause (control changed) is stated using the context\'s own values');
+    ok(explain.text.indexOf('Quantity') !== -1 && explain.text.indexOf('25') !== -1,
+        'Mima: the effect is stated using the model\'s own metric values, not invented ones');
+    ok(explain.text.indexOf('Demand') !== -1, 'Mima: the curve she names as moved matches the ghosted curve the engine actually drew');
+
+    const shiftResult = mimaExplain(ctx, 'movementOrShift');
+    ok(shiftResult.text.indexOf('Demand') !== -1, 'Mima (movement/shift): names the curve that actually moved');
+    ok(shiftResult.text.indexOf('Supply') !== -1, 'Mima (movement/shift): also names the curve that stayed unchanged, when there is one');
+
+    const noEffectCtx = Object.assign({}, ctx, { effects: [], ghostedNames: [] });
+    const noEffectText = mimaExplain(noEffectCtx, 'why').text;
+    ok(noEffectText.indexOf('Quantity') === -1, "Mima: does not report an effect that the context says didn't happen");
+})();
+
+(function testMimaExplainReadsGraphLabVerdictVerbatim() {
+    // Mima must reuse the Graph Lab's own verdict.kind, never re-derive
+    // movement/shift herself — this is the literal test of "Mima must
+    // never contradict the simulator."
+    ['movement', 'shift', 'both', 'none'].forEach(kind => {
+        const ctx = { lang: 'en', mode: 'graphlab', title: 'Fixture GraphLab', isFirstRender: false,
+            changedControls: [{ id: 'price', label: 'Price', before: '50', after: '60' }],
+            effects: [], verdict: { kind, title: `verdict-${kind}` }, ghostedNames: [], allTraceNames: [] };
+        const text = mimaExplain(ctx, 'movementOrShift').text;
+        const expectedWord = kind === 'movement' ? 'MOVEMENT' : kind === 'shift' ? 'SHIFT' : kind === 'both' ? 'BOTH' : 'Nothing has moved';
+        ok(text.indexOf(expectedWord) !== -1, `Mima (graphlab verdict='${kind}'): names exactly the verdict the Graph Lab computed, not a different one`);
+    });
+})();
+
+(function testMimaTextAndVoiceShareOneSource() {
+    // js/mima-ui.js's Speak/Replay buttons call MimaVoice.speak(lastResult.text, lastResult.lang)
+    // where lastResult IS the object shown in the text panel — asserted
+    // here by construction: mimaExplain() returns {text, lang} as one
+    // object, so there is no second call path that could diverge.
+    const ctx = { lang: 'hi', mode: 'simulator', title: 'स्थिरता', isFirstRender: true, changedControls: [], effects: [], ghostedNames: [], allTraceNames: [] };
+    const r1 = mimaExplain(ctx, 'explain');
+    const r2 = mimaExplain(ctx, 'explain');
+    ok(r1.text === r2.text, 'Mima: same context + same intent always produces the same text (deterministic, not generative)');
+    ok(r1.lang === 'hi', "Mima: Hindi UI context produces a Hindi-tagged result for the voice layer to speak in Hindi");
+})();
+
+(function testMimaLanguageFollowsContext() {
+    const base = { mode: 'simulator', title: 'X', isFirstRender: true, changedControls: [], effects: [], ghostedNames: [], allTraceNames: [] };
+    const en = mimaExplain(Object.assign({}, base, { lang: 'en' }), 'explain');
+    const hi = mimaExplain(Object.assign({}, base, { lang: 'hi' }), 'explain');
+    ok(en.lang === 'en' && hi.lang === 'hi', 'Mima: language tag on the result matches the context language, for every intent');
+    ok(en.text !== hi.text, 'Mima: English and Hindi contexts produce genuinely different text, not the same string relabelled');
+})();
+
+(function testMimaHandlesNoActiveSimulation() {
+    const result = mimaExplain(null, 'explain');
+    ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
+})();
 
 (function testCentralTendency() {
     const sim = findSim('stats-central-tendency');

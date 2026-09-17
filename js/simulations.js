@@ -25,6 +25,11 @@ const _corrNoise = range(30).map(() => _corrRandN());
 const SIMS = [
     {
         id: 'micro-supply-demand',
+        // Draws its own baseline ("original") curves, which are
+        // all-determinants-zero relative rather than previous-step
+        // relative. Two different "before" references on one chart would
+        // read as clutter, so the shared auto-ghost stands down here.
+        autoGhost: false,
         module: 'micro',
         title: 'Supply & Demand: Every Determinant',
         desc: 'Every named CBSE determinant of demand and supply as its own live control, changed together to see equilibrium move — not just one abstract "shift". For the exam-precise movement-vs-shift distinction on demand alone, see "Demand: Movement vs Shift (Drag the Curve)" instead.',
@@ -260,6 +265,7 @@ const SIMS = [
     },
     {
         id: 'macro-gdp',
+        metricLabels: { gdpExp: 'GDP (Expenditure Method)', totalInjections: 'Total Injections', totalLeakages: 'Total Leakages', wages: 'Factor Payments', consumption: 'Consumption Expenditure', investment: 'Investment (I)', saving: 'Savings (S)', taxes: 'Taxes (T)', exportsVal: 'Exports (X)', imports: 'Imports (M)' },
         module: 'macro',
         title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector + Financial Market)',
         desc: 'Choose 2-Sector, 3-Sector or 4-Sector, and optionally switch on the Financial Market (Banks) — the diagram draws ONLY the sectors and flows that exist in your choice, correctly split into injections and leakages.',
@@ -346,15 +352,26 @@ const SIMS = [
             const nx = has4 ? v.nx : 0;
             const exportsVal = Math.max(nx, 0) + 50, imports = Math.max(-nx, 0) + 50;
 
+            // CANONICAL LAYOUT — one fixed ring, never recomputed from which
+            // OTHER sectors happen to be active. Every node owns a single,
+            // permanent anchor point (a 5-point circular arrangement around
+            // the centre of the Households–Firms axis: Households at 9
+            // o'clock, Firms at 3 o'clock, Government at 12, Financial
+            // Market at roughly 8, Foreign Sector at roughly 4). Toggling a
+            // sector only ever adds/removes ITS OWN node+flows from the
+            // `nodes`/`flows` objects below — it must never change another
+            // node's (x, y), or a node already on screen visibly jumps when
+            // an unrelated sector is toggled. That silent jump (Financial
+            // Market sliding from bottom-centre to bottom-left the instant
+            // Foreign Sector was added) was the exact bug this comment is
+            // guarding against — verified by screenshot, not just by reading
+            // the code, since a "close enough" hard-coded number is exactly
+            // the kind of thing that reads fine and renders wrong.
             const hh = { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' };
             const firm = { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' };
             const gov = { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' };
-            // Foreign Sector and Banks share the bottom of the diagram —
-            // spread to bottom-left/right when both are present, otherwise
-            // whichever one exists alone takes the bottom-center spot the
-            // other would have used.
-            const foreign = { x: has4 && hasBank ? 370 : 250, y: 344, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
-            const bank = { x: has4 && hasBank ? 130 : 250, y: 344, label: 'Financial Market (Banks)', icon: '🏦', color: '#0891b2' };
+            const bank = { x: 130, y: 344, label: 'Financial Market (Banks)', icon: '🏦', color: '#0891b2' };
+            const foreign = { x: 370, y: 344, label: 'Foreign Sector', icon: '🌍', color: '#f43f5e' };
 
             const nodes = { hh, firm };
             if (has3) nodes.gov = gov;
@@ -547,6 +564,12 @@ const SIMS = [
     },
     {
         id: 'macro-multiplier',
+        metricLabels: { k: 'Spending Multiplier (k)', kt: 'Tax Multiplier (kt)', Y1: 'New Equilibrium Income', dySpending: 'ΔY from Spending', dyTax: 'ΔY from Tax' },
+        // Already plots AE-before and AE-after as two explicit, named
+        // curves — that IS its before/after, authored as economics rather
+        // than as a transition artefact. Adding a third dotted "previous"
+        // line on top would confuse which comparison is the lesson.
+        autoGhost: false,
         module: 'macro',
         title: 'The Multiplier Effect: Investment, Government Spending & Tax',
         desc: 'The named Investment Multiplier, plus Government Spending and Tax multipliers as extra contrast.',

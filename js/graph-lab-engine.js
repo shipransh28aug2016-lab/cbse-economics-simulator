@@ -494,17 +494,34 @@ function glRender(sim, syncChips) {
 
     if (syncChips !== false) (cfg.vars || []).forEach(v => glSyncChip(v));
 
+    const structuredChanges = typeof structuredWhatChanged === 'function'
+        ? structuredWhatChanged({ controls: cfg.vars }, glPrevState, glState) : [];
+
     const readingsBody = document.getElementById('readings-body');
     if (readingsBody) {
         const rows = Array.isArray(m.readings)
             ? m.readings.map(r => `<div class="reading-row"><span>${r.label}</span><b>${r.value}</b></div>`).join('')
             : (m.readings || '');
-        const changed = typeof describeWhatChanged === 'function'
-            ? describeWhatChanged({ controls: cfg.vars }, glPrevState, glState) : '';
+        const changed = structuredChanges.length
+            ? `<div class="reading-row whatchanged-row">🔄 <span>${tEngine('engine.whatChanged', 'What changed:')}</span> ${structuredChanges.map(c => `<b>${c.label}</b>: ${c.before} → ${c.after}`).join(', ')}</div>`
+            : '';
         readingsBody.innerHTML = changed + (typeof translateReadings === 'function' ? translateReadings(sim, rows) : rows);
         readingsBody.classList.remove('pulse');
         void readingsBody.offsetWidth;
         readingsBody.classList.add('pulse');
+    }
+
+    // Hand Mima the SAME verdict (movement/shift/both/none) the banner
+    // above just rendered — cfg.model()'s own verdict.kind, never a
+    // separate guess about what kind of change this was.
+    if (typeof mimaSetSnapshot === 'function') {
+        mimaSetSnapshot(sim, 'graphlab', {
+            isFirstRender: !structuredChanges.length,
+            changedControls: structuredChanges,
+            verdict: m.verdict || null,
+            currentMetrics: m.metrics || {},
+            readingsHTML: Array.isArray(m.readings) ? '' : (m.readings || '')
+        });
     }
 
     if (Array.isArray(m.formulas)) {

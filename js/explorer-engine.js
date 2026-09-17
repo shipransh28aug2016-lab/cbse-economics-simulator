@@ -146,7 +146,8 @@ function renderCardsExplorer(sim, panel, overlay) {
         const liveScore = score();
         const scorePct = liveScore.answered === 0 ? 0 : liveScore.correct / liveScore.answered;
         const ringCirc = 100.5; // 2*pi*16, matches r=16 below
-        overlay.innerHTML = `<div class="explorer-score-ring" title="${liveScore.correct} / ${liveScore.total} correct so far" role="img" aria-label="${liveScore.correct} of ${liveScore.total} correct">
+        overlay.innerHTML = `<div class="explorer-cards-stage">
+        <div class="explorer-score-ring" title="${liveScore.correct} / ${liveScore.total} correct so far" role="img" aria-label="${liveScore.correct} of ${liveScore.total} correct">
             <svg viewBox="0 0 36 36" width="52" height="52">
                 <circle class="ring-bg" cx="18" cy="18" r="16"></circle>
                 <circle class="ring-fg" cx="18" cy="18" r="16" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringCirc - ringCirc * scorePct}" transform="rotate(-90 18 18)"></circle>
@@ -163,7 +164,8 @@ function renderCardsExplorer(sim, panel, overlay) {
                 </div>
                 ${ans ? `<div class="explorer-card-explain">${ans.correct ? '✅' : '❌'} ${tc.explain}</div>` : ''}
             </div>`;
-        }).join('')}</div>`;
+        }).join('')}</div>
+        </div>`;
         explorerFade(overlay);
 
         overlay.querySelectorAll('.explorer-card-opt').forEach(btn => {

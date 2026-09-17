@@ -15,7 +15,15 @@ const appGlobals = {
     styledAxisTitle: 'readonly', clamp: 'readonly', buildControls: 'readonly',
     applyControlVisibility: 'readonly', renderSimChart: 'readonly', renderSim: 'readonly',
     refreshChallenge: 'readonly', renderPractice: 'readonly', renderChallengeShell: 'readonly',
-    describeWhatChanged: 'readonly',
+    describeWhatChanged: 'readonly', structuredWhatChanged: 'readonly',
+    // js/transition-layer.js — the shared cause→effect layer, loaded
+    // before sim-engine.js so the engine can call into it.
+    diffMetrics: 'readonly', describeEffects: 'readonly', buildGhostTraces: 'readonly',
+    // js/mima-context.js + js/mima-explain.js + js/mima-voice.js +
+    // js/mima-ui.js — the Mima teaching-assistant layer.
+    mimaSetSnapshot: 'readonly', mimaClearSnapshot: 'readonly', getMimaContext: 'readonly',
+    mimaOnStateChanged: 'writable', mimaExplain: 'readonly', MimaVoice: 'readonly',
+    mimaInitUI: 'readonly',
     renderDataLab: 'readonly', renderExplorer: 'readonly',
     // js/graph-lab-engine.js (mode: 'graphlab') + the Graph Lab sim files.
     renderGraphLab: 'readonly', glShowGhost: 'writable', glState: 'writable',
@@ -51,7 +59,7 @@ module.exports = [
             sourceType: 'script',
             globals: {
                 window: 'readonly', document: 'readonly', console: 'readonly',
-                localStorage: 'readonly', fetch: 'readonly', setTimeout: 'readonly',
+                localStorage: 'readonly', sessionStorage: 'readonly', fetch: 'readonly', setTimeout: 'readonly',
                 performance: 'readonly', requestAnimationFrame: 'readonly',
                 module: 'writable', require: 'readonly',
                 ...appGlobals

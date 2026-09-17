@@ -1,5 +1,17 @@
 # Visual Teaching Audit — all 44 sims
 
+> **Architectural note (4th pass, supersedes the per-sim framing below).**
+> The first three passes fixed 18 real gaps one sim at a time — each defensible, but
+> all of them treating a missing *annotation* as the unit of work. The structural
+> question went unasked until an architecture audit: `renderSimChart()` retained the
+> previous **inputs** and discarded the model's **output**, so the app could state a
+> cause and never an effect, and every before/after visual had to be hand-derived per
+> sim. Retaining one object (`prevSimResult`) turned that into a shared capability —
+> see `js/transition-layer.js` and CLAUDE.md's "transition layer" section. The rows
+> below still record per-sim visual state, but the **default** for cause→effect and
+> for before/after geometry is now the shared layer, not per-sim authoring. Prefer
+> extending that layer over adding another one-off annotation.
+
 This is the machine-usable audit the L99/"Teach-by-Visualization" directive asked for.
 It is a **living tracking table**, not a one-time report — update a row's Status/Gap
 whenever you touch that sim's visual layer, and re-derive Priority from
@@ -36,7 +48,7 @@ this pass · — not applicable (genre doesn't need it, per item 7/12 of the dir
 | `gl-revenue-producer-eq` | graphlab | XI-B-U6 | Revenue/producer equilibrium, drag-based | ✅ (existing) | N/A | ✅ | none | — |
 | `micro-price-controls` | curve | XI-B-U7 | Ceiling/floor → shortage/surplus | 🔧 bracket + on-chart annotation (this pass) | N/A | 🔧 fixed | none remaining | — |
 | `micro-market-structures` | curve | XI-B-U7 (enrichment) | N firms → P→MC | 🔧 continuous P(N) curve approaching MC asymptote (this pass) | N/A | 🔧 fixed | none remaining | — |
-| `macro-gdp` | custom (SVG) | XII-A-U1 | Circular flow, injections/leakages | N/A (flow diagram, not curve equilibrium) | N/A | ✅ (TLM added prior pass) | none | — |
+| `macro-gdp` | custom (SVG) | XII-A-U1 | Circular flow, injections/leakages, **stable node topology across 2/3/4-Sector + Financial Market** | N/A (flow diagram, not curve equilibrium) | N/A | 🔧 fixed (4th audit) | Financial Market and Foreign Sector shared two conditional slots and visibly swapped/slid position whenever the OTHER sector was toggled, turning the diagram into a vertical/plus-shaped stack instead of a stable circular ring — a genuine model-visualization bug (not a missing-annotation gap like the other rows), found via a direct user report, root-caused to the exact two lines sharing a conditional x-coordinate, fixed with permanent fixed anchors, and covered by a new automated regression (`testCircularFlowTopology()`) that would have caught it | — |
 | `macro-multiplier` | curve | XII-A-U3 | ΔG/ΔT → ΔY via multiplier | ✅ old/new equilibrium markers + AE before/after | N/A | ✅ | none | — |
 | `macro-propensity` | table→chart | XII-A-U3 | MPC/MPS from C,Y data | ✅ fitted line + 45° line | N/A | ✅ | none | — |
 | `gl-consumption-saving` | graphlab | XII-A-U3 | C/S schedules, break-even point | ✅ (existing) | shift = autonomous C change (handled) | ✅ | none | — |

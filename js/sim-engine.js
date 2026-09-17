@@ -249,6 +249,12 @@ function tEngine(key, fallback) {
 let simEngineState = {};
 let prevSimEngineState = {};
 let suppressNextWhatChanged = true;
+// The previous render's MODEL OUTPUT (compute()'s traces + metrics), not
+// just its inputs. Retaining it is what lets js/transition-layer.js name
+// the effect a change caused, and draw where a curve was a moment ago —
+// see that file's header for why this one object closes the cause→effect
+// loop for every simulator-mode sim at once.
+let prevSimResult = null;
 
 function clamp(v, min, max) {
     return Math.min(max, Math.max(min, v));
@@ -283,18 +289,28 @@ function displayValue(sim, ctl, raw) {
 // returns a short "🔄 What changed" line naming exactly the field(s) the
 // student just touched. Returns '' when nothing differs (or on the very
 // first render of a simulation, where "changed" has no meaning yet).
-function describeWhatChanged(sim, prev, next) {
-    if (!sim || !sim.controls || !sim.controls.length) return '';
+
+// The structured form, shared by the HTML renderer below and
+// js/mima-context.js — one list of {id, label, before, after}, never
+// computed twice.
+function structuredWhatChanged(sim, prev, next) {
+    if (!sim || !sim.controls || !sim.controls.length) return [];
     const changes = [];
     sim.controls.forEach(c => {
         const before = prev[c.id];
         const after = next[c.id];
         if (before === undefined || after === undefined) return;
         if (String(before) === String(after)) return;
-        changes.push(`<b>${controlLabel(sim, c)}</b>: ${displayValue(sim, c, before)} → ${displayValue(sim, c, after)}`);
+        changes.push({ id: c.id, label: controlLabel(sim, c), before: displayValue(sim, c, before), after: displayValue(sim, c, after) });
     });
+    return changes;
+}
+
+function describeWhatChanged(sim, prev, next) {
+    const changes = structuredWhatChanged(sim, prev, next);
     if (!changes.length) return '';
-    return `<div class="reading-row whatchanged-row">🔄 <span>${tEngine('engine.whatChanged', 'What changed:')}</span> ${changes.join(', ')}</div>`;
+    const parts = changes.map(c => `<b>${c.label}</b>: ${c.before} → ${c.after}`);
+    return `<div class="reading-row whatchanged-row">🔄 <span>${tEngine('engine.whatChanged', 'What changed:')}</span> ${parts.join(', ')}</div>`;
 }
 
 // ── Practice checklist + auto-checked Challenge (generic, optional) ──
@@ -729,9 +745,15 @@ function renderSimChart(sim) {
     const readingsBody = document.getElementById('readings-body');
     if (!overlay) return;
 
-    // Snapshot the diff line BEFORE recording this render's state as
-    // "previous" — it names exactly what the student just moved.
-    const whatChangedHTML = suppressNextWhatChanged ? '' : describeWhatChanged(sim, prevSimEngineState, simEngineState);
+    // Snapshot the diff BEFORE recording this render's state as
+    // "previous" — it names exactly what the student just moved. Computed
+    // once as structured data so the HTML row and js/mima-context.js read
+    // the identical list, never two independently-derived ones.
+    const suppressedThisRender = suppressNextWhatChanged;
+    const structuredChanges = suppressedThisRender ? [] : structuredWhatChanged(sim, prevSimEngineState, simEngineState);
+    const whatChangedHTML = structuredChanges.length
+        ? `<div class="reading-row whatchanged-row">🔄 <span>${tEngine('engine.whatChanged', 'What changed:')}</span> ${structuredChanges.map(c => `<b>${c.label}</b>: ${c.before} → ${c.after}`).join(', ')}</div>`
+        : '';
     suppressNextWhatChanged = false;
 
     let result;
@@ -755,8 +777,23 @@ function renderSimChart(sim) {
         // bar chart) isn't covered by the shared defaults above, but its
         // title still needs the same bold-legible treatment.
         if (layout.yaxis2) layout.yaxis2 = styledAxisTitle(layout.yaxis2);
+        // Ghosts are drawn FIRST so the live curves sit on top of them,
+        // and only on a real transition (never the first render of a sim,
+        // and never a repaint with unchanged controls such as a language
+        // toggle). A sim that already draws its own before/after geometry
+        // opts out with `autoGhost: false` rather than stacking two
+        // different "previous" references on one chart.
+        const isTransition = !suppressedThisRender && prevSimResult && whatChangedHTML;
+        const ghosts = (isTransition && sim.autoGhost !== false && typeof buildGhostTraces === 'function')
+            ? buildGhostTraces(prevSimResult.traces, result.traces || [])
+            : [];
+        // A ghost's name is "<curve name> (before)" (see buildGhostTraces) —
+        // stripping that suffix gives Mima the exact list of curves that
+        // moved, read from the same geometry the student sees, never
+        // guessed from the sim's economics.
+        var _mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
         if (typeof Plotly !== 'undefined') {
-            Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
+            Plotly.react(overlay, ghosts.concat(result.traces || []), layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
         if (sim.predict) checkPredictReveal(sim, result);
     } else {
@@ -769,8 +806,22 @@ function renderSimChart(sim) {
     void overlay.offsetWidth; // force reflow to restart the animation
     overlay.classList.add('chart-fresh');
 
+    // The effect half of the causal chain. `whatChangedHTML` names what the
+    // student moved; this names what the MODEL did about it — the two
+    // together are the cause→effect statement the app could not make while
+    // the previous result was being discarded. Computed once as structured
+    // data (`effects`) and rendered from it, so js/mima-context.js can read
+    // the exact same array Mima and the readings panel both speak from —
+    // never a second, independently-recomputed version.
+    const isRealTransition = !suppressedThisRender && whatChangedHTML && prevSimResult;
+    const touchedControlIds = structuredChanges.map(c => c.id);
+    const effects = (isRealTransition && typeof diffMetrics === 'function')
+        ? diffMetrics(sim, prevSimResult.metrics, result.metrics, 3, touchedControlIds)
+        : [];
+    const effectsHTML = effects.length ? describeEffects(sim, effects) : '';
+
     if (readingsBody) {
-        readingsBody.innerHTML = whatChangedHTML + translateReadings(sim, result.readings || '');
+        readingsBody.innerHTML = whatChangedHTML + effectsHTML + translateReadings(sim, result.readings || '');
         // Restart the highlight animation on every recompute so students
         // notice the readings actually changed.
         readingsBody.classList.remove('pulse');
@@ -791,7 +842,26 @@ function renderSimChart(sim) {
     }
 
     refreshChallenge(sim, result.metrics);
+
+    // Hand the SAME structured data just rendered into the readings panel
+    // to Mima — never a re-derived version. See js/mima-context.js's header.
+    if (typeof mimaSetSnapshot === 'function') {
+        mimaSetSnapshot(sim, typeof sim.customRender === 'function' ? 'customRender' : 'simulator', {
+            isFirstRender: suppressedThisRender,
+            changedControls: structuredChanges,
+            effects: effects,
+            ghostedNames: typeof _mimaGhostedNames !== 'undefined' ? _mimaGhostedNames : [],
+            allTraceNames: (result.traces || []).map(t => t.name).filter(Boolean),
+            currentMetrics: result.metrics || {},
+            readingsHTML: result.readings || ''
+        });
+    }
+
     prevSimEngineState = Object.assign({}, simEngineState);
+    // Retain the model's own output, not just the inputs that produced it.
+    // Traces are kept by reference: compute() rebuilds them fresh on every
+    // call, so the retained arrays are never mutated behind our back.
+    prevSimResult = { traces: (result.traces || []).slice(), metrics: Object.assign({}, result.metrics) };
 }
 
 function renderSim(sim) {
@@ -856,7 +926,9 @@ function renderSim(sim) {
 
     simEngineState = {};
     prevSimEngineState = {};
+    prevSimResult = null;
     suppressNextWhatChanged = true;
+    if (typeof mimaClearSnapshot === 'function') mimaClearSnapshot();
     renderPractice(sim);
     renderChallengeShell(sim);
     renderTLM(sim);
