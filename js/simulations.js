@@ -412,7 +412,7 @@ const SIMS = [
             if (has3) {
                 flows.push(
                     { id: 'flow-tax', from: hh, to: gov, bend: 16, labelOffset: 11, value: taxes, color: gov.color, kind: 'money', label: 'Taxes (T) — Leakage' },
-                    { id: 'flow-gspend', from: gov, to: hh, bend: 16, labelOffset: 11, value: g, color: gov.color, kind: 'money', label: 'Govt Spending (G) — Injection' }
+                    { id: 'flow-gspend', from: gov, to: firm, bend: 16, labelOffset: 11, value: g, color: gov.color, kind: 'money', label: 'Govt Purchases (G) — Injection' }
                 );
             }
             if (has4) {
