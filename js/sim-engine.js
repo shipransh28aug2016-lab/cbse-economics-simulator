@@ -857,6 +857,11 @@ function renderSimChart(sim) {
         });
     }
 
+    // Sim-scoped AI Tutor (js/ai-tutor.js) — handed this render's own
+    // metrics directly (not read back off prevSimResult, which at this
+    // point still holds the PREVIOUS render's values).
+    if (typeof aiTutorOnRender === 'function') aiTutorOnRender(sim, result.metrics || {});
+
     prevSimEngineState = Object.assign({}, simEngineState);
     // Retain the model's own output, not just the inputs that produced it.
     // Traces are kept by reference: compute() rebuilds them fresh on every
@@ -929,6 +934,7 @@ function renderSim(sim) {
     prevSimResult = null;
     suppressNextWhatChanged = true;
     if (typeof mimaClearSnapshot === 'function') mimaClearSnapshot();
+    if (typeof aiTutorOnSimSwitch === 'function') aiTutorOnSimSwitch(sim);
     renderPractice(sim);
     renderChallengeShell(sim);
     renderTLM(sim);

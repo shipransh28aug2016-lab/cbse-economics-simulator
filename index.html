@@ -267,6 +267,27 @@
         <div class="info-card-header collapsible-header" data-panel-key="tlm" role="button" tabindex="0" aria-expanded="false"><span data-i18n="card.tlm">🧑‍🏫 Teaching &amp; Learning Toolkit</span><span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="tlm-body"></div>
       </div>
+      <!-- js/ai-tutor.js: a per-sim rule-based "AI Tutor" side panel.
+           Hidden by default; only shown when the active sim declares
+           sim.aiTutor (currently just macro-multiplier). -->
+      <div class="info-card hidden collapsed ai-tutor-card" id="ai-tutor-card">
+        <div class="info-card-header collapsible-header" data-panel-key="aiTutor" role="button" tabindex="0" aria-expanded="false">
+          <span data-i18n="card.aiTutor">🤖 AI Tutor</span>
+          <button type="button" class="ai-tutor-theme-btn" id="ai-tutor-theme-btn" title="Toggle tutor theme" aria-label="Toggle tutor theme">🌙</button>
+          <span class="panel-chevron" aria-hidden="true">⌄</span>
+        </div>
+        <div class="info-card-body" id="ai-tutor-body">
+          <div class="ai-tutor-scenario" id="ai-tutor-scenario"></div>
+          <div class="ai-tutor-missions" id="ai-tutor-missions"></div>
+          <div class="ai-tutor-log" id="ai-tutor-log"></div>
+          <form class="ai-tutor-chat-form" id="ai-tutor-chat-form">
+            <input type="text" id="ai-tutor-chat-input" class="ai-tutor-chat-input" placeholder="e.g. &quot;what if MPC falls?&quot;" autocomplete="off">
+            <button type="submit" class="ai-tutor-send-btn" aria-label="Send">➤</button>
+          </form>
+          <button type="button" class="ai-tutor-quiz-btn" id="ai-tutor-quiz-btn">🎯 Generate my question</button>
+          <div class="ai-tutor-quiz-body" id="ai-tutor-quiz-body"></div>
+        </div>
+      </div>
       <button class="quiz-launch-btn" id="quiz-launch-btn" data-i18n="sim.takeQuiz">🎯 Take the Quiz  →</button>
       <div style="text-align: center; color: var(--text3); font-size: 11px; margin-top: 16px; margin-bottom: 8px; letter-spacing: 0.5px;">
         &copy; PP creations by Paras Pranav
@@ -390,6 +411,7 @@
 <script src="js/mima-explain.js?v=1"></script>
 <script src="js/mima-voice.js?v=1"></script>
 <script src="js/mima-ui.js?v=1"></script>
+<script src="js/ai-tutor.js?v=1"></script>
 <script src="js/app.js?v=6"></script>
 </body>
 </html>

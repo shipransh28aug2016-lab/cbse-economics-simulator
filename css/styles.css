@@ -2272,3 +2272,191 @@ header, .sim-topbar {
   .mima-bubble { right: 14px; bottom: 14px; width: 46px; height: 46px; font-size: 20px; }
   .mima-panel { right: 12px; left: 12px; width: auto; bottom: 74px; }
 }
+
+/* ── AI Tutor card (js/ai-tutor.js) ──────────────────────────────
+   A scoped slate/zinc + electric-blue/emerald aesthetic, distinct from
+   the app's purple glassmorphism, applied ONLY inside this one card —
+   see js/ai-tutor.js's header for why it's scoped rather than a
+   site-wide theme. `.ai-tutor-dark` (toggled by the 🌙/☀️ button in the
+   card header) swaps to a dark slate surface without touching any
+   other panel on the page. */
+.ai-tutor-card {
+  --at-bg: #f8fafc;
+  --at-surface: #ffffff;
+  --at-border: #e2e8f0;
+  --at-text: #0f172a;
+  --at-text2: #475569;
+  --at-accent: #2563eb;
+  --at-accent-2: #10b981;
+  background: var(--at-bg);
+  border: 1px solid var(--at-border);
+  color: var(--at-text);
+}
+.ai-tutor-card.ai-tutor-dark {
+  --at-bg: #0f172a;
+  --at-surface: #1e293b;
+  --at-border: #334155;
+  --at-text: #e2e8f0;
+  --at-text2: #94a3b8;
+  --at-accent: #60a5fa;
+  --at-accent-2: #34d399;
+}
+.ai-tutor-card .info-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--at-text);
+}
+.ai-tutor-card .info-card-header span:first-child { flex: 1; }
+.ai-tutor-theme-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.ai-tutor-theme-btn:hover { background: var(--at-border); }
+.ai-tutor-body, #ai-tutor-body {
+  background: var(--at-bg);
+  color: var(--at-text);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ai-tutor-scenario-text, .ai-tutor-scenario-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-border);
+  color: var(--at-text2);
+}
+.ai-tutor-missions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ai-tutor-mission {
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-border);
+  color: var(--at-text2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-tutor-mission.done { color: var(--at-accent-2); border-color: var(--at-accent-2); }
+.ai-tutor-mission-xp {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--at-accent);
+}
+.ai-tutor-xp-total {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--at-accent);
+  text-align: right;
+}
+.ai-tutor-log {
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-tutor-msg {
+  font-size: 12.5px;
+  line-height: 1.45;
+  padding: 7px 10px;
+  border-radius: 12px;
+  max-width: 92%;
+}
+.ai-tutor-msg--bot {
+  background: var(--at-surface);
+  border: 1px solid var(--at-border);
+  color: var(--at-text);
+  align-self: flex-start;
+  border-bottom-left-radius: 3px;
+}
+.ai-tutor-msg--user {
+  background: linear-gradient(135deg, var(--at-accent), var(--at-accent-2));
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 3px;
+}
+.ai-tutor-chat-form {
+  display: flex;
+  gap: 6px;
+}
+.ai-tutor-chat-input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--at-border);
+  background: var(--at-surface);
+  color: var(--at-text);
+  font-size: 12.5px;
+}
+.ai-tutor-send-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: var(--at-accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+.ai-tutor-send-btn:hover { filter: brightness(1.1); }
+.ai-tutor-quiz-btn {
+  border: 1px solid var(--at-accent);
+  background: transparent;
+  color: var(--at-accent);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ai-tutor-quiz-btn:hover { background: var(--at-accent); color: #fff; }
+.ai-tutor-quiz-q {
+  font-size: 12.5px;
+  color: var(--at-text);
+  margin: 0 0 6px;
+}
+.ai-tutor-quiz-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.ai-tutor-quiz-opt {
+  border: 1px solid var(--at-border);
+  background: var(--at-surface);
+  color: var(--at-text);
+  border-radius: 8px;
+  padding: 7px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out);
+}
+.ai-tutor-quiz-opt:hover:not(:disabled) { border-color: var(--at-accent); }
+.ai-tutor-quiz-opt.correct { background: var(--at-accent-2); color: #fff; border-color: var(--at-accent-2); }
+.ai-tutor-quiz-opt.incorrect { background: #ef4444; color: #fff; border-color: #ef4444; }
+.ai-tutor-quiz-result {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 6px 0 0;
+  color: var(--at-text);
+}
+
+@media (max-width: 720px) {
+  .ai-tutor-log { max-height: 130px; }
+  .ai-tutor-quiz-opts { grid-template-columns: 1fr; }
+}

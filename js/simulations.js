@@ -570,6 +570,68 @@ const SIMS = [
         // than as a transition artefact. Adding a third dotted "previous"
         // line on top would confuse which comparison is the lesson.
         autoGhost: false,
+        // Opts this sim into js/ai-tutor.js's side-panel "Multiplier Coach"
+        // (state-aware chat with bidirectional slider control, a dynamic
+        // real-world scenario line, and adaptive quiz/mission generation —
+        // all rule-based templates over this sim's own compute(), never an
+        // independent claim about the economics; see js/ai-tutor.js's header
+        // for why this project can't call a real LLM from the browser).
+        aiTutor: {
+            scenarios: {
+                di: {
+                    up: (v, hi) => hi
+                        ? `निजी निवेश में ₹${v}B की उछाल — जैसे फ़र्में नई फ़ैक्ट्रियाँ या गोदाम बना रही हों — तुरंत मज़दूरी चुकाती है और सामग्री खरीदती है। चूँकि एक व्यक्ति का व्यय दूसरे की आय है, यह ₹${v}B कई और दौर तक अर्थव्यवस्था में घूमता रहता है।`
+                        : `A ₹${v}B jump in private investment — say, firms building new factories or warehouses — pays wages and buys materials immediately. Because one person's spending is another's income, that ₹${v}B recycles through the economy for several more rounds before fading out.`,
+                    down: (v, hi) => hi
+                        ? `फ़र्मों द्वारा नियोजित निवेश में ₹${v}B की कटौती (मंदी की आशंका, या महँगा ऋण) उस व्यय को तुरंत हटा देती है, और आय के वे दौर भी साथ ही गायब हो जाते हैं।`
+                        : `Firms cutting planned investment by ₹${v}B (a recession scare, or costlier credit) removes that spending immediately, and each round of income it used to generate disappears with it.`
+                },
+                dg: {
+                    up: (v, hi) => hi
+                        ? `₹${v}B का सरकारी धक्का — जैसे राजमार्ग या अस्पताल निर्माण — बिल्कुल निजी निवेश की तरह सीधे अर्थव्यवस्था में व्यय डालता है, और उसी तरह गुणित होता है।`
+                        : `A ₹${v}B government push — think highway or hospital construction — injects spending directly into the economy exactly like private investment does, and it multiplies the same way.`,
+                    down: (v, hi) => hi
+                        ? `सरकारी व्यय में ₹${v}B की कटौती (मितव्ययिता बजट) उतना ही प्रत्यक्ष इंजेक्शन वापस ले लेती है, जिससे व्यय के वे दौर सिकुड़ जाते हैं।`
+                        : `A ₹${v}B cut in government spending (an austerity budget) withdraws that much direct injection, shrinking the rounds of spending it used to trigger.`
+                },
+                dt: {
+                    up: (v, hi) => hi
+                        ? `करों में ₹${v}B की वृद्धि परिवारों की प्रयोज्य आय उतनी ही घटा देती है, जिससे उपभोग अप्रत्यक्ष रूप से घटता है — यह बराबर के व्यय-कटौती से छोटा असर है, क्योंकि उसमें से केवल MPC-हिस्सा ही खर्च होना था।`
+                        : `Raising taxes by ₹${v}B leaves households with that much less disposable income, so consumption falls only indirectly — a smaller effect than an equal spending cut, since only the MPC-share of it would have been spent anyway.`,
+                    down: (v, hi) => hi
+                        ? `करों में ₹${Math.abs(v)}B की कटौती परिवारों की जेब में सीधे पैसा डालती है, पर उसका केवल एक हिस्सा (MPC) ही खर्च होता है — बाकी बचाया जाता है — यही कारण है कि कर गुणक व्यय गुणक से छोटा है।`
+                        : `Cutting taxes by ₹${Math.abs(v)}B puts money directly in households' pockets, but only a fraction (the MPC) actually gets spent — the rest is saved — which is exactly why the tax multiplier is smaller than the spending multiplier.`
+                },
+                mpc: {
+                    up: (v, hi) => hi
+                        ? `परिवार अब हर अतिरिक्त रुपये का ${Math.round(v * 100)}% खर्च कर रहे हैं, बचाने के बजाय। हर व्यय-दौर अधिक पूरी तरह घूमता है, इसलिए अब इस अर्थव्यवस्था में कोई भी इंजेक्शन आय में एक बड़ा अंतिम बदलाव लाता है।`
+                        : `Households now spend ${Math.round(v * 100)}% of every extra rupee they earn instead of saving it. Each spending round recycles more fully, so any injection into this economy now produces a bigger final change in income.`,
+                    down: (v, hi) => hi
+                        ? `परिवार अब अधिक बचत कर रहे हैं — हर अतिरिक्त रुपये का केवल ${Math.round(v * 100)}% खर्च हो रहा है। हर व्यय-दौर जल्दी बुझ जाता है, इसलिए वही इंजेक्शन अब आय में छोटा अंतिम बदलाव लाता है — गुणक स्वयं सिकुड़ गया है।`
+                        : `Households are now saving more — spending only ${Math.round(v * 100)}% of each extra rupee. Each round of spending fades out faster, so the SAME injection produces a smaller final change in income — the multiplier itself has shrunk.`
+                }
+            },
+            missions: [
+                {
+                    id: 'close-gap-300', xp: 50,
+                    prompt: 'Using ΔI or ΔG alone (not both together), push the New Equilibrium Income to at least ₹300B.',
+                    hiPrompt: 'केवल ΔI या ΔG का उपयोग करके (दोनों एक साथ नहीं), नई संतुलन आय को कम से कम ₹300B तक पहुँचाएँ।',
+                    check(state, metrics) { return !!metrics && metrics.Y1 >= 300 && !(state.di > 0 && state.dg > 0); }
+                },
+                {
+                    id: 'tax-cut-boost', xp: 40,
+                    prompt: 'Cut taxes (ΔT negative) enough to raise income by at least ₹50B from tax alone.',
+                    hiPrompt: 'करों में इतनी कटौती करें (ΔT ऋणात्मक) कि केवल कर से आय कम से कम ₹50B बढ़े।',
+                    check(state, metrics) { return !!metrics && metrics.dyTax >= 50; }
+                },
+                {
+                    id: 'high-mpc-multiplier', xp: 30,
+                    prompt: 'Push MPC high enough that the multiplier k is at least 5.',
+                    hiPrompt: 'MPC को इतना बढ़ाएँ कि गुणक k कम से कम 5 हो जाए।',
+                    check(state, metrics) { return !!metrics && metrics.k >= 5; }
+                }
+            ]
+        },
         module: 'macro',
         title: 'The Multiplier Effect: Investment, Government Spending & Tax',
         desc: 'The named Investment Multiplier, plus Government Spending and Tax multipliers as extra contrast.',

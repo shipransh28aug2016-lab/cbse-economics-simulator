@@ -55,6 +55,7 @@ if (typeof I18N_HI === 'undefined') {
         'card.practice': '🧩 निर्देशित अभ्यास',
         'card.challenge': '🎯 चुनौती',
         'card.tlm': '🧑‍🏫 शिक्षण और अधिगम टूलकिट',
+        'card.aiTutor': '🤖 एआई ट्यूटर',
         'sim.takeQuiz': '🎯 प्रश्नोत्तरी लें  →',
         'tlm.keyIdea': '💡 मुख्य विचार',
         'tlm.commonMistakes': '⚠️ सामान्य भूलें',
