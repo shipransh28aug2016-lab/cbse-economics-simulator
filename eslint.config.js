@@ -24,6 +24,11 @@ const appGlobals = {
     mimaSetSnapshot: 'readonly', mimaClearSnapshot: 'readonly', getMimaContext: 'readonly',
     mimaOnStateChanged: 'writable', mimaExplain: 'readonly', MimaVoice: 'readonly',
     mimaInitUI: 'readonly',
+    // js/ai-tutor.js — the per-sim, rule-based "AI Tutor" side panel
+    // (opt-in via sim.aiTutor). Reads sim-engine.js's own state globals
+    // directly, the same way js/mima-ui.js reads `currentLang`.
+    aiTutorOnRender: 'readonly', aiTutorOnSimSwitch: 'readonly',
+    simEngineState: 'writable', prevSimResult: 'writable',
     renderDataLab: 'readonly', renderExplorer: 'readonly',
     // js/graph-lab-engine.js (mode: 'graphlab') + the Graph Lab sim files.
     renderGraphLab: 'readonly', glShowGhost: 'writable', glState: 'writable',

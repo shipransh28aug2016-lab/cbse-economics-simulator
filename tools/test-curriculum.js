@@ -628,6 +628,66 @@ function extractNodePos(html, label) {
     ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
 })();
 
+// ── AI Tutor (js/ai-tutor.js) config on macro-multiplier ──────────
+// js/ai-tutor.js itself is DOM-wiring code (chat panel, quiz buttons);
+// what actually needs economic-correctness coverage is the DATA it
+// consumes — sim.aiTutor.missions[*].check() and .scenarios[*] — which
+// live on the sim object in js/simulations.js and can be exercised
+// directly against the sim's own real compute(), exactly like a
+// sim's existing `challenge.check()`.
+(function testAiTutorConfig() {
+    const sim = findSim('macro-multiplier');
+    ok(!!sim.aiTutor, 'AI Tutor: macro-multiplier opts in with sim.aiTutor');
+    if (!sim.aiTutor) return;
+
+    const ctl = id => sim.controls.find(c => c.id === id);
+
+    sim.aiTutor.missions.forEach(m => {
+        ok(typeof m.id === 'string' && m.id.length > 0, 'AI Tutor mission has an id');
+        ok(typeof m.xp === 'number' && m.xp > 0, `AI Tutor mission "${m.id}": xp is a positive number`);
+        ok(typeof m.prompt === 'string' && m.prompt.length > 0, `AI Tutor mission "${m.id}": has an English prompt`);
+        ok(typeof m.hiPrompt === 'string' && /[ऀ-ॿ]/.test(m.hiPrompt), `AI Tutor mission "${m.id}": has a Hindi prompt`);
+        let threw = false;
+        try { m.check({}, null); } catch (e) { threw = true; }
+        ok(!threw, `AI Tutor mission "${m.id}": check() tolerates missing state/metrics without throwing`);
+    });
+
+    // Each mission's threshold must actually be reachable by the sim's
+    // real compute() somewhere inside its controls' own declared domain
+    // — never an XP goal the model can't produce.
+    const highMpcState = { mpc: ctl('mpc').max, di: 0, dg: 0, dt: 0 };
+    ok(sim.aiTutor.missions.find(m => m.id === 'high-mpc-multiplier').check(highMpcState, sim.compute(highMpcState).metrics),
+        'AI Tutor mission "high-mpc-multiplier": reachable at the MPC control\'s own max');
+
+    const gapState = { mpc: 0.8, di: ctl('di').max, dg: 0, dt: 0 };
+    ok(sim.aiTutor.missions.find(m => m.id === 'close-gap-300').check(gapState, sim.compute(gapState).metrics),
+        'AI Tutor mission "close-gap-300": reachable using ΔI alone at a plausible MPC');
+
+    const taxState = { mpc: 0.8, di: 0, dg: 0, dt: ctl('dt').min };
+    ok(sim.aiTutor.missions.find(m => m.id === 'tax-cut-boost').check(taxState, sim.compute(taxState).metrics),
+        'AI Tutor mission "tax-cut-boost": reachable at the ΔT control\'s own min (largest tax cut)');
+
+    // Scenario bank: real, non-empty text in both languages, for every
+    // control the sim actually has, at both ends of its domain — a drag
+    // calls this once per pixel, so a boundary-value throw would be a
+    // boundary a student could actually reach.
+    ['mpc', 'di', 'dg', 'dt'].forEach(id => {
+        const bank = sim.aiTutor.scenarios[id];
+        ok(!!bank && typeof bank.up === 'function' && typeof bank.down === 'function',
+            `AI Tutor scenario bank for "${id}" has both an up() and down() generator`);
+        if (!bank) return;
+        const c = ctl(id);
+        [c.min, c.max].forEach(v => {
+            ['up', 'down'].forEach(dir => {
+                const en = bank[dir](v, false);
+                const hi = bank[dir](v, true);
+                ok(typeof en === 'string' && en.length > 20 && !/[ऀ-ॿ]/.test(en), `AI Tutor scenario "${id}".${dir}(${v}): produces real English-only text`);
+                ok(typeof hi === 'string' && /[ऀ-ॿ]/.test(hi), `AI Tutor scenario "${id}".${dir}(${v}): produces real Hindi text`);
+            });
+        });
+    });
+})();
+
 (function testCentralTendency() {
     const sim = findSim('stats-central-tendency');
     const rows = [{ label: 'a', value: 2 }, { label: 'b', value: 4 }, { label: 'c', value: 4 }, { label: 'd', value: 6 }];

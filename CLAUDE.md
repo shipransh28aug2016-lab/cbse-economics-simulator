@@ -326,6 +326,64 @@ a framework the project never had:
 Run all four with `npm run verify`. Run them after every module you add — do not batch
 verification to the end of a session.
 
+## The AI Tutor ("Multiplier Coach", `js/ai-tutor.js`) — a per-sim rule-based coach
+
+Requested as an "AI-native, adaptive learning" upgrade (state-aware chat that can also
+drive the sim's own controls, dynamic real-world scenario text, and adaptive quiz/mission
+generation). This app is 100% static files with **no backend and no build step** — the
+same constraint that shaped Mima above — so, exactly like `js/mima-explain.js`, this is a
+**deterministic template engine over the sim's own `compute()`**, not a real LLM call:
+calling a real LLM directly from the browser would ship its API key to every visitor,
+which this project has no server to prevent. If a genuine LLM backend is ever added (a
+serverless proxy holding the key), it should replace the FAQ/answer logic in
+`js/ai-tutor.js` without touching how the rest of the app calls it — mirroring
+`js/mima-voice.js`'s "swap this one file" contract.
+
+- **Scope**: opt-in via `sim.aiTutor = { scenarios, missions }` on a sim's entry in its
+  `js/simulations*.js` file. Currently wired to exactly one sim — `macro-multiplier`
+  (the named Investment Multiplier, Class XII Unit 3) — chosen because bidirectional
+  slider actuation and a live-computed quiz answer are easiest to verify unambiguously on
+  a sim with few, orthogonal, linearly-related controls. Extending to another sim means
+  adding its own `aiTutor` config; nothing in `js/ai-tutor.js` is hard-coded to this one
+  sim's id.
+- **Distinct from Mima**: Mima (above) is app-wide, read-only, and explains what already
+  rendered. This tutor is a dedicated per-sim side panel (`#ai-tutor-card`, hidden unless
+  the active sim declares `aiTutor`) that can also **actuate**: a typed question like
+  *"what if MPC falls?"* is parsed for a control + direction, moves that control's real
+  slider through the exact same code path a manual drag uses (`renderSimChart(sim)`), and
+  then reads the reply back from `getMimaContext()` — the same structured effect data
+  Mima and the readings panel already render — so the tutor's explanation of what it just
+  did can never diverge from what the readings panel shows.
+- **Dynamic scenario line**: `sim.aiTutor.scenarios[controlId].up|down(value, isHindi)` —
+  a bilingual, hand-authored template bank (four controls × two directions × two
+  languages on `macro-multiplier`), re-rendered after every real transition off the
+  student's own interaction history (not off the raw sim state), so it always describes
+  the variable the student most recently touched.
+- **Adaptive quiz**: `generateQuiz()` reads the last few touched control ids from session
+  interaction history and asks a question whose numbers and correct answer come straight
+  from that render's own `compute()` metrics (`k`, `kt`, `dySpending`, `dyTax`) — never a
+  hand-authored number, so it cannot drift from the model the way an authored question
+  could. Distractors are algebraic near-misses (half, 1.5×, sign-flip) of the real answer.
+- **Missions / session XP**: `sim.aiTutor.missions[]` follows the exact same
+  `{prompt, hiPrompt, check(state, metrics)}` shape as a sim's existing `challenge` —
+  reuse, not a parallel mechanic. XP here is a **session-only counter local to this
+  panel**, not the app's Profile/Badges system (`CLAUDE.md`'s existing note that
+  XP/Badges/Profile are still UI-only placeholders remains true — this tutor doesn't wire
+  into that system, to avoid overclaiming progress that doesn't persist).
+- **Scoped aesthetic**: `.ai-tutor-card` in `css/styles.css` uses its own slate/zinc +
+  electric-blue/emerald CSS variables (`--at-*`), independent of the app's purple
+  glassmorphism, with a local 🌙/☀️ toggle (`.ai-tutor-dark`) — scoped to this one card so
+  it can't regress any other sim's styling.
+- **Tested in `tools/test-curriculum.js`** (`testAiTutorConfig`): every mission's
+  threshold is checked as actually reachable by sweeping the sim's own controls through
+  its own domain (never an XP goal the model can't produce), and every scenario generator
+  is checked at both ends of its control's domain, in both languages, for real non-empty
+  text. `js/ai-tutor.js` itself is DOM-wiring code (chat panel, quiz buttons) and is
+  additionally exercised end-to-end with real Playwright pointer/typing events (bidirectional
+  actuation, FAQ answers, quiz generation + grading, theme toggle, Hindi toggle, and
+  hide-on-switch to a non-`aiTutor` sim) as part of manual verification before shipping —
+  not yet folded into `tools/smoke.js`'s automated sweep (open backlog item).
+
 ## Working conventions
 
 1. Never remove or repurpose an existing `sim.id` — cards may be referenced by saved
