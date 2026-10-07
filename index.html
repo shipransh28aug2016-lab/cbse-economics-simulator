@@ -375,6 +375,20 @@
   </div>
 </div>
 
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "three": "https://esm.sh/three@0.160.0",
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12?external=react,react-dom,three"
+  }
+}
+</script>
+<script type="module">
+  import { render3DCircularFlow } from './js/circular_flow_3d.js';
+  window.render3DCircularFlow = render3DCircularFlow;
+</script>
 <script src="js/curriculum-data.js?v=1"></script>
 <script src="js/panel-collapse.js?v=1"></script>
 <script src="js/plotly.min.js?v=2"></script>
