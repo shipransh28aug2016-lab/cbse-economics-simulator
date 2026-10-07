@@ -468,14 +468,29 @@ const SIMS = [
                 </g>`;
 
             const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');
-            container.innerHTML = `
-                <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                     aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
-                    ${flowsSVG}
-                    ${nodesSVG}
-                    ${labelsSVG}
-                    ${legendSVG}
-                </svg>`;
+            if (typeof window.renderCircularFlow3D === 'function') {
+                window.renderCircularFlow3D(container, {
+                    model: sector === '2' ? '2-sector' : (sector === '3' ? '3-sector' : '4-sector'),
+                    hasBank: hasBank,
+                    C: consumption,
+                    Y: wages,
+                    S: saving,
+                    I: investment,
+                    T: taxes,
+                    G: g,
+                    X: exportsVal,
+                    M: imports
+                });
+            } else {
+                container.innerHTML = `
+                    <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+                         aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
+                        ${flowsSVG}
+                        ${nodesSVG}
+                        ${labelsSVG}
+                        ${legendSVG}
+                    </svg>`;
+            }
 
             // Injections vs Leakages — the actual CBSE-taught rule for
             // whether National Income is rising, falling, or in

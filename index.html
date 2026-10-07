@@ -8,6 +8,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css?v=4" />
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom": "https://esm.sh/react-dom@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "three": "https://esm.sh/three@0.168.0",
+      "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.8?external=react,react-dom,three"
+    }
+  }
+  </script>
   <script>
     window.addEventListener('error', function(e) {
       const errorDiv = document.createElement('div');
@@ -384,6 +395,7 @@
 <script src="js/datalab-engine.js?v=1"></script>
 <script src="js/explorer-engine.js?v=1"></script>
 <script src="js/graph-lab-engine.js?v=1"></script>
+<script type="module" src="js/circular-flow-3d.js?v=1"></script>
 <script src="js/simulations.js?v=4"></script>
 <script src="js/simulations_extended.js?v=8"></script>
 <script src="js/simulations_class11_micro.js?v=1"></script>
