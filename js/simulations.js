@@ -468,19 +468,10 @@ const SIMS = [
                 </g>`;
 
             const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');
-            if (typeof window.renderCircularFlow3D === 'function') {
-                window.renderCircularFlow3D(container, {
-                    model: sector === '2' ? '2-sector' : (sector === '3' ? '3-sector' : '4-sector'),
-                    hasBank: hasBank,
-                    C: consumption,
-                    Y: wages,
-                    S: saving,
-                    I: investment,
-                    T: taxes,
-                    G: g,
-                    X: exportsVal,
-                    M: imports
-                });
+
+            // Delegate 3D Isometric rendering to circular_flow_3d module if available
+            if (typeof window.render3DCircularFlow === 'function') {
+                window.render3DCircularFlow(container, v);
             } else {
                 container.innerHTML = `
                     <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EconSim Pro | CBSE Class XI–XII Economics Simulator</title>
-  <meta name="description" content="Live gamified economics simulations for CBSE Class XI and XII students. Understand Supply & Demand, GDP, Multiplier, Correlation, and more through interactive labs." />
+  <meta name="description" content="Live gamified economics simulations for CBSE Class XI and XII students. Understand Supply & Demand, GDP, Multiplier, Correlation, and more through interactive learning experiences." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css?v=4" />
@@ -52,7 +52,7 @@
   </div>
   <div class="nav-center" id="nav-breadcrumb"></div>
   <div class="nav-right">
-    <button id="lang-toggle" onclick="toggleLanguage()" class="icon-btn" style="width:auto;padding:0 12px;font-size:12px;font-weight:600;margin-right:8px;border-radius:12px;background:rgba(255,255,255,0.1)">🌐 हिन्दी</button>
+    <button id="lang-toggle" onclick="toggleLanguage()" class="icon-btn" style="width:auto;padding:0 12px;font-size:12px;font-weight:600;margin-right:8px;border-radius:12px;background:rgba(255,255,255,0.08);color:var(--text1);border:1px solid var(--border2);">EN</button>
     <div class="xp-chip">
       <span class="xp-star">⭐</span>
       <span id="nav-xp">0 XP</span>
@@ -70,8 +70,6 @@
   <!-- HERO (sleek single-line strip) -->
   <section class="hero">
     <svg class="hero-bg-decor" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-      <!-- a single faint sparkline motif — suits a thin strip better than
-           the taller banner's bars/scatter/crossing-lines composition did -->
       <polyline points="740,45 800,20 850,38 905,12 960,32 1015,8 1070,26 1125,15 1170,24"
                 fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.18"/>
       <circle cx="1015" cy="8" r="3" fill="#ef4444" opacity="0.22"/>
@@ -93,18 +91,7 @@
     </div>
   </section>
 
-  <!-- MODULES, grouped by CBSE Class 2026-27 hierarchy: Class XI (Part A
-       Statistics + Part B Microeconomics) then Class XII (Part A
-       Macroeconomics + Part B Indian Economic Development). See
-       curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md and
-       js/curriculum-data.js — this grouping is not decorative, it is the
-       thing the "no wrong class mapping" check validates. -->
   <section class="modules-section">
-
-    <!-- Every module panel below is collapsible (click its header, or use
-         this one master switch) — collapsed panels show just the header,
-         so the whole app fits in far less scrolling. State is remembered
-         per-panel in localStorage. See js/panel-collapse.js. -->
     <div class="panel-toolbar">
       <button type="button" class="panel-toolbar-btn" id="home-collapse-toggle">🗂️ Collapse All</button>
     </div>
@@ -115,7 +102,6 @@
         <p class="class-title-parts" data-i18n="class.xi.parts">Part A: Statistics for Economics · Part B: Introductory Microeconomics</p>
       </div>
 
-      <!-- MODULE: STATISTICS -->
       <div class="module-block" id="module-stats">
         <div class="module-header collapsible-header" data-panel-key="module-stats" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge stats-badge">σ</div>
@@ -135,7 +121,6 @@
         <div class="sims-grid" id="grid-stats"></div>
       </div>
 
-      <!-- MODULE: MICROECONOMICS -->
       <div class="module-block" id="module-micro">
         <div class="module-header collapsible-header" data-panel-key="module-micro" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge micro-badge">μ</div>
@@ -162,7 +147,6 @@
         <p class="class-title-parts" data-i18n="class.xii.parts">Part A: Introductory Macroeconomics · Part B: Indian Economic Development</p>
       </div>
 
-      <!-- MODULE: MACROECONOMICS -->
       <div class="module-block" id="module-macro">
         <div class="module-header collapsible-header" data-panel-key="module-macro" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge macro-badge">M</div>
@@ -182,7 +166,6 @@
         <div class="sims-grid" id="grid-macro"></div>
       </div>
 
-      <!-- MODULE: INDIAN ECONOMIC DEVELOPMENT -->
       <div class="module-block" id="module-india">
         <div class="module-header collapsible-header" data-panel-key="module-india" role="button" tabindex="0" aria-expanded="true">
           <div class="module-icon-badge india-badge">🇮🇳</div>
@@ -205,7 +188,6 @@
 
   </section>
 
-  <!-- RECENT ACHIEVEMENTS -->
   <section class="achievements-section">
     <h2 class="section-title" data-i18n="achievements.title">🏆 Recent Achievements</h2>
     <div class="badges-row" id="recent-badges">
@@ -213,8 +195,7 @@
     </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer style="padding: 24px 28px; border-top: 1px solid var(--border2); display: flex; justify-content: space-between; align-items: center; color: var(--text3); font-size: 12px; margin-top: 40px; flex-wrap: wrap; gap: 8px;">
+  <footer style="padding: 24px 28px; border-top: 1px solid var(--border2); display: flex; justify-content: space-between; align-items: center; color: var(--text3); font-size: 12px; margin-top: 40px;">
     <span>EconSim Pro — CBSE Economics Lab</span>
     <span>&copy; PP creations by Paras Pranav</span>
   </footer>
@@ -236,20 +217,14 @@
   </div>
 
   <div class="sim-body">
-    <!-- LEFT: canvas + controls -->
     <div class="sim-left">
       <div class="canvas-shell" id="canvas-shell">
         <canvas id="sim-canvas"></canvas>
-        <div id="sim-dom-overlay"></div><!-- for DOM-based sims -->
+        <div id="sim-dom-overlay"></div>
       </div>
       <div class="controls-panel" id="controls-panel"></div>
     </div>
 
-    <!-- RIGHT: info sidebar. Every card is collapsible — click its header
-         (or use the master switch below) to shrink it to just its title,
-         so the full sidebar can be scanned, and the whole screen viewed,
-         with far less scrolling. State remembers per-card across sims.
-         See js/panel-collapse.js. -->
     <div class="sim-right">
       <div class="panel-toolbar">
         <button type="button" class="panel-toolbar-btn" id="sim-collapse-toggle">🗂️ Collapse All</button>
@@ -278,9 +253,6 @@
         <div class="info-card-header collapsible-header" data-panel-key="tlm" role="button" tabindex="0" aria-expanded="false"><span data-i18n="card.tlm">🧑‍🏫 Teaching &amp; Learning Toolkit</span><span class="panel-chevron" aria-hidden="true">⌄</span></div>
         <div class="info-card-body" id="tlm-body"></div>
       </div>
-      <!-- js/ai-tutor.js: a per-sim rule-based "AI Tutor" side panel.
-           Hidden by default; only shown when the active sim declares
-           sim.aiTutor (currently just macro-multiplier). -->
       <div class="info-card hidden collapsed ai-tutor-card" id="ai-tutor-card">
         <div class="info-card-header collapsible-header" data-panel-key="aiTutor" role="button" tabindex="0" aria-expanded="false">
           <span data-i18n="card.aiTutor">🤖 AI Tutor</span>
@@ -308,9 +280,6 @@
 
 </div><!-- end screen-sim -->
 
-<!-- ══════════════════════════════════════════════
-     SCREEN: PROFILE
-══════════════════════════════════════════════ -->
 <div id="screen-profile" class="screen">
   <div class="sim-topbar">
     <button class="back-btn" onclick="showScreen('home')" data-i18n="common.back">← Back</button>
@@ -337,17 +306,13 @@
     </div>
   </div>
 
-  <!-- FOOTER -->
-  <footer style="padding: 24px 0; border-top: 1px solid var(--border2); display: flex; justify-content: space-between; align-items: center; color: var(--text3); font-size: 12px; margin-top: 40px; flex-wrap: wrap; gap: 8px;">
+  <footer style="padding: 24px 0; border-top: 1px solid var(--border2); display: flex; justify-content: space-between; align-items: center; color: var(--text3); font-size: 12px; margin-top: 40px;">
     <span>EconSim Pro Profile</span>
     <span>&copy; PP creations by Paras Pranav</span>
   </footer>
 
 </div>
 
-<!-- ══════════════════════════════════════════════
-     QUIZ MODAL
-══════════════════════════════════════════════ -->
 <div id="quiz-overlay" class="overlay hidden">
   <div class="quiz-modal">
     <div class="quiz-modal-header">
@@ -374,10 +339,8 @@
   </div>
 </div>
 
-<!-- ░░ XP POPUP ░░ -->
 <div class="xp-popup hidden" id="xp-popup">+<span id="xp-pop-amt">100</span> XP</div>
 
-<!-- ░░ ACHIEVEMENT POPUP ░░ -->
 <div class="achievement-popup hidden" id="ach-popup">
   <div class="ach-pop-icon" id="ach-pop-icon">🏆</div>
   <div class="ach-pop-text">
@@ -386,6 +349,21 @@
   </div>
 </div>
 
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "three": "https://esm.sh/three@0.160.0",
+    "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12?external=react,react-dom,three"
+  }
+}
+</script>
+<script type="module">
+  import { render3DCircularFlow } from './js/circular-flow-3d.js';
+  window.render3DCircularFlow = render3DCircularFlow;
+  window.renderCircularFlow3D = render3DCircularFlow;
+</script>
 <script src="js/curriculum-data.js?v=1"></script>
 <script src="js/panel-collapse.js?v=1"></script>
 <script src="js/plotly.min.js?v=2"></script>
