@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -307,7 +307,7 @@ function GlowingParticleFlow({ start, end, mid, color, isRealFlow, intensity = 1
     const time = state.clock.getElapsedTime() * 0.4 * (speed + intensity / 100);
     const children = groupRef.current.children;
 
-    for (let i = 0; i < children.length; i++) {
+    for (let i = 0, len = children.length; i < len; i++) {
       if (i >= particles.length) break;
       const mesh = children[i];
       let t = (particles[i].offset + time) % 1.0;
