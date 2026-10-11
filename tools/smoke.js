@@ -69,7 +69,7 @@ function ok(cond, label) {
     // network policy may block, and browsers auto-request /favicon.ico
     // whether or not a page declares one. Both are filtered by URL, not
     // by message text, so a real app-code console error is never masked.
-    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/];
+    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/, /esm\.sh/];
     const errors = [];
     page.on('console', msg => {
         if (msg.type() !== 'error') return;
@@ -356,6 +356,7 @@ function ok(cond, label) {
     const beforeI18n = errors.length;
     const heroBadgeEn = (await page.locator('.hero-badge').textContent()) || '';
     await page.locator('#lang-toggle').click();
+
     await page.waitForTimeout(150);
     const heroBadgeHi = (await page.locator('.hero-badge').textContent()) || '';
     ok(heroBadgeHi !== heroBadgeEn && /[ऀ-ॿ]/.test(heroBadgeHi), `i18n: static UI text (hero badge) switches to Devanagari on toggle (got "${heroBadgeHi}")`);

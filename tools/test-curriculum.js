@@ -1106,6 +1106,53 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
 context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
 console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
 
+// ── Security verification: Challenge Shell XSS mitigation ─────
+(function testChallengeShellXSS() {
+    const cardEl = stubEl();
+    const bodyEl = stubEl();
+    bodyEl.children = [];
+    bodyEl.appendChild = function(child) { this.children.push(child); };
+
+    const docElements = {
+        'challenge-card': cardEl,
+        'challenge-body': bodyEl
+    };
+
+    const origGetElementById = sandbox.document.getElementById;
+    const origCreateElement = sandbox.document.createElement;
+
+    sandbox.document.getElementById = (id) => docElements[id] || stubEl();
+    sandbox.document.createElement = (tag) => {
+        const el = stubEl();
+        el.tagName = tag.toUpperCase();
+        return el;
+    };
+
+    const maliciousPrompt = '<img src=x onerror=alert("XSS")>';
+    const testSim = {
+        id: 'test-xss-sim',
+        challenge: {
+            prompt: maliciousPrompt,
+            check: () => false
+        }
+    };
+
+    const renderShellInContext = vm.runInContext('renderChallengeShell', context);
+    renderShellInContext(testSim);
+
+    ok(bodyEl.innerHTML === '', 'renderChallengeShell does not set body.innerHTML directly');
+    ok(bodyEl.children.length === 2, 'renderChallengeShell appends 2 child elements (p and status div)');
+    if (bodyEl.children.length >= 2) {
+        ok(bodyEl.children[0].textContent === maliciousPrompt, 'Prompt is assigned as raw text via textContent, neutralizing HTML tags/XSS vectors');
+        ok(bodyEl.children[0].className === 'challenge-prompt', 'Prompt element carries challenge-prompt class');
+        ok(bodyEl.children[1].className === 'challenge-status', 'Status element carries challenge-status class');
+        ok(bodyEl.children[1].id === 'challenge-status', 'Status element carries challenge-status ID');
+    }
+
+    sandbox.document.getElementById = origGetElementById;
+    sandbox.document.createElement = origCreateElement;
+})();
+
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {
     console.error(`\n❌ tools/test-curriculum.js FAILED (${failures} failing assertions).`);
