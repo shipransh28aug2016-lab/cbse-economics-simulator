@@ -124,6 +124,7 @@ const CURRICULUM_NODES = context.window.CURRICULUM_NODES;
 const validateCurriculum = context.window.validateCurriculum;
 const dataLabValidate = context.dataLabValidate;
 const fmt = context.fmt;
+const lineIntersect = context.lineIntersect;
 const generateQuiz = context.generateQuiz;
 const QUIZ_BANK = vm.runInContext('QUIZ_BANK', context);
 const SIM_I18N_HI = vm.runInContext('SIM_I18N_HI', context);
@@ -685,6 +686,46 @@ function extractNodePos(html, label) {
                 ok(typeof hi === 'string' && /[ऀ-ॿ]/.test(hi), `AI Tutor scenario "${id}".${dir}(${v}): produces real Hindi text`);
             });
         });
+    });
+})();
+
+(function testLineIntersect() {
+    // Standard linear market equilibrium intersection: P = 100 - 2*Q and P = 20 + 3*Q
+    // Q = (100 - 20) / (2 + 3) = 16, P = 100 - 2*16 = 68
+    const std = lineIntersect(100, 2, 20, 3);
+    approx(std.Q, 16, 1e-9, 'lineIntersect: standard equilibrium Q');
+    approx(std.P, 68, 1e-9, 'lineIntersect: standard equilibrium P');
+
+    // Decimal / fractional coefficients: P = 100 - 1.2*Q and P = 20 + 0.8*Q
+    // Q = (100 - 20) / (1.2 + 0.8) = 40, P = 100 - 1.2*40 = 52
+    const dec = lineIntersect(100, 1.2, 20, 0.8);
+    approx(dec.Q, 40, 1e-9, 'lineIntersect: decimal coefficients Q');
+    approx(dec.P, 52, 1e-9, 'lineIntersect: decimal coefficients P');
+
+    // Horizontal supply curve (zero supply slope d = 0): P = 100 - 2*Q and P = 40
+    // Q = (100 - 40) / 2 = 30, P = 40
+    const horiz = lineIntersect(100, 2, 40, 0);
+    approx(horiz.Q, 30, 1e-9, 'lineIntersect: horizontal curve Q');
+    approx(horiz.P, 40, 1e-9, 'lineIntersect: horizontal curve P');
+
+    // Identical intercepts (a = c): P = 50 - 2*Q and P = 50 + 3*Q
+    // Q = 0, P = 50
+    const zeroQ = lineIntersect(50, 2, 50, 3);
+    approx(zeroQ.Q, 0, 1e-9, 'lineIntersect: equal intercepts Q');
+    approx(zeroQ.P, 50, 1e-9, 'lineIntersect: equal intercepts P');
+
+    // Verify mathematical invariants: P_demand = a - b*Q and P_supply = c + d*Q match
+    const testCases = [
+        { a: 120, b: 1.5, c: 30, d: 1.5 },
+        { a: 90, b: 0.8, c: 10, d: 1.2 },
+        { a: 200, b: 5, c: 50, d: 2.5 }
+    ];
+    testCases.forEach(({ a, b, c, d }) => {
+        const { Q, P } = lineIntersect(a, b, c, d);
+        const pDemand = a - b * Q;
+        const pSupply = c + d * Q;
+        approx(pDemand, pSupply, 1e-9, `lineIntersect: P_demand == P_supply for (${a}, ${b}, ${c}, ${d})`);
+        approx(P, pDemand, 1e-9, `lineIntersect: returned P matches P_demand for (${a}, ${b}, ${c}, ${d})`);
     });
 })();
 

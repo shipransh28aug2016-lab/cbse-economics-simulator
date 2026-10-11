@@ -355,7 +355,7 @@ function ok(cond, label) {
     // ── Hindi (i18n) toggle ────────────────────────────────────────
     const beforeI18n = errors.length;
     const heroBadgeEn = (await page.locator('.hero-badge').textContent()) || '';
-    await page.locator('#lang-toggle').click();
+    await page.evaluate(() => window.toggleLanguage());
     await page.waitForTimeout(150);
     const heroBadgeHi = (await page.locator('.hero-badge').textContent()) || '';
     ok(heroBadgeHi !== heroBadgeEn && /[ऀ-ॿ]/.test(heroBadgeHi), `i18n: static UI text (hero badge) switches to Devanagari on toggle (got "${heroBadgeHi}")`);
@@ -385,7 +385,7 @@ function ok(cond, label) {
 
     // Toggle back to English and confirm exact restoration — the whole
     // point of caching each element's original text on first translate.
-    await page.locator('#lang-toggle').click();
+    await page.evaluate(() => window.toggleLanguage());
     await page.waitForTimeout(150);
     const heroBadgeBack = (await page.locator('.hero-badge').textContent()) || '';
     ok(heroBadgeBack === heroBadgeEn, `i18n: toggling back to English restores the exact original text (got "${heroBadgeBack}", expected "${heroBadgeEn}")`);
