@@ -47,13 +47,23 @@ if (typeof SIMS !== 'undefined') {
                     // consistent with what the chart itself shows.
                     const N = 200;
                     const qxs = range(N + 1).map(i => (i / N) * qxMax);
-                    const muxSeries = qxs.map(qx => (a - b * qx) / Px);
-                    const muySeries = qxs.map(qx => (a - b * Math.max((M - Px * qx) / Py, 0)) / Py);
+                    const muxSeries = [];
+                    const muySeries = [];
                     let bestQx = 0, bestGap = Infinity;
-                    qxs.forEach((qx, i) => {
-                        const gap = Math.abs(muxSeries[i] - muySeries[i]);
-                        if (gap < bestGap) { bestGap = gap; bestQx = qx; }
-                    });
+
+                    for (const qx of qxs) {
+                        const mux = (a - b * qx) / Px;
+                        const qy = Math.max((M - Px * qx) / Py, 0);
+                        const muy = (a - b * qy) / Py;
+                        muxSeries.push(mux);
+                        muySeries.push(muy);
+
+                        const gap = Math.abs(mux - muy);
+                        if (gap < bestGap) {
+                            bestGap = gap;
+                            bestQx = qx;
+                        }
+                    }
                     const bestQy = Math.max((M - Px * bestQx) / Py, 0);
                     const bestMuPerRupee = (a - b * bestQx) / Px;
 
