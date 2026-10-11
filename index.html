@@ -353,6 +353,7 @@
 {
   "imports": {
     "react": "https://esm.sh/react@18.3.1",
+    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
     "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
     "three": "https://esm.sh/three@0.160.0",
     "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12?external=react,react-dom,three"
@@ -360,7 +361,7 @@
 }
 </script>
 <script type="module">
-  import { render3DCircularFlow } from './js/circular-flow-3d.js';
+  import { render3DCircularFlow } from './js/circular_flow_3d.js';
   window.render3DCircularFlow = render3DCircularFlow;
   window.renderCircularFlow3D = render3DCircularFlow;
 </script>
@@ -373,7 +374,6 @@
 <script src="js/datalab-engine.js?v=1"></script>
 <script src="js/explorer-engine.js?v=1"></script>
 <script src="js/graph-lab-engine.js?v=1"></script>
-<script type="module" src="js/circular-flow-3d.js?v=1"></script>
 <script src="js/simulations.js?v=4"></script>
 <script src="js/simulations_extended.js?v=8"></script>
 <script src="js/simulations_class11_micro.js?v=1"></script>
