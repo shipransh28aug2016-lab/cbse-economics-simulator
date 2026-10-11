@@ -132,6 +132,9 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const glWireChip = vm.runInContext('glWireChip', context);
+const glWireHandles = vm.runInContext('glWireHandles', context);
+const renderGraphLab = context.renderGraphLab;
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -686,6 +689,103 @@ function extractNodePos(html, label) {
             });
         });
     });
+})();
+
+(function testGraphLabReleasePointerCaptureErrorHandling() {
+    const sim = findSim('gl-demand-movement-shift');
+    ok(!!sim && sim.mode === 'graphlab', 'releasePointerCapture test: found graphlab sim');
+    if (!sim) return;
+
+    vm.runInContext('glSim = SIMS.find(s => s.id === "gl-demand-movement-shift");', context);
+    vm.runInContext('glState = {}; (glSim.graphLab.vars || []).forEach(v => { glState[v.id] = v.value; });', context);
+
+    // 1. Test glWireChip when releasePointerCapture throws an intentional error
+    const varDecl = sim.graphLab.vars[0];
+    let chipCaptured = false;
+    let chipReleasedAndThrew = false;
+    const trackListeners = {};
+
+    const trackEl = {
+        getBoundingClientRect: () => ({ left: 0, width: 100 }),
+        setPointerCapture: (id) => { chipCaptured = true; },
+        releasePointerCapture: (id) => {
+            chipReleasedAndThrew = true;
+            throw new Error('DOMException: InvalidPointerId');
+        },
+        addEventListener: (type, fn) => { trackListeners[type] = fn; }
+    };
+
+    const hostEl = {
+        querySelector: (sel) => {
+            if (sel === `[data-track="${varDecl.id}"]`) return trackEl;
+            return null;
+        }
+    };
+
+    let chipErrorCaught = false;
+    try {
+        glWireChip(sim, hostEl, varDecl);
+        ok(typeof trackListeners['pointerdown'] === 'function', 'glWireChip registered pointerdown');
+        ok(typeof trackListeners['pointerup'] === 'function', 'glWireChip registered pointerup');
+
+        // Trigger pointerdown
+        trackListeners['pointerdown']({ pointerId: 42, clientX: 50, preventDefault: noop });
+        ok(chipCaptured, 'glWireChip setPointerCapture called on pointerdown');
+
+        // Trigger pointerup - releasePointerCapture will throw, catch branch should handle it
+        trackListeners['pointerup']({ pointerId: 42, preventDefault: noop });
+        chipErrorCaught = true;
+    } catch (e) {
+        chipErrorCaught = false;
+    }
+
+    ok(chipReleasedAndThrew, 'glWireChip track.releasePointerCapture was invoked and threw an error');
+    ok(chipErrorCaught, 'glWireChip releasePointerCapture error was caught safely without throwing');
+
+    // 2. Test glWireHandles when releasePointerCapture throws an intentional error
+    let handleCaptured = false;
+    let handleReleasedAndThrew = false;
+    const handleListeners = {};
+
+    const handleEl = {
+        classList: { add: noop, remove: noop },
+        setPointerCapture: (id) => { handleCaptured = true; },
+        releasePointerCapture: (id) => {
+            handleReleasedAndThrew = true;
+            throw new Error('DOMException: InvalidPointerId');
+        },
+        addEventListener: (type, fn) => { handleListeners[type] = fn; }
+    };
+
+    const svgEl = {
+        querySelector: (sel) => handleEl,
+        classList: { add: noop, remove: noop },
+        createSVGPoint: () => null,
+        getBoundingClientRect: () => ({ left: 0, top: 0, width: 880, height: 430 })
+    };
+
+    const handleDecl = { id: 'testHandle', bind: varDecl.id, axis: 'x', k: 1 };
+    const scales = { ix: px => px, iy: py => py };
+
+    let handleErrorCaught = false;
+    try {
+        glWireHandles(svgEl, [handleDecl], scales);
+        ok(typeof handleListeners['pointerdown'] === 'function', 'glWireHandles registered pointerdown');
+        ok(typeof handleListeners['pointerup'] === 'function', 'glWireHandles registered pointerup');
+
+        // Trigger pointerdown on handle
+        handleListeners['pointerdown']({ pointerId: 99, clientX: 20, clientY: 20, preventDefault: noop });
+        ok(handleCaptured, 'glWireHandles setPointerCapture called on pointerdown');
+
+        // Trigger pointerup on handle - releasePointerCapture will throw
+        handleListeners['pointerup']({ pointerId: 99, preventDefault: noop });
+        handleErrorCaught = true;
+    } catch (e) {
+        handleErrorCaught = false;
+    }
+
+    ok(handleReleasedAndThrew, 'glWireHandles el.releasePointerCapture was invoked and threw an error');
+    ok(handleErrorCaught, 'glWireHandles releasePointerCapture error was caught safely without throwing');
 })();
 
 (function testCentralTendency() {
