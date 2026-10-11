@@ -132,6 +132,9 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const getMimaContext = vm.runInContext('getMimaContext', context);
+const mimaSetSnapshot = vm.runInContext('mimaSetSnapshot', context);
+const mimaClearSnapshot = vm.runInContext('mimaClearSnapshot', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -566,6 +569,124 @@ function extractNodePos(html, label) {
 // js/mima-ui.js — these tests check the SOURCE that guarantee applies to,
 // and that Mima never states a fact her own context doesn't contain
 // (never contradicts the simulator, per CLAUDE.md's Mima section).
+(function testGetMimaContext() {
+    // 1. Initial / cleared state returns null
+    mimaClearSnapshot();
+    ok(getMimaContext() === null, 'getMimaContext: returns null when no snapshot exists');
+
+    // Track listener callbacks
+    let listenerCalls = 0;
+    context.mimaOnStateChanged = () => { listenerCalls++; };
+
+    // 2. Set snapshot with simulation data
+    const mockSim = {
+        id: 'micro-demand',
+        title: 'Demand Curve',
+        module: 'micro',
+        class: 'XI',
+        part: 'B',
+        unit: 'U5',
+        unitTitle: 'Consumer Behaviour',
+        tlm: { keyIdea: 'Demand slopes downwards' }
+    };
+    const mockData = {
+        isFirstRender: true,
+        changedControls: [{ label: 'Price', before: 10, after: 15 }],
+        effects: [{ label: 'Quantity', before: 100, after: 80, rose: false }],
+        verdict: null,
+        ghostedNames: ['Demand Curve'],
+        allTraceNames: ['Demand Curve'],
+        currentMetrics: { price: 15, qty: 80 },
+        readingsHTML: '<span>P=15</span>'
+    };
+
+    mimaSetSnapshot(mockSim, 'simulator', mockData);
+    ok(listenerCalls === 1, 'mimaSetSnapshot: triggers mimaOnStateChanged callback');
+
+    // 3. Verify getMimaContext() populates context correctly
+    context.currentLang = 'en';
+    let ctx = getMimaContext();
+    ok(ctx !== null, 'getMimaContext: returns a non-null object after snapshot set');
+    ok(ctx.simId === 'micro-demand', 'getMimaContext: contains simId');
+    ok(ctx.title === 'Demand Curve', 'getMimaContext: contains title');
+    ok(ctx.module === 'micro', 'getMimaContext: contains module');
+    ok(ctx.classLabel === 'XI', 'getMimaContext: contains classLabel');
+    ok(ctx.part === 'B', 'getMimaContext: contains part');
+    ok(ctx.unit === 'U5', 'getMimaContext: contains unit');
+    ok(ctx.unitTitle === 'Consumer Behaviour', 'getMimaContext: contains unitTitle');
+    ok(ctx.mode === 'simulator', 'getMimaContext: contains mode');
+    ok(ctx.isFirstRender === true, 'getMimaContext: contains isFirstRender');
+    ok(ctx.changedControls.length === 1 && ctx.changedControls[0].label === 'Price', 'getMimaContext: contains changedControls');
+    ok(ctx.effects.length === 1 && ctx.effects[0].label === 'Quantity', 'getMimaContext: contains effects');
+    ok(ctx.ghostedNames[0] === 'Demand Curve', 'getMimaContext: contains ghostedNames');
+    ok(ctx.keyIdea === 'Demand slopes downwards', 'getMimaContext: contains keyIdea');
+    ok(typeof ctx.at === 'number' && ctx.at > 0, 'getMimaContext: contains timestamp at');
+
+    // 4. Test language resolution
+    ok(ctx.lang === 'en', 'getMimaContext: sets lang to "en" when currentLang === "en"');
+
+    context.currentLang = 'hi';
+    const ctxHi = getMimaContext();
+    ok(ctxHi.lang === 'hi', 'getMimaContext: sets lang to "hi" when currentLang === "hi"');
+
+    context.currentLang = 'fr'; // unknown / non-hi language
+    const ctxFr = getMimaContext();
+    ok(ctxFr.lang === 'en', 'getMimaContext: defaults lang to "en" when currentLang is non-hi');
+
+    context.currentLang = undefined;
+    const ctxUndef = getMimaContext();
+    ok(ctxUndef.lang === 'en', 'getMimaContext: defaults lang to "en" when currentLang is undefined');
+
+    // Reset currentLang back to 'en'
+    context.currentLang = 'en';
+
+    // 5. Test immutability / object copy
+    ctx = getMimaContext();
+    ctx.simId = 'mutated';
+    ctx.changedControls.push({ label: 'Mutated' });
+    const ctx2 = getMimaContext();
+    ok(ctx2.simId === 'micro-demand', 'getMimaContext: returned object is a shallow copy (internal simId preserved)');
+
+    // 6. Test defaults when optional data parameters are omitted
+    mimaSetSnapshot(mockSim, 'simulator', {});
+    const ctxDefaults = getMimaContext();
+    ok(ctxDefaults.isFirstRender === false, 'mimaSetSnapshot: defaults isFirstRender to false when omitted');
+    ok(Array.isArray(ctxDefaults.changedControls) && ctxDefaults.changedControls.length === 0, 'mimaSetSnapshot: defaults changedControls to [] when omitted');
+    ok(Array.isArray(ctxDefaults.effects) && ctxDefaults.effects.length === 0, 'mimaSetSnapshot: defaults effects to [] when omitted');
+    ok(ctxDefaults.verdict === null, 'mimaSetSnapshot: defaults verdict to null when omitted');
+    ok(Array.isArray(ctxDefaults.ghostedNames) && ctxDefaults.ghostedNames.length === 0, 'mimaSetSnapshot: defaults ghostedNames to [] when omitted');
+    ok(Array.isArray(ctxDefaults.allTraceNames) && ctxDefaults.allTraceNames.length === 0, 'mimaSetSnapshot: defaults allTraceNames to [] when omitted');
+    ok(typeof ctxDefaults.currentMetrics === 'object' && Object.keys(ctxDefaults.currentMetrics).length === 0, 'mimaSetSnapshot: defaults currentMetrics to {} when omitted');
+    ok(ctxDefaults.readingsHTML === '', 'mimaSetSnapshot: defaults readingsHTML to "" when omitted');
+
+    // 7. Test mimaClearSnapshot resets getMimaContext to null and triggers listener
+    const callsBeforeClear = listenerCalls;
+    mimaClearSnapshot();
+    ok(getMimaContext() === null, 'getMimaContext: returns null after mimaClearSnapshot()');
+    ok(listenerCalls === callsBeforeClear + 1, 'mimaClearSnapshot: triggers mimaOnStateChanged callback');
+
+    // Cleanup listener stub
+    delete context.mimaOnStateChanged;
+
+    // 8. Integration test with real sim and mimaExplain
+    const realSim = findSim('micro-price-controls');
+    mimaSetSnapshot(realSim, 'simulator', {
+        isFirstRender: false,
+        changedControls: [{ label: 'Control Price', before: 60, after: 80 }],
+        effects: [{ label: 'Shortage / Surplus', before: 0, after: 20, rose: true }],
+        ghostedNames: ['Supply'],
+        allTraceNames: ['Demand', 'Supply']
+    });
+    const liveCtx = getMimaContext();
+    const explanation = mimaExplain(liveCtx, 'explain');
+    ok(explanation && typeof explanation.text === 'string' && explanation.text.length > 0,
+        'getMimaContext integration: live context directly feeds into mimaExplain and generates explanation');
+    ok(explanation.text.indexOf('Control Price') !== -1,
+        'getMimaContext integration: mimaExplain output contains control label from live context');
+
+    mimaClearSnapshot();
+})();
+
 (function testMimaExplainNeverInventsFacts() {
     const ctx = {
         lang: 'en', mode: 'simulator', title: 'Fixture Sim', isFirstRender: false,
