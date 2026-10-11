@@ -98,13 +98,13 @@ const SIMS = [
                 ],
                 layout: { xaxis: { title: 'Quantity', range: [0, 80] }, yaxis: { title: 'Price (₹)', range: [0, 160] } },
                 metrics: { equilibriumPrice: P, equilibriumQuantity: Q, demandShift, supplyShift },
-                readings: `<div class="reading-row"><span>Net Demand Shift</span><b>${demandShift >= 0 ? '+' : ''}${demandShift}</b></div>
-                           <div class="reading-row"><span>Net Supply Shift</span><b>${supplyShift >= 0 ? '+' : ''}${supplyShift}</b></div>
-                           <div class="reading-row"><span>Equilibrium Price</span><b>₹${fmt(P)}</b></div>
-                           <div class="reading-row"><span>Equilibrium Quantity</span><b>${fmt(Q)} units</b></div>
-                           <div class="reading-row insight-row">💡 ${biggest
+                readings: readingRow('Net Demand Shift', `${demandShift >= 0 ? '+' : ''}${demandShift}`) +
+                           readingRow('Net Supply Shift', `${supplyShift >= 0 ? '+' : ''}${supplyShift}`) +
+                           readingRow('Equilibrium Price', `₹${fmt(P)}`) +
+                           readingRow('Equilibrium Quantity', `${fmt(Q)} units`) +
+                           readingInsight(biggest
                                ? `The biggest mover right now is <b>${biggest.label}</b> (Δ${biggest.v >= 0 ? '+' : ''}${biggest.v}). ${demandShift !== 0 ? (demandShift > 0 ? 'Demand has shifted right (increased)' : 'Demand has shifted left (decreased)') + '. ' : ''}${supplyShift !== 0 ? (supplyShift < 0 ? 'Supply has shifted right (increased) — lower net cost/higher tech/subsidy.' : 'Supply has shifted left (decreased) — higher net cost/tax.') : ''}`
-                               : 'All factors are at zero — move any slider to see its own named effect on demand or supply.'}</div>`
+                               : 'All factors are at zero — move any slider to see its own named effect on demand or supply.')
             };
         },
         practice: [
@@ -173,10 +173,10 @@ const SIMS = [
                     layout: { xaxis: { title: 'Consumer Income (₹\'000/month)', range: [0, 105] }, yaxis: { title: 'Quantity Demanded', range: [0, 35] } },
                     formulas: ['Ey = (%ΔQ) / (%ΔY)', 'Point elasticity: Ey = (dQ/dY) × (Y/Q)', 'Demand: Q = 5 + 0.3Y (normal good)'],
                     metrics: { Ey, mode: 'income' },
-                    readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
-                               <div class="reading-row"><span>Income Elasticity (Ey)</span><b>${fmt(Ey)}</b></div>
-                               <div class="reading-row"><span>Classification</span><b>${label}</b></div>
-                               <div class="reading-row insight-row">💡 Ey &gt; 0 means demand rises with income (a normal good) — Ey &gt; 1 marks it a luxury, 0 &lt; Ey &lt; 1 a necessity. An inferior good (not modeled here) would show Ey &lt; 0.</div>`
+                    readings: readingRow('Quantity Demanded', fmt(Q)) +
+                               readingRow('Income Elasticity (Ey)', fmt(Ey)) +
+                               readingRow('Classification', label) +
+                               readingInsight('Ey &gt; 0 means demand rises with income (a normal good) — Ey &gt; 1 marks it a luxury, 0 &lt; Ey &lt; 1 a necessity. An inferior good (not modeled here) would show Ey &lt; 0.')
                 };
             }
             if (v.type === 'cross') {
@@ -192,10 +192,10 @@ const SIMS = [
                     layout: { xaxis: { title: 'Price of Related Good Y (₹)', range: [0, 100] }, yaxis: { title: 'Quantity Demanded of Good X', range: [0, 60] } },
                     formulas: ['Exy = (%ΔQx) / (%ΔPy)', 'Point elasticity: Exy = (dQx/dPy) × (Py/Qx)', 'Demand: Qx = 10 + 0.5Py (X and Y are substitutes)'],
                     metrics: { Exy, mode: 'cross' },
-                    readings: `<div class="reading-row"><span>Quantity Demanded of X</span><b>${fmt(Qx)}</b></div>
-                               <div class="reading-row"><span>Cross Elasticity (Exy)</span><b>${fmt(Exy)}</b></div>
-                               <div class="reading-row"><span>Relationship</span><b>Substitutes (Exy &gt; 0)</b></div>
-                               <div class="reading-row insight-row">💡 Exy &gt; 0 (e.g. tea &amp; coffee) means a price rise in Y pushes buyers toward X — they're substitutes. Complements (e.g. car &amp; petrol) would show Exy &lt; 0 instead.</div>`
+                    readings: readingRow('Quantity Demanded of X', fmt(Qx)) +
+                               readingRow('Cross Elasticity (Exy)', fmt(Exy)) +
+                               readingRow('Relationship', 'Substitutes (Exy &gt; 0)') +
+                               readingInsight("Exy &gt; 0 (e.g. tea &amp; coffee) means a price rise in Y pushes buyers toward X — they're substitutes. Complements (e.g. car &amp; petrol) would show Exy &lt; 0 instead.")
                 };
             }
             const P = v.price, subs = v.substitutes;
@@ -221,10 +221,10 @@ const SIMS = [
                 layout: { xaxis: { title: 'Quantity', range: [0, 55] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
                 formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', `Demand: Q = 50 − ${fmt(bEff, 1)}P (steeper slope with more substitutes)`, 'Determinants of Ed: substitutes, necessity vs luxury, share of income, time period'],
                 metrics: { Ed, mode: 'price', substitutes: subs },
-                readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
-                           <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${fmt(Ed)}</b></div>
-                           <div class="reading-row"><span>Classification</span><b>${label}</b></div>
-                           <div class="reading-row insight-row">💡 ${insight}</div>`
+                readings: readingRow('Quantity Demanded', fmt(Q)) +
+                           readingRow('Point Elasticity (Ed)', fmt(Ed)) +
+                           readingRow('Classification', label) +
+                           readingInsight(insight)
             };
         },
         tlm: {
@@ -510,20 +510,16 @@ const SIMS = [
             const gdpExp = identityHolds ? consumption : consumption + investment + g + nx; // C, or C + I + G + NX once any leakage/injection channel exists
             return {
                 metrics: { sector, bank: v.bank || 'no', consumption, wages, saving, investment, g, nx, taxes, exportsVal, imports, totalInjections, totalLeakages, gdpExp },
-                readings: `<div class="reading-row"><span>Economy Model</span><b>${sectorLabel}${hasBank ? ' + Financial Market' : ''}</b></div>
-                           <div class="reading-row"><span>Consumption Expenditure (C)</span><b>₹${consumption}B</b></div>
-                           <div class="reading-row"><span>Factor Payments (Wages etc.)</span><b>₹${wages}B</b></div>
-                           ${identityHolds ? `<div class="reading-row insight-row">Wages is forced equal to Consumption here — that's what "Y = C" means with no leakage channel open yet.</div>` : ''}
-                           ${hasBank ? `<div class="reading-row"><span>Savings (S) — Leakage</span><b>₹${saving}B</b></div>
-                           <div class="reading-row"><span>Investment (I) — Injection</span><b>₹${investment}B</b></div>` : ''}
-                           ${has3 ? `<div class="reading-row"><span>Taxes (T) — Leakage</span><b>₹${taxes}B</b></div>
-                           <div class="reading-row"><span>Govt Spending (G) — Injection</span><b>₹${g}B</b></div>` : ''}
-                           ${has4 ? `<div class="reading-row"><span>Exports (X) — Injection</span><b>₹${fmt(exportsVal, 0)}B</b></div>
-                           <div class="reading-row"><span>Imports (M) — Leakage</span><b>₹${fmt(imports, 0)}B</b></div>` : ''}
-                           ${!identityHolds ? `<div class="reading-row"><span>Total Injections</span><b>₹${fmt(totalInjections, 0)}B</b></div>
-                           <div class="reading-row"><span>Total Leakages</span><b>₹${fmt(totalLeakages, 0)}B</b></div>` : ''}
-                           <div class="reading-row insight-row">💡 ${verdict}</div>
-                           <div class="reading-row insight-row">Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms.</div>`
+                readings: readingRow('Economy Model', `${sectorLabel}${hasBank ? ' + Financial Market' : ''}`) +
+                           readingRow('Consumption Expenditure (C)', `₹${consumption}B`) +
+                           readingRow('Factor Payments (Wages etc.)', `₹${wages}B`) +
+                           (identityHolds ? readingInsight("Wages is forced equal to Consumption here — that's what \"Y = C\" means with no leakage channel open yet.", '') : '') +
+                           (hasBank ? readingRow('Savings (S) — Leakage', `₹${saving}B`) + readingRow('Investment (I) — Injection', `₹${investment}B`) : '') +
+                           (has3 ? readingRow('Taxes (T) — Leakage', `₹${taxes}B`) + readingRow('Govt Spending (G) — Injection', `₹${g}B`) : '') +
+                           (has4 ? readingRow('Exports (X) — Injection', `₹${fmt(exportsVal, 0)}B`) + readingRow('Imports (M) — Leakage', `₹${fmt(imports, 0)}B`) : '') +
+                           (!identityHolds ? readingRow('Total Injections', `₹${fmt(totalInjections, 0)}B`) + readingRow('Total Leakages', `₹${fmt(totalLeakages, 0)}B`) : '') +
+                           readingInsight(verdict) +
+                           readingInsight('Notice the <b>real flow</b> (dashed, square) always moves opposite to the <b>money flow</b> (solid, round) it pays for — Factor Services flow to Firms while Factor Payments flow back to Households, and Goods &amp; Services flow to Households while Consumption Expenditure flows back to Firms.', '')
             };
         },
         // Teaching & Learning Toolkit — see docs/economics/models/circular-flow.md
@@ -676,12 +672,12 @@ const SIMS = [
                 ],
                 layout: { xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Aggregate Expenditure (AE)', range: [0, 400] } },
                 metrics: { k, kt, dySpending, dyTax, Y1 },
-                readings: `<div class="reading-row"><span>Investment Multiplier (k)</span><b>${fmt(k)}</b></div>
-                           <div class="reading-row"><span>Tax Multiplier (kt, contrast)</span><b>${fmt(kt)}</b></div>
-                           <div class="reading-row"><span>ΔY from Spending (I+G)</span><b>₹${fmt(dySpending)}B</b></div>
-                           <div class="reading-row"><span>ΔY from Tax</span><b>₹${fmt(dyTax)}B</b></div>
-                           <div class="reading-row"><span>New Equilibrium Y</span><b>₹${fmt(Y1)}B</b></div>
-                           <div class="reading-row insight-row">💡 A higher MPC means each round of spending recycles further — a bigger multiplier. The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.</div>`
+                readings: readingRow('Investment Multiplier (k)', fmt(k)) +
+                           readingRow('Tax Multiplier (kt, contrast)', fmt(kt)) +
+                           readingRow('ΔY from Spending (I+G)', `₹${fmt(dySpending)}B`) +
+                           readingRow('ΔY from Tax', `₹${fmt(dyTax)}B`) +
+                           readingRow('New Equilibrium Y', `₹${fmt(Y1)}B`) +
+                           readingInsight('A higher MPC means each round of spending recycles further — a bigger multiplier. The tax multiplier is always smaller in magnitude than the spending multiplier (by exactly one unit: k − |kt| = 1), because a tax change only affects spending indirectly through disposable income.')
             };
         },
         practice: [
@@ -838,10 +834,10 @@ const SIMS = [
                 ],
                 layout: { xaxis: { title: 'Cumulative % of Population' }, yaxis: { title: 'Cumulative % of Income' } },
                 metrics: { gini, headcount },
-                readings: `<div class="reading-row"><span>Approx. Gini Coefficient</span><b>${fmt(gini)}</b></div>
-                           <div class="reading-row"><span>Interpretation</span><b>${gini < 0.3 ? 'Relatively Equal' : gini < 0.5 ? 'Moderate Inequality' : 'High Inequality'}</b></div>
-                           <div class="reading-row"><span>Headcount Ratio (illustrative)</span><b>${fmt(headcount, 1)}%</b></div>
-                           <div class="reading-row insight-row">💡 The amber dashed line marks the population share below your Poverty Line — that percentage is exactly what NCERT calls the <b>headcount ratio</b>. Raise the Poverty Line and more people fall below it; raise inequality and, for the same line, a larger low-income group forms.</div>`
+                readings: readingRow('Approx. Gini Coefficient', fmt(gini)) +
+                           readingRow('Interpretation', gini < 0.3 ? 'Relatively Equal' : gini < 0.5 ? 'Moderate Inequality' : 'High Inequality') +
+                           readingRow('Headcount Ratio (illustrative)', `${fmt(headcount, 1)}%`) +
+                           readingInsight('The amber dashed line marks the population share below your Poverty Line — that percentage is exactly what NCERT calls the <b>headcount ratio</b>. Raise the Poverty Line and more people fall below it; raise inequality and, for the same line, a larger low-income group forms.')
             };
         },
         practice: [
