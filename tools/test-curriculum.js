@@ -1078,6 +1078,29 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
         (r.stats || []).forEach(s => { englishHTMLs.push(String(s.label)); englishHTMLs.push(String(s.value)); });
         if (r.interpretation) englishHTMLs.push(r.interpretation);
         (r.formulas || []).forEach(f => englishHTMLs.push(f));
+    } else if (sim.mode === 'graphlab' && sim.graphLab) {
+        const cfg = sim.graphLab;
+        const base = {};
+        cfg.vars.forEach(v => { base[v.id] = v.value; });
+        cfg.vars.forEach(sweepVar => {
+            const n = Math.min(24, Math.max(3, Math.round((sweepVar.max - sweepVar.min) / sweepVar.step)));
+            for (let i = 0; i <= n; i++) {
+                const val = sweepVar.min + ((sweepVar.max - sweepVar.min) * i) / n;
+                const state = Object.assign({}, base, { [sweepVar.id]: val });
+                const m = cfg.model(state, { prev: base, base });
+                if (Array.isArray(m.readings)) {
+                    m.readings.forEach(r => {
+                        if (r) {
+                            englishHTMLs.push(String(r.label));
+                            englishHTMLs.push(String(r.value));
+                        }
+                    });
+                } else if (typeof m.readings === 'string') {
+                    englishHTMLs.push(m.readings);
+                }
+                (m.formulas || []).forEach(f => englishHTMLs.push(f));
+            }
+        });
     } else if (typeof sim.compute === 'function') {
         const base = collectDefaults(sim);
         (sim.controls || []).forEach(control => {
@@ -1095,8 +1118,8 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
 
     englishHTMLs.forEach((html, i) => {
         const translated = translateReadings(sim, html);
-        pairs.forEach(([en]) => {
-            if (html.indexOf(en) !== -1) {
+        pairs.forEach(([en, hi]) => {
+            if (en !== hi && html.indexOf(en) !== -1) {
                 readingsPatternsChecked++;
                 ok(translated.indexOf(en) === -1, `${simId}: swept output[${i}] no longer contains English readings pattern ${JSON.stringify(en)} after translateReadings()`);
             }
