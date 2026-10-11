@@ -445,34 +445,63 @@ function renderQuickCheck(sim, qc, host) {
     if (!host) return;
     const question = hiPath(sim, 'tlm.quickCheck.question') || qc.question;
     const options = qc.options.map((o, i) => hiPath(sim, `tlm.quickCheck.options.${i}`) || o);
-    host.innerHTML = `
-        <p class="tlm-qc-question">${question}</p>
-        <div class="tlm-qc-options">
-            ${options.map((o, i) => `<button type="button" class="tlm-qc-btn" data-i="${i}">${o}</button>`).join('')}
-        </div>
-        <div class="tlm-qc-feedback hidden" id="tlm-qc-feedback"></div>
-    `;
+
+    if (typeof host.replaceChildren === 'function') {
+        host.replaceChildren();
+    } else {
+        host.innerHTML = '';
+    }
+
+    const qEl = document.createElement('p');
+    qEl.className = 'tlm-qc-question';
+    qEl.textContent = question;
+    host.appendChild(qEl);
+
+    const optsDiv = document.createElement('div');
+    optsDiv.className = 'tlm-qc-options';
+    options.forEach((o, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tlm-qc-btn';
+        btn.dataset.i = String(i);
+        btn.textContent = o;
+        optsDiv.appendChild(btn);
+    });
+    host.appendChild(optsDiv);
+
+    const feedback = document.createElement('div');
+    feedback.className = 'tlm-qc-feedback hidden';
+    feedback.id = 'tlm-qc-feedback';
+    host.appendChild(feedback);
+
     let answered = false;
-    host.querySelectorAll('.tlm-qc-btn').forEach(btn => {
+    optsDiv.querySelectorAll('.tlm-qc-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (answered) return;
             answered = true;
             const i = Number(btn.dataset.i);
             const correct = i === qc.correctIndex;
-            host.querySelectorAll('.tlm-qc-btn').forEach((b, bi) => {
+            optsDiv.querySelectorAll('.tlm-qc-btn').forEach((b, bi) => {
                 b.disabled = true;
                 if (bi === qc.correctIndex) b.classList.add('tlm-qc-btn--correct');
                 else if (bi === i) b.classList.add('tlm-qc-btn--wrong');
             });
-            const feedback = document.getElementById('tlm-qc-feedback');
-            if (feedback) {
-                feedback.classList.remove('hidden');
-                const explain = hiPath(sim, 'tlm.quickCheck.explain') || qc.explain || '';
-                const prefix = correct
-                    ? tEngine('quiz.correct', '✅ Correct!')
-                    : tEngine('quiz.incorrect', '❌ Not quite.');
-                feedback.innerHTML = `<b>${prefix}</b> ${explain}`;
+            const feedbackEl = document.getElementById('tlm-qc-feedback') || feedback;
+            feedbackEl.classList.remove('hidden');
+            const explain = hiPath(sim, 'tlm.quickCheck.explain') || qc.explain || '';
+            const prefix = correct
+                ? tEngine('quiz.correct', '✅ Correct!')
+                : tEngine('quiz.incorrect', '❌ Not quite.');
+
+            if (typeof feedbackEl.replaceChildren === 'function') {
+                feedbackEl.replaceChildren();
+            } else {
+                feedbackEl.innerHTML = '';
             }
+            const bold = document.createElement('b');
+            bold.textContent = prefix;
+            feedbackEl.appendChild(bold);
+            feedbackEl.appendChild(document.createTextNode(' ' + explain));
         });
     });
 }
