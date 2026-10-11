@@ -45,6 +45,7 @@ const FILES = [
     'js/datalab-engine.js',
     'js/explorer-engine.js',
     'js/graph-lab-engine.js',
+    'js/ai-tutor.js',
     'js/simulations.js',
     'js/simulations_extended.js',
     'js/simulations_class11_micro.js',
@@ -73,12 +74,15 @@ const FILES = [
 
 function noop() {}
 function stubEl() {
+    const children = [];
     return {
+        children,
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop, setAttribute: noop,
+        appendChild(child) { children.push(child); },
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
         get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
-        get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
+        get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; if (v === '') children.length = 0; },
         offsetWidth: 100
     };
 }
@@ -686,6 +690,32 @@ function extractNodePos(html, label) {
             });
         });
     });
+
+    // Test renderScenario DOM XSS mitigation
+    const scenarioEl = stubEl();
+    const origGetElementById = sandbox.document.getElementById;
+    sandbox.document.getElementById = id => id === 'ai-tutor-scenario' ? scenarioEl : stubEl();
+
+    const testSim = Object.assign({}, sim, {
+        controls: sim.controls,
+        aiTutor: {
+            scenarios: {
+                di: {
+                    up: () => '<script>alert("XSS")</script>'
+                }
+            }
+        }
+    });
+
+    context.simEngineState = { mpc: 0.6, di: 20, dg: 0, dt: 0 };
+    context.window.aiTutorOnSimSwitch(testSim);
+    context.window.aiTutorOnRender(testSim, { k: 2.5 });
+
+    ok(scenarioEl.children.length === 1, 'AI Tutor scenario: renders a single paragraph element');
+    const childP = scenarioEl.children[0];
+    ok(childP && childP.className === 'ai-tutor-scenario-hint', 'AI Tutor scenario: renders hint paragraph using DOM creation methods');
+
+    sandbox.document.getElementById = origGetElementById;
 })();
 
 (function testCentralTendency() {
