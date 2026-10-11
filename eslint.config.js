@@ -54,10 +54,10 @@ module.exports = [
     js.configs.recommended,
     {
         // Vendored third-party library — not ours to lint or fix.
-        ignores: ['js/plotly.min.js']
+        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js']
     },
     {
-        files: ['js/circular_flow_3d.js'],
+        files: ['js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
@@ -70,7 +70,7 @@ module.exports = [
     },
     {
         files: ['js/**/*.js'],
-        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js'],
+        ignores: ['js/plotly.min.js', 'js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',
