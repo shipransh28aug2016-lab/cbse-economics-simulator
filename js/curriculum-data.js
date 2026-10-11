@@ -1,20 +1,20 @@
-// ══════════════════════════════════════════════════════════════
-// CBSE Economics (Subject Code 030) — 2026–27 curriculum registry.
-//
-// This file is the machine-checkable counterpart of
-// curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md.
-// Every syllabus Topic named in that document gets exactly one node
-// here, with a unique `id` ("syllabusId"). js/simulations*.js files
-// declare which node(s) each simulation/data-lab/explorer covers via
-// `sim.syllabusIds`; nothing else in the app should hand-maintain a
-// second copy of "what covers what" — the coverage matrix, the
-// duplicate-ID check, and the "no wrong class mapping" check are all
-// generated FROM this file plus SIMS, not written by hand alongside it.
-//
-// Loaded before every js/simulations*.js file (see index.html).
-// Works as a plain <script> (assigns to window) and under Node
-// (module.exports), so tools/test-curriculum.js can require() it.
-// ══════════════════════════════════════════════════════════════
+/**
+ * CBSE Economics (Subject Code 030) — 2026–27 curriculum registry.
+ *
+ * This file is the machine-checkable counterpart of
+ * curriculum/Economics_2026-27_Content_MicroContent_Taxonomy.md.
+ * Every syllabus Topic named in that document gets exactly one node
+ * here, with a unique `id` ("syllabusId"). js/simulations*.js files
+ * declare which node(s) each simulation/data-lab/explorer covers via
+ * `sim.syllabusIds`; nothing else in the app should hand-maintain a
+ * second copy of "what covers what" — the coverage matrix, the
+ * duplicate-ID check, and the "no wrong class mapping" check are all
+ * generated FROM this file plus SIMS, not written by hand alongside it.
+ *
+ * Loaded before every js/simulations*.js file (see index.html).
+ * Works as a plain <script> (assigns to window) and under Node
+ * (module.exports), so tools/test-curriculum.js can require() it.
+ */
 
 const PART_TITLES = {
     XI: { A: 'Statistics for Economics', B: 'Introductory Microeconomics' },
