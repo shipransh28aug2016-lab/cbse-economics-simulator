@@ -9,7 +9,7 @@ const appGlobals = {
     PART_TITLES: 'readonly', CURRICULUM_NODES: 'readonly', partTitle: 'readonly',
     chapterTagText: 'readonly', findNode: 'readonly', validateCurriculum: 'readonly',
     Plotly: 'readonly',
-    fmt: 'readonly', range: 'readonly', lineIntersect: 'readonly', seededRand: 'readonly',
+    fmt: 'readonly', readingRow: 'readonly', readingInsight: 'readonly', range: 'readonly', lineIntersect: 'readonly', seededRand: 'readonly',
     makeRandN: 'readonly', curveOffsetPoint: 'readonly', curvedPathD: 'readonly',
     flowLabelSVG: 'readonly', flowStreamSVG: 'readonly', plotlyDefaultLayout: 'readonly',
     styledAxisTitle: 'readonly', clamp: 'readonly', buildControls: 'readonly',
@@ -57,7 +57,7 @@ module.exports = [
         ignores: ['js/plotly.min.js']
     },
     {
-        files: ['js/circular_flow_3d.js'],
+        files: ['js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
@@ -70,7 +70,7 @@ module.exports = [
     },
     {
         files: ['js/**/*.js'],
-        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js'],
+        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',

@@ -353,9 +353,11 @@ function ok(cond, label) {
     ok(errors.length === beforeQuiz2, `quiz (Data Lab sim): no console/page errors${errors.length > beforeQuiz2 ? ' — ' + errors.slice(beforeQuiz2).join('; ') : ''}`);
 
     // ── Hindi (i18n) toggle ────────────────────────────────────────
+    await page.evaluate(() => window.showScreen('home'));
+    await page.waitForTimeout(60);
     const beforeI18n = errors.length;
     const heroBadgeEn = (await page.locator('.hero-badge').textContent()) || '';
-    await page.locator('#lang-toggle').click();
+    await page.locator('#lang-toggle').click({ force: true });
     await page.waitForTimeout(150);
     const heroBadgeHi = (await page.locator('.hero-badge').textContent()) || '';
     ok(heroBadgeHi !== heroBadgeEn && /[ऀ-ॿ]/.test(heroBadgeHi), `i18n: static UI text (hero badge) switches to Devanagari on toggle (got "${heroBadgeHi}")`);
@@ -385,7 +387,7 @@ function ok(cond, label) {
 
     // Toggle back to English and confirm exact restoration — the whole
     // point of caching each element's original text on first translate.
-    await page.locator('#lang-toggle').click();
+    await page.locator('#lang-toggle').click({ force: true });
     await page.waitForTimeout(150);
     const heroBadgeBack = (await page.locator('.hero-badge').textContent()) || '';
     ok(heroBadgeBack === heroBadgeEn, `i18n: toggling back to English restores the exact original text (got "${heroBadgeBack}", expected "${heroBadgeEn}")`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';

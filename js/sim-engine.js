@@ -16,6 +16,16 @@ function fmt(n, d = 2) {
     return n.toFixed(d);
 }
 
+// Formats a standard live reading row or insight row for a simulation's
+// readings panel output.
+function readingRow(label, value) {
+    return `<div class="reading-row"><span>${label}</span><b>${value}</b></div>`;
+}
+
+function readingInsight(text, icon = '💡 ') {
+    return `<div class="reading-row insight-row">${icon}${text}</div>`;
+}
+
 function range(n) {
     return Array.from({ length: n }, (_, i) => i);
 }
