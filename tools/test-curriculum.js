@@ -1106,6 +1106,32 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
 context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
 console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
 
+// ── Graph Lab glSyncChip DOM safety test ──────────────────────
+(function testGlSyncChipSecurity() {
+    const glSyncChip = vm.runInContext('glSyncChip', context);
+    const elements = {
+        'gl-fill-v1': stubEl(),
+        'gl-knob-v1': stubEl(),
+        'gl-val-v1': stubEl()
+    };
+    // Mock getElementById to return our test element stubs
+    context.document.getElementById = id => elements[id] || null;
+
+    const fakeSim = { id: 'test-sim', graphLab: { vars: [{ id: 'v1', min: 0, max: 100, step: 1, value: 50, unit: '<img src=x onerror=alert(1)>' }] } };
+    vm.runInContext('glSim = ' + JSON.stringify(fakeSim), context);
+    vm.runInContext('glState = { v1: 50 }', context);
+
+    const out = elements['gl-val-v1'];
+    // Track child elements appended
+    const children = [];
+    out.appendChild = el => { children.push(el); };
+
+    glSyncChip(fakeSim.graphLab.vars[0]);
+
+    ok(out.textContent === '50', 'glSyncChip sets textContent of output element to formatted value');
+    ok(children.length === 1 && children[0].textContent === '<img src=x onerror=alert(1)>', 'glSyncChip creates <em> with safe textContent matching unit string');
+})();
+
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {
     console.error(`\n❌ tools/test-curriculum.js FAILED (${failures} failing assertions).`);
