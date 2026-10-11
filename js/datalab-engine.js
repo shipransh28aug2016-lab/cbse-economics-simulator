@@ -187,7 +187,14 @@ function recomputeDataLab(sim, rebuildTable) {
 
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
-        if (formulaBody) formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${translateReadings(sim, f)}</div>`).join('');
+        if (formulaBody) {
+            formulaBody.replaceChildren(...result.formulas.map(f => {
+                const div = document.createElement('div');
+                div.className = 'formula-line';
+                div.textContent = translateReadings(sim, f);
+                return div;
+            }));
+        }
     }
 
     if (typeof refreshChallenge === 'function') refreshChallenge(sim, result.metrics);

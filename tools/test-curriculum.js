@@ -72,24 +72,31 @@ const FILES = [
 ];
 
 function noop() {}
-function stubEl() {
-    return {
+const elCache = {};
+function stubEl(id) {
+    if (id && elCache[id]) return elCache[id];
+    const el = {
+        id,
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop, setAttribute: noop,
+        appendChild(child) { (this.children = this.children || []).push(child); },
+        replaceChildren(...nodes) { this.children = Array.from(nodes); },
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
         get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
         get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
         offsetWidth: 100
     };
+    if (id) elCache[id] = el;
+    return el;
 }
 const sandbox = {
     console,
     window: {},
     document: {
-        getElementById: () => stubEl(),
+        getElementById: (id) => stubEl(id),
         querySelectorAll: () => [],
         querySelector: () => null,
-        createElement: () => stubEl(),
+        createElement: (tag) => stubEl(),
         addEventListener: noop,
         documentElement: { lang: 'en' }
     },
@@ -686,6 +693,53 @@ function extractNodePos(html, label) {
             });
         });
     });
+})();
+
+(function testSafeFormulaRendering() {
+    const fb = vm.runInContext('document.getElementById("formula-body")', context);
+
+    // 1. Simulator mode
+    const sim = {
+        id: 'test-xss-sim',
+        controls: [],
+        compute: () => ({
+            formulas: ['<img src=x onerror=alert(1)>', 'Normal = A / B'],
+            traces: [],
+            metrics: {}
+        })
+    };
+    vm.runInContext('renderSimChart', context)(sim);
+    ok(Array.isArray(fb.children) && fb.children.length === 2, 'Safe formula rendering: formulaBody received 2 child elements via replaceChildren in simulator mode');
+    ok(fb.children[0].textContent === '<img src=x onerror=alert(1)>', 'Safe formula rendering: malicious string stored safely in textContent without innerHTML parsing in simulator mode');
+    ok(fb.children[1].textContent === 'Normal = A / B', 'Safe formula rendering: normal formula string stored correctly in textContent');
+
+    // 2. DataLab mode
+    const dataLabSim = {
+        id: 'test-xss-datalab',
+        dataLab: {
+            columns: [{ id: 'col1', label: 'Col 1', type: 'number' }],
+            defaultRows: [{ col1: 10 }],
+            calculate: () => ({
+                formulas: ['<script>alert("xss-datalab")</script>'],
+                stats: [],
+                traces: []
+            })
+        }
+    };
+    vm.runInContext('recomputeDataLab', context)(dataLabSim, false);
+    ok(Array.isArray(fb.children) && fb.children.length === 1, 'Safe formula rendering: formulaBody updated in datalab mode');
+    ok(fb.children[0].textContent === '<script>alert("xss-datalab")</script>', 'Safe formula rendering: datalab formula stored safely in textContent');
+
+    // 3. GraphLab mode formula rendering pattern
+    const mFormulas = ['<svg onload=alert(1)>'];
+    fb.replaceChildren(...mFormulas.map(f => {
+        const div = stubEl();
+        div.className = 'formula-line';
+        div.textContent = f;
+        return div;
+    }));
+    ok(Array.isArray(fb.children) && fb.children.length === 1, 'Safe formula rendering: formulaBody updated for graphlab formulas');
+    ok(fb.children[0].textContent === '<svg onload=alert(1)>', 'Safe formula rendering: graphlab formula stored safely in textContent');
 })();
 
 (function testCentralTendency() {

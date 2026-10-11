@@ -526,7 +526,14 @@ function glRender(sim, syncChips) {
 
     if (Array.isArray(m.formulas)) {
         const fb = document.getElementById('formula-body');
-        if (fb) fb.innerHTML = m.formulas.map(f => `<div class="formula-line">${typeof translateReadings === 'function' ? translateReadings(sim, f) : f}</div>`).join('');
+        if (fb) {
+            fb.replaceChildren(...m.formulas.map(f => {
+                const div = document.createElement('div');
+                div.className = 'formula-line';
+                div.textContent = typeof translateReadings === 'function' ? translateReadings(sim, f) : f;
+                return div;
+            }));
+        }
     }
 
     if (typeof refreshChallenge === 'function') refreshChallenge(sim, m.metrics);
