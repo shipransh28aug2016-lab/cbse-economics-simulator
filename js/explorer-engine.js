@@ -82,7 +82,14 @@ function renderTimelineExplorer(sim, panel, overlay) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'explorer-timeline-btn' + (idx === i ? ' active' : '');
-            btn.innerHTML = `<span class="explorer-timeline-period">${te.period}</span><span class="explorer-timeline-title">${te.title}</span>`;
+            const periodSpan = document.createElement('span');
+            periodSpan.className = 'explorer-timeline-period';
+            periodSpan.textContent = te.period;
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'explorer-timeline-title';
+            titleSpan.textContent = te.title;
+            btn.appendChild(periodSpan);
+            btn.appendChild(titleSpan);
             btn.addEventListener('click', () => { explorerState.timelineIndex = idx; draw(); });
             navEl.appendChild(btn);
         });

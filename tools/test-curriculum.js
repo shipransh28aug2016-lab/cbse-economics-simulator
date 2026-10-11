@@ -73,9 +73,12 @@ const FILES = [
 
 function noop() {}
 function stubEl() {
+    const children = [];
     return {
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop, setAttribute: noop,
+        appendChild: function(c) { children.push(c); return c; },
+        children,
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
         get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
         get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
@@ -844,6 +847,48 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testTimelineExplorerXssSafety() {
+    const renderTimelineExplorer = vm.runInContext('renderTimelineExplorer', context);
+    const elements = {};
+    const panel = stubEl();
+    const overlay = stubEl();
+    const navEl = stubEl();
+
+    elements['controls-panel'] = panel;
+    elements['sim-dom-overlay'] = overlay;
+    elements['explorer-timeline-nav'] = navEl;
+    elements['explorer-prev'] = stubEl();
+    elements['explorer-next'] = stubEl();
+    elements['explorer-reset'] = stubEl();
+    elements['readings-body'] = stubEl();
+
+    const origGetById = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => elements[id] || stubEl();
+
+    const maliciousSim = {
+        id: 'test-xss-sim',
+        explorer: {
+            type: 'timeline',
+            eras: [
+                { period: '<img src=x onerror=alert(1)>', title: '<script>alert(2)</script>', body: 'test' }
+            ]
+        }
+    };
+
+    renderTimelineExplorer(maliciousSim, panel, overlay);
+
+    ok(navEl.children.length === 1, 'Timeline Explorer XSS: navigation button was created');
+    const btn = navEl.children[0];
+    ok(btn.children && btn.children.length === 2, 'Timeline Explorer XSS: button contains period and title spans');
+    const [periodSpan, titleSpan] = btn.children;
+    ok(periodSpan.textContent === '<img src=x onerror=alert(1)>', 'Timeline Explorer XSS: period textContent set safely');
+    ok(periodSpan.innerHTML === '', 'Timeline Explorer XSS: period innerHTML is empty (no html parsed)');
+    ok(titleSpan.textContent === '<script>alert(2)</script>', 'Timeline Explorer XSS: title textContent set safely');
+    ok(titleSpan.innerHTML === '', 'Timeline Explorer XSS: title innerHTML is empty (no html parsed)');
+
+    sandbox.document.getElementById = origGetById;
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
