@@ -256,6 +256,15 @@ let suppressNextWhatChanged = true;
 // loop for every simulator-mode sim at once.
 let prevSimResult = null;
 
+let cachedControlsPanel = null;
+
+function getControlsPanel() {
+    if (!cachedControlsPanel || !cachedControlsPanel.isConnected) {
+        cachedControlsPanel = document.getElementById('controls-panel');
+    }
+    return cachedControlsPanel;
+}
+
 function clamp(v, min, max) {
     return Math.min(max, Math.max(min, v));
 }
@@ -478,7 +487,7 @@ function renderQuickCheck(sim, qc, host) {
 }
 
 function buildControls(sim) {
-    const panel = document.getElementById('controls-panel');
+    const panel = getControlsPanel();
     if (!panel) return;
     panel.innerHTML = '';
 
@@ -731,7 +740,7 @@ function checkPredictReveal(sim, result) {
 // control that's relevant to more than one, but not all, of the select's
 // options — e.g. shown for both '3-sector' and '4-sector' but not '2').
 function applyControlVisibility(sim) {
-    const panel = document.getElementById('controls-panel');
+    const panel = getControlsPanel();
     if (!panel) return;
     panel.querySelectorAll('.control-row[data-show-when-id]').forEach(row => {
         const allowed = row.dataset.showWhenEquals.split(',');
@@ -946,15 +955,15 @@ function renderSim(sim) {
         // other modes it is cleared by the Graph Lab engine itself.
         renderGraphLab(sim);
     } else if (sim.mode === 'datalab' && typeof renderDataLab === 'function') {
-        const panel = document.getElementById('controls-panel');
+        const panel = getControlsPanel();
         if (panel) { panel.innerHTML = ''; panel.classList.remove('hidden'); }
         renderDataLab(sim, overlay);
     } else if (sim.mode === 'explorer' && typeof renderExplorer === 'function') {
-        const panel = document.getElementById('controls-panel');
+        const panel = getControlsPanel();
         if (panel) { panel.innerHTML = ''; panel.classList.remove('hidden'); }
         renderExplorer(sim, overlay);
     } else {
-        const panel = document.getElementById('controls-panel');
+        const panel = getControlsPanel();
         if (panel) panel.classList.remove('hidden');
         buildControls(sim);
         renderSimChart(sim);
