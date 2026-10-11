@@ -36,7 +36,12 @@ const MIMA_PHRASES = {
             none: 'Nothing has moved yet in a way that shows movement or shift — try changing a variable.'
         },
         curvesMovedIntro: names => `The curve${names.length > 1 ? 's' : ''} that moved: ${names.join(', ')}.`,
-        curvesUnchanged: names => `${names.join(' and ')} stayed exactly where ${names.length > 1 ? 'they were' : 'it was'} — that variable doesn't affect ${names.length > 1 ? 'them' : 'it'}.`,
+        curvesUnchanged: names => {
+            const listStr = names.length > 2
+                ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]
+                : names.join(' and ');
+            return `${listStr} stayed exactly where ${names.length > 1 ? 'they were' : 'it was'} — that variable doesn't affect ${names.length > 1 ? 'them' : 'it'}.`;
+        },
         keyIdea: idea => `The key idea here: ${idea}`,
         graphIntro: names => names.length ? `Right now the graph is showing: ${names.join(', ')}.` : "I don't have a description of the current graph yet.",
         why: "The change you made feeds directly into the model's formula, and that recalculation is what moved the numbers above.",
@@ -57,8 +62,8 @@ const MIMA_PHRASES = {
             both: 'यहाँ दोनों हुए: वक्र एक नई स्थिति में खिसका, और आप उसके साथ भी हिले — परीक्षा में इन्हें दो अलग घटनाओं के रूप में नाम देना अपेक्षित है।',
             none: 'अभी तक ऐसा कुछ नहीं हिला जो movement या shift दिखाए — कोई चर बदलकर देखें।'
         },
-        curvesMovedIntro: names => `जो वक्र हिला: ${names.join(', ')}।`,
-        curvesUnchanged: names => `${names.join(' और ')} बिल्कुल वहीं रहा — वह चर इसे प्रभावित नहीं करता।`,
+        curvesMovedIntro: names => `जो वक्र ${names.length > 1 ? 'हिले' : 'हिला'}: ${names.join(', ')}।`,
+        curvesUnchanged: names => `${names.join(' और ')} बिल्कुल वहीं ${names.length > 1 ? 'रहे' : 'रहा'} — वह चर ${names.length > 1 ? 'इन्हें' : 'इसे'} प्रभावित नहीं करता।`,
         keyIdea: idea => `यहाँ मुख्य विचार: ${idea}`,
         graphIntro: names => names.length ? `अभी ग्राफ़ में यह दिख रहा है: ${names.join(', ')}।` : 'मेरे पास अभी वर्तमान ग्राफ़ का विवरण नहीं है।',
         why: 'आपने जो बदलाव किया वह सीधे मॉडल के सूत्र में जाता है, और उसी पुनर्गणना से ऊपर की संख्याएँ हिली हैं।',
@@ -67,16 +72,18 @@ const MIMA_PHRASES = {
 };
 
 function mimaJoinChanges(ctx, P) {
-    if (!ctx.changedControls.length) return '';
-    if (ctx.changedControls.length === 1) {
-        const c = ctx.changedControls[0];
+    const changedControls = (ctx && ctx.changedControls) || [];
+    if (!changedControls.length) return '';
+    if (changedControls.length === 1) {
+        const c = changedControls[0];
         return P.changedOne(c.label, c.before, c.after);
     }
-    return P.changedMany(ctx.changedControls.length) + ' ' +
-        ctx.changedControls.map(c => `${c.label}: ${c.before} → ${c.after}`).join('; ') + '.';
+    return P.changedMany(changedControls.length) + ' ' +
+        changedControls.map(c => `${c.label}: ${c.before} → ${c.after}`).join('; ') + '.';
 }
 
 function mimaMovementOrShift(ctx, P) {
+    if (!ctx) return P.movementVerdict.none;
     // Graph Labs (mode: 'graphlab') already compute the exam-precise
     // verdict — read it, never re-derive it.
     if (ctx.mode === 'graphlab') {
@@ -89,20 +96,32 @@ function mimaMovementOrShift(ctx, P) {
     // = shifted (its whole shape/position changed); if no curve moved but
     // a metric did, the effect is a movement of the READING POINT along
     // an unchanged curve.
-    if (ctx.ghostedNames && ctx.ghostedNames.length) {
-        const unchanged = (ctx.allTraceNames || []).filter(n => ctx.ghostedNames.indexOf(n) === -1);
-        let text = P.curvesMovedIntro(ctx.ghostedNames);
+    const ghostedNames = ctx.ghostedNames || [];
+    if (ghostedNames.length) {
+        const allTraceNames = ctx.allTraceNames || [];
+        const unchanged = allTraceNames.filter(n => ghostedNames.indexOf(n) === -1);
+        let text = P.curvesMovedIntro(ghostedNames);
         if (unchanged.length) text += ' ' + P.curvesUnchanged(unchanged);
         return text;
     }
-    if (ctx.effects.length) {
+    const effects = ctx.effects || [];
+    if (effects.length) {
         return P.movementVerdict.movement;
     }
     return P.movementVerdict.none;
 }
 
 function mimaStripTags(html) {
-    return String(html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return String(html || '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 // intent: 'explain' | 'whatChanged' | 'why' | 'movementOrShift' | 'graph'
@@ -111,38 +130,49 @@ function mimaExplain(context, intent) {
     const P = MIMA_PHRASES[lang];
 
     if (!context) return { text: P.noSim, lang };
-    if (context.isFirstRender || (!context.changedControls.length && !context.effects.length && intent !== 'graph')) {
-        if (intent === 'whatChanged') return { text: P.noChangeYet, lang };
-        if (intent === 'movementOrShift') return { text: mimaMovementOrShift(context, P), lang };
-        if (intent === 'graph') {
-            const names = context.allTraceNames && context.allTraceNames.length ? context.allTraceNames : [];
-            const parts = [P.graphIntro(names)];
+
+    const VALID_INTENTS = ['explain', 'whatChanged', 'why', 'movementOrShift', 'graph'];
+    if (intent && VALID_INTENTS.indexOf(intent) === -1) {
+        return { text: P.unknownIntent, lang };
+    }
+    const effectiveIntent = intent || 'explain';
+
+    const changedControls = context.changedControls || [];
+    const effects = context.effects || [];
+    const ghostedNames = context.ghostedNames || [];
+    const allTraceNames = context.allTraceNames || [];
+    const title = context.title || (lang === 'hi' ? 'सिमुलेशन' : 'this simulation');
+
+    if (context.isFirstRender || (!changedControls.length && !effects.length && effectiveIntent !== 'graph')) {
+        if (effectiveIntent === 'whatChanged') return { text: P.noChangeYet, lang };
+        if (effectiveIntent === 'movementOrShift') return { text: mimaMovementOrShift(context, P), lang };
+        if (effectiveIntent === 'graph') {
+            const parts = [P.graphIntro(allTraceNames)];
             if (context.keyIdea) parts.push(P.keyIdea(context.keyIdea));
             return { text: parts.join(' '), lang };
         }
-        return { text: P.firstRender(context.title), lang };
+        return { text: P.firstRender(title), lang };
     }
 
-    if (intent === 'whatChanged') {
+    if (effectiveIntent === 'whatChanged') {
         return { text: mimaJoinChanges(context, P) || P.noChangeYet, lang };
     }
 
-    if (intent === 'movementOrShift') {
+    if (effectiveIntent === 'movementOrShift') {
         return { text: mimaMovementOrShift(context, P), lang };
     }
 
-    if (intent === 'graph') {
-        const names = context.allTraceNames && context.allTraceNames.length ? context.allTraceNames : [];
-        const parts = [P.graphIntro(names)];
-        if (context.ghostedNames && context.ghostedNames.length) parts.push(P.curvesMovedIntro(context.ghostedNames));
+    if (effectiveIntent === 'graph') {
+        const parts = [P.graphIntro(allTraceNames)];
+        if (ghostedNames.length) parts.push(P.curvesMovedIntro(ghostedNames));
         return { text: parts.join(' '), lang };
     }
 
-    if (intent === 'why') {
+    if (effectiveIntent === 'why') {
         const parts = [P.why];
-        if (context.effects.length) {
+        if (effects.length) {
             parts.push(P.effectIntro);
-            context.effects.forEach(e => parts.push(P.effectLine(e.label, e.before, e.after, e.rose)));
+            effects.forEach(e => parts.push(P.effectLine(e.label, e.before, e.after, e.rose)));
         }
         if (context.verdict && context.verdict.detail) parts.push(mimaStripTags(context.verdict.detail));
         return { text: parts.join(' '), lang };
@@ -152,16 +182,16 @@ function mimaExplain(context, intent) {
     const parts = [];
     const cause = mimaJoinChanges(context, P);
     if (cause) parts.push(cause);
-    if (context.effects.length) {
+    if (effects.length) {
         parts.push(P.effectIntro);
-        context.effects.forEach(e => parts.push(P.effectLine(e.label, e.before, e.after, e.rose)));
+        effects.forEach(e => parts.push(P.effectLine(e.label, e.before, e.after, e.rose)));
     } else if (context.mode !== 'graphlab') {
         parts.push(P.noEffect);
     }
-    if (context.mode === 'graphlab' || (context.ghostedNames && context.ghostedNames.length)) {
+    if (context.mode === 'graphlab' || ghostedNames.length) {
         parts.push(mimaMovementOrShift(context, P));
     }
     if (context.verdict && context.verdict.title) parts.push(mimaStripTags(context.verdict.title));
     if (context.keyIdea && !cause) parts.push(P.keyIdea(context.keyIdea));
-    return { text: parts.join(' ') || P.firstRender(context.title), lang };
+    return { text: parts.join(' ') || P.firstRender(title), lang };
 }
