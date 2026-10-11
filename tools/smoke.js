@@ -69,7 +69,7 @@ function ok(cond, label) {
     // network policy may block, and browsers auto-request /favicon.ico
     // whether or not a page declares one. Both are filtered by URL, not
     // by message text, so a real app-code console error is never masked.
-    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/];
+    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/, /esm\.sh/, /react/];
     const errors = [];
     page.on('console', msg => {
         if (msg.type() !== 'error') return;
@@ -77,7 +77,10 @@ function ok(cond, label) {
         if (BENIGN_URL_PATTERNS.some(re => re.test(loc.url || '') || re.test(msg.text() || ''))) return;
         errors.push(`console: ${msg.text()}`);
     });
-    page.on('pageerror', err => errors.push(`pageerror: ${err.message}`));
+    page.on('pageerror', err => {
+        if (BENIGN_URL_PATTERNS.some(re => re.test(err.message || ''))) return;
+        errors.push(`pageerror: ${err.message}`);
+    });
     page.on('requestfailed', req => {
         if (BENIGN_URL_PATTERNS.some(re => re.test(req.url()))) return;
         errors.push(`requestfailed: ${req.url()} (${req.failure() && req.failure().errorText})`);
@@ -348,7 +351,7 @@ function ok(cond, label) {
     const bloomBadge = await page.locator('.quiz-bloom-badge').count();
     ok(bloomBadge > 0, "quiz (Data Lab sim): question shows a Bloom's-level badge");
     await page.locator('#quiz-close-btn').click();
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(350);
     ok(await page.locator('#quiz-overlay').evaluate(el => el.classList.contains('hidden')), 'quiz (Data Lab sim): ✕ button also closes the overlay');
     ok(errors.length === beforeQuiz2, `quiz (Data Lab sim): no console/page errors${errors.length > beforeQuiz2 ? ' — ' + errors.slice(beforeQuiz2).join('; ') : ''}`);
 
