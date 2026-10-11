@@ -348,11 +348,13 @@ function ok(cond, label) {
     const bloomBadge = await page.locator('.quiz-bloom-badge').count();
     ok(bloomBadge > 0, "quiz (Data Lab sim): question shows a Bloom's-level badge");
     await page.locator('#quiz-close-btn').click();
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(300);
     ok(await page.locator('#quiz-overlay').evaluate(el => el.classList.contains('hidden')), 'quiz (Data Lab sim): ✕ button also closes the overlay');
     ok(errors.length === beforeQuiz2, `quiz (Data Lab sim): no console/page errors${errors.length > beforeQuiz2 ? ' — ' + errors.slice(beforeQuiz2).join('; ') : ''}`);
 
     // ── Hindi (i18n) toggle ────────────────────────────────────────
+    await page.evaluate(() => { window.showScreen('home'); window.scrollTo(0, 0); });
+    await page.waitForTimeout(150);
     const beforeI18n = errors.length;
     const heroBadgeEn = (await page.locator('.hero-badge').textContent()) || '';
     await page.locator('#lang-toggle').click();
