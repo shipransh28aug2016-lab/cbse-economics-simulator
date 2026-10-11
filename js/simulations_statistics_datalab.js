@@ -70,7 +70,7 @@ if (typeof SIMS !== 'undefined') {
             ],
             challenge: {
                 prompt: 'Edit the marks so Mean, Median and Mode are all different from one another.',
-                check(state, metrics) {
+                check(_state, metrics) {
                     if (!metrics || metrics.mode === null || metrics.mode === undefined) return false;
                     const a = metrics.mean, b = metrics.median, c = metrics.mode;
                     return Math.abs(a - b) > 0.5 && Math.abs(b - c) > 0.5 && Math.abs(a - c) > 0.5;
