@@ -132,6 +132,8 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const mimaSetSnapshot = vm.runInContext('mimaSetSnapshot', context);
+const getMimaContext = vm.runInContext('getMimaContext', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -626,6 +628,20 @@ function extractNodePos(html, label) {
 (function testMimaHandlesNoActiveSimulation() {
     const result = mimaExplain(null, 'explain');
     ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
+})();
+
+(function testMimaSetSnapshotDefensiveHandling() {
+    mimaSetSnapshot(null, 'simulator', {});
+    ok(getMimaContext() === null, 'mimaSetSnapshot: null sim clears context');
+
+    mimaSetSnapshot(undefined, 'simulator', null);
+    ok(getMimaContext() === null, 'mimaSetSnapshot: undefined sim clears context');
+
+    // Test minimal sim object missing optional properties
+    const minimalSim = { id: 'test-sim' };
+    mimaSetSnapshot(minimalSim, 'simulator', null);
+    const ctx = getMimaContext();
+    ok(ctx !== null && ctx.simId === 'test-sim' && ctx.title === '', 'mimaSetSnapshot: minimal sim handles missing properties safely');
 })();
 
 // ── AI Tutor (js/ai-tutor.js) config on macro-multiplier ──────────

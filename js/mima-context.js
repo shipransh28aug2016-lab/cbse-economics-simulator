@@ -32,20 +32,28 @@ let mimaSnapshot = null;
 
 // mode: 'simulator' | 'customRender' | 'graphlab'
 function mimaSetSnapshot(sim, mode, data) {
+    if (!sim) {
+        mimaClearSnapshot();
+        return;
+    }
+    const d = data || {};
     mimaSnapshot = {
-        simId: sim.id,
-        title: (typeof hiPath === 'function' && hiPath(sim, 'title')) || sim.title,
-        module: sim.module,
-        classLabel: sim.class, part: sim.part, unit: sim.unit, unitTitle: sim.unitTitle,
+        simId: sim.id || null,
+        title: (typeof hiPath === 'function' && hiPath(sim, 'title')) || sim.title || '',
+        module: sim.module || null,
+        classLabel: sim.class || null,
+        part: sim.part || null,
+        unit: sim.unit || null,
+        unitTitle: sim.unitTitle || null,
         mode,
-        isFirstRender: !!data.isFirstRender,
-        changedControls: data.changedControls || [],   // [{label, before, after}]
-        effects: data.effects || [],                    // [{label, before, after, rose}]
-        verdict: data.verdict || null,                   // graphlab only: {kind, title, detail}
-        ghostedNames: data.ghostedNames || [],            // simulator only: curves that moved
-        allTraceNames: data.allTraceNames || [],          // simulator only: every curve on screen
-        currentMetrics: data.currentMetrics || {},
-        readingsHTML: data.readingsHTML || '',
+        isFirstRender: !!d.isFirstRender,
+        changedControls: d.changedControls || [],   // [{label, before, after}]
+        effects: d.effects || [],                    // [{label, before, after, rose}]
+        verdict: d.verdict || null,                   // graphlab only: {kind, title, detail}
+        ghostedNames: d.ghostedNames || [],            // simulator only: curves that moved
+        allTraceNames: d.allTraceNames || [],          // simulator only: every curve on screen
+        currentMetrics: d.currentMetrics || {},
+        readingsHTML: d.readingsHTML || '',
         keyIdea: (sim.tlm && (hiPath(sim, 'tlm.keyIdea') || sim.tlm.keyIdea)) || null,
         at: Date.now()
     };
