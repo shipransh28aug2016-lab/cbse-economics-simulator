@@ -420,6 +420,60 @@ function checkExplorer(sim) {
 function findSim(id) { return SIMS.find(s => s.id === id); }
 function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (got ${a}, expected ≈${b})`); }
 
+(function testPanelCollapse() {
+    const savePanelCollapsed = vm.runInContext('savePanelCollapsed', context);
+    const loadPanelCollapsed = vm.runInContext('loadPanelCollapsed', context);
+
+    const store = {};
+    const originalGetItem = sandbox.localStorage.getItem;
+    const originalSetItem = sandbox.localStorage.setItem;
+
+    try {
+        // Standard operational test (happy path)
+        sandbox.localStorage.getItem = (key) => store[key] !== undefined ? store[key] : null;
+        sandbox.localStorage.setItem = (key, val) => { store[key] = String(val); };
+
+        savePanelCollapsed('testKey', true);
+        ok(store['econsim-panel-testKey'] === '1', 'savePanelCollapsed: stores "1" when collapsed is true');
+        ok(loadPanelCollapsed('testKey', false) === true, 'loadPanelCollapsed: reads true when stored value is "1"');
+
+        savePanelCollapsed('testKey', false);
+        ok(store['econsim-panel-testKey'] === '0', 'savePanelCollapsed: stores "0" when collapsed is false');
+        ok(loadPanelCollapsed('testKey', true) === false, 'loadPanelCollapsed: reads false when stored value is "0"');
+
+        delete store['econsim-panel-testKey'];
+        ok(loadPanelCollapsed('testKey', true) === true, 'loadPanelCollapsed: returns default true when key is missing');
+        ok(loadPanelCollapsed('testKey', false) === false, 'loadPanelCollapsed: returns default false when key is missing');
+
+        // Error handling test: setItem throws an exception (e.g. QuotaExceededError or SecurityError in private browsing)
+        sandbox.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+        let setItemThrew = false;
+        try {
+            savePanelCollapsed('testErrorKey', true);
+        } catch (e) {
+            setItemThrew = true;
+        }
+        ok(!setItemThrew, 'savePanelCollapsed: silently handles localStorage.setItem error without crashing');
+
+        // Error handling test: getItem throws an exception
+        sandbox.localStorage.getItem = () => { throw new Error('SecurityError'); };
+        let getItemThrew = false;
+        let loadedValDefaultTrue, loadedValDefaultFalse;
+        try {
+            loadedValDefaultTrue = loadPanelCollapsed('testErrorKey', true);
+            loadedValDefaultFalse = loadPanelCollapsed('testErrorKey', false);
+        } catch (e) {
+            getItemThrew = true;
+        }
+        ok(!getItemThrew, 'loadPanelCollapsed: silently handles localStorage.getItem error without crashing');
+        ok(loadedValDefaultTrue === true, 'loadPanelCollapsed: returns default true when getItem throws an exception');
+        ok(loadedValDefaultFalse === false, 'loadPanelCollapsed: returns default false when getItem throws an exception');
+    } finally {
+        sandbox.localStorage.getItem = originalGetItem;
+        sandbox.localStorage.setItem = originalSetItem;
+    }
+})();
+
 // Regression guard for the circular-flow layout-jump bug: switching the
 // Economy Model (2/3/4-Sector) or the Financial Market toggle must never
 // move a node that was ALREADY visible before the toggle. The bug this
