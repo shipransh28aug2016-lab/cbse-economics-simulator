@@ -492,7 +492,9 @@ function buildControls(sim) {
     header.dataset.panelKey = 'controls';
     header.setAttribute('role', 'button');
     header.setAttribute('tabindex', '0');
-    header.innerHTML = `<span>${tEngine('engine.adjustVariables', '🎛️ Adjust the Variables')}</span>`;
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = tEngine('engine.adjustVariables', '🎛️ Adjust the Variables');
+    header.appendChild(titleSpan);
 
     const hint = document.createElement('p');
     hint.className = 'controls-panel-hint';
