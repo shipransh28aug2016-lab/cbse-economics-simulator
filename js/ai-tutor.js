@@ -193,17 +193,17 @@
     function generateQuiz(sim) {
         const metrics = lastMetrics;
         if (!metrics) return null;
-        const touched = Array.from(new Set(history.slice(-6).map(h => h.id)));
+        const touched = new Set(history.slice(-6).map(h => h.id));
         let question, correct, unit = '₹', suffix = 'B';
 
-        if (touched.indexOf('dt') !== -1 && (touched.indexOf('mpc') !== -1 || touched.indexOf('di') !== -1 || touched.indexOf('dg') !== -1)) {
+        if (touched.has('dt') && (touched.has('mpc') || touched.has('di') || touched.has('dg'))) {
             question = t(
                 `You set MPC = ${fmt(simEngineState.mpc)}, ΔI = ₹${fmt(simEngineState.di)}B, ΔG = ₹${fmt(simEngineState.dg)}B and ΔT = ₹${fmt(simEngineState.dt)}B. What is the TOTAL ΔY (spending effect + tax effect combined)?`,
                 `आपने MPC = ${fmt(simEngineState.mpc)}, ΔI = ₹${fmt(simEngineState.di)}B, ΔG = ₹${fmt(simEngineState.dg)}B और ΔT = ₹${fmt(simEngineState.dt)}B सेट किया। कुल ΔY (व्यय प्रभाव + कर प्रभाव मिलाकर) क्या है?`
             );
             correct = roundNice(metrics.dySpending + metrics.dyTax);
-        } else if (touched.length) {
-            const id = touched[touched.length - 1];
+        } else if (touched.size) {
+            const id = Array.from(touched).pop();
             if (id === 'mpc') {
                 question = t(`At MPC = ${fmt(simEngineState.mpc)}, what is the Investment/Govt Multiplier (k)?`, `MPC = ${fmt(simEngineState.mpc)} पर, निवेश/सरकारी गुणक (k) क्या है?`);
                 correct = roundNice(metrics.k);
