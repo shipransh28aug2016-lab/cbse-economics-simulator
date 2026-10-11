@@ -15,6 +15,7 @@
 // ══════════════════════════════════════════════════════════════
 
 let explorerState = { timelineIndex: 0, scenarioId: null, cardAnswers: {} };
+let readingsBodyCache = null;
 
 function renderExplorer(sim) {
     const panel = document.getElementById('controls-panel');
@@ -29,12 +30,14 @@ function renderExplorer(sim) {
 }
 
 function explorerReadings(html) {
-    const readingsBody = document.getElementById('readings-body');
-    if (!readingsBody) return;
-    readingsBody.innerHTML = html || '';
-    readingsBody.classList.remove('pulse');
-    void readingsBody.offsetWidth;
-    readingsBody.classList.add('pulse');
+    if (!readingsBodyCache || !document.contains(readingsBodyCache)) {
+        readingsBodyCache = document.getElementById('readings-body');
+    }
+    if (!readingsBodyCache) return;
+    readingsBodyCache.innerHTML = html || '';
+    readingsBodyCache.classList.remove('pulse');
+    void readingsBodyCache.offsetWidth;
+    readingsBodyCache.classList.add('pulse');
 }
 
 function explorerFade(overlay) {
@@ -60,38 +63,58 @@ function renderTimelineExplorer(sim, panel, overlay) {
         };
     }
 
+    panel.innerHTML = `
+        <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.exploreTimeline', '🧭 Explore the Timeline')}</span>
+            <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
+            <span class="panel-chevron" aria-hidden="true">⌄</span>
+        </div>
+        <p class="controls-panel-hint">${tEngine('engine.timelineHint', 'Step through each period, or jump straight to one — the panel on the right explains why that period mattered economically.')}</p>
+        <div class="explorer-timeline-nav" id="explorer-timeline-nav"></div>
+        <div class="explorer-timeline-controls">
+            <button type="button" class="datalab-btn" id="explorer-prev">${tEngine('engine.previous', '← Previous')}</button>
+            <button type="button" class="datalab-btn" id="explorer-next">${tEngine('engine.next', 'Next →')}</button>
+        </div>`;
+
+    const navEl = document.getElementById('explorer-timeline-nav');
+    const prevBtn = document.getElementById('explorer-prev');
+    const nextBtn = document.getElementById('explorer-next');
+    const timelineResetBtn = document.getElementById('explorer-reset');
+
+    if (timelineResetBtn) {
+        timelineResetBtn.addEventListener('click', (e) => e.stopPropagation());
+        timelineResetBtn.addEventListener('click', () => { explorerState.timelineIndex = 0; draw(); });
+    }
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => { explorerState.timelineIndex--; draw(); });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => { explorerState.timelineIndex++; draw(); });
+    }
+    if (typeof initPanelCollapse === 'function') {
+        initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
+    }
+
+    const timelineBtns = eras.map((e, idx) => {
+        const te = tEra(idx);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'explorer-timeline-btn';
+        btn.innerHTML = `<span class="explorer-timeline-period">${te.period}</span><span class="explorer-timeline-title">${te.title}</span>`;
+        btn.addEventListener('click', () => { explorerState.timelineIndex = idx; draw(); });
+        if (navEl) navEl.appendChild(btn);
+        return btn;
+    });
+
     function draw() {
         const i = explorerState.timelineIndex;
         const era = tEra(i);
 
-        panel.innerHTML = `
-            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.exploreTimeline', '🧭 Explore the Timeline')}</span>
-                <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
-                <span class="panel-chevron" aria-hidden="true">⌄</span>
-            </div>
-            <p class="controls-panel-hint">${tEngine('engine.timelineHint', 'Step through each period, or jump straight to one — the panel on the right explains why that period mattered economically.')}</p>
-            <div class="explorer-timeline-nav" id="explorer-timeline-nav"></div>
-            <div class="explorer-timeline-controls">
-                <button type="button" class="datalab-btn" id="explorer-prev" ${i === 0 ? 'disabled' : ''}>${tEngine('engine.previous', '← Previous')}</button>
-                <button type="button" class="datalab-btn" id="explorer-next" ${i === eras.length - 1 ? 'disabled' : ''}>${tEngine('engine.next', 'Next →')}</button>
-            </div>`;
+        if (prevBtn) prevBtn.disabled = (i === 0);
+        if (nextBtn) nextBtn.disabled = (i === eras.length - 1);
 
-        const navEl = document.getElementById('explorer-timeline-nav');
-        eras.forEach((e, idx) => {
-            const te = tEra(idx);
-            const btn = document.createElement('button');
-            btn.type = 'button';
+        timelineBtns.forEach((btn, idx) => {
             btn.className = 'explorer-timeline-btn' + (idx === i ? ' active' : '');
-            btn.innerHTML = `<span class="explorer-timeline-period">${te.period}</span><span class="explorer-timeline-title">${te.title}</span>`;
-            btn.addEventListener('click', () => { explorerState.timelineIndex = idx; draw(); });
-            navEl.appendChild(btn);
         });
-        document.getElementById('explorer-prev').addEventListener('click', () => { explorerState.timelineIndex--; draw(); });
-        document.getElementById('explorer-next').addEventListener('click', () => { explorerState.timelineIndex++; draw(); });
-        const timelineResetBtn = document.getElementById('explorer-reset');
-        timelineResetBtn.addEventListener('click', (e) => e.stopPropagation());
-        timelineResetBtn.addEventListener('click', () => { explorerState.timelineIndex = 0; draw(); });
-        if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
 
         overlay.innerHTML = `
             <div class="explorer-timeline-card">
@@ -131,18 +154,23 @@ function renderCardsExplorer(sim, panel, overlay) {
         return { answered, correct, total: cards.length };
     }
 
-    function draw() {
-        panel.innerHTML = `
-            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.classifyEach', '🧭 Classify Each Statement')}</span>
-                <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
-                <span class="panel-chevron" aria-hidden="true">⌄</span>
-            </div>
-            <p class="controls-panel-hint">${tEngine('engine.cardsHint', "Pick an answer for each card on the right — you'll see the correct classification and a short explanation immediately.")}</p>`;
-        const cardsResetBtn = document.getElementById('explorer-reset');
+    panel.innerHTML = `
+        <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.classifyEach', '🧭 Classify Each Statement')}</span>
+            <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
+            <span class="panel-chevron" aria-hidden="true">⌄</span>
+        </div>
+        <p class="controls-panel-hint">${tEngine('engine.cardsHint', "Pick an answer for each card on the right — you'll see the correct classification and a short explanation immediately.")}</p>`;
+
+    const cardsResetBtn = document.getElementById('explorer-reset');
+    if (cardsResetBtn) {
         cardsResetBtn.addEventListener('click', (e) => e.stopPropagation());
         cardsResetBtn.addEventListener('click', () => { explorerState.cardAnswers = {}; draw(); });
-        if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
+    }
+    if (typeof initPanelCollapse === 'function') {
+        initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
+    }
 
+    function draw() {
         const liveScore = score();
         const scorePct = liveScore.answered === 0 ? 0 : liveScore.correct / liveScore.answered;
         const ringCirc = 100.5; // 2*pi*16, matches r=16 below
@@ -205,30 +233,42 @@ function renderScenarioExplorer(sim, panel, overlay) {
         };
     }
 
+    panel.innerHTML = `
+        <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.chooseScenario', '🧭 Choose a Scenario')}</span>
+            <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
+            <span class="panel-chevron" aria-hidden="true">⌄</span>
+        </div>
+        <p class="controls-panel-hint">${tEngine('engine.scenarioHint', 'Switch between scenarios to compare them side by side.')}</p>
+        <div class="control-segmented control-segmented--stacked" id="explorer-scenario-group" role="group"></div>`;
+
+    const group = document.getElementById('explorer-scenario-group');
+    const scenarioResetBtn = document.getElementById('explorer-reset');
+
+    if (scenarioResetBtn) {
+        scenarioResetBtn.addEventListener('click', (e) => e.stopPropagation());
+        scenarioResetBtn.addEventListener('click', () => { explorerState.scenarioId = scenarios[0].id; draw(); });
+    }
+    if (typeof initPanelCollapse === 'function') {
+        initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
+    }
+
+    const scenarioBtns = scenarios.map(s => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'segmented-btn';
+        btn.textContent = tScenario(s).label;
+        btn.addEventListener('click', () => { explorerState.scenarioId = s.id; draw(); });
+        if (group) group.appendChild(btn);
+        return { id: s.id, btn };
+    });
+
     function draw() {
         const currentRaw = scenarios.find(s => s.id === explorerState.scenarioId) || scenarios[0];
         const current = tScenario(currentRaw);
 
-        panel.innerHTML = `
-            <div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.chooseScenario', '🧭 Choose a Scenario')}</span>
-                <button type="button" class="reset-btn" id="explorer-reset">${tEngine('engine.reset', '↺ Reset')}</button>
-                <span class="panel-chevron" aria-hidden="true">⌄</span>
-            </div>
-            <p class="controls-panel-hint">${tEngine('engine.scenarioHint', 'Switch between scenarios to compare them side by side.')}</p>
-            <div class="control-segmented control-segmented--stacked" id="explorer-scenario-group" role="group"></div>`;
-        const group = document.getElementById('explorer-scenario-group');
-        scenarios.forEach(s => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'segmented-btn' + (s.id === current.id ? ' active' : '');
-            btn.textContent = tScenario(s).label;
-            btn.addEventListener('click', () => { explorerState.scenarioId = s.id; draw(); });
-            group.appendChild(btn);
+        scenarioBtns.forEach(item => {
+            item.btn.className = 'segmented-btn' + (item.id === current.id ? ' active' : '');
         });
-        const scenarioResetBtn = document.getElementById('explorer-reset');
-        scenarioResetBtn.addEventListener('click', (e) => e.stopPropagation());
-        scenarioResetBtn.addEventListener('click', () => { explorerState.scenarioId = scenarios[0].id; draw(); });
-        if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, panel.querySelector('.controls-panel-header'), 'controls', false);
 
         overlay.innerHTML = `<div class="explorer-scenario-card">
             <h3 class="explorer-scenario-title">${current.label}</h3>
