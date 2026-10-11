@@ -110,6 +110,33 @@ function openSim(simId) {
     }
 }
 
+// Helper function to safely construct sim card DOM elements without innerHTML interpolation.
+function createSimCard(sim, title, desc) {
+    const card = document.createElement('div');
+    card.className = `sim-card sim-card--${sim.module}`;
+
+    if (sim.enrichment) {
+        const badge = document.createElement('span');
+        badge.className = 'sim-card-badge';
+        badge.title = typeof tEngine === 'function'
+            ? tEngine('engine.enrichmentTag', '✨ Enrichment — beyond the 2026–27 unit list for this topic')
+            : '✨ Enrichment — beyond the 2026–27 unit list for this topic';
+        badge.textContent = '✨';
+        card.appendChild(badge);
+    }
+
+    const h3 = document.createElement('h3');
+    h3.textContent = title;
+    card.appendChild(h3);
+
+    const p = document.createElement('p');
+    p.textContent = desc;
+    card.appendChild(p);
+
+    card.onclick = () => openSim(sim.id);
+    return card;
+}
+
 // Populates (or, on a language switch, re-populates) the home-screen
 // module grids from SIMS. Split out from initApp() so applyLanguage()
 // can call it again to swap every card's title/description without a
@@ -129,29 +156,16 @@ function rebuildHomeGrids() {
         SIMS.forEach(sim => {
             const title = simField(sim, 'title');
             const desc = simField(sim, 'desc');
-            // Surfaced on the Home grid too, not just inside the sim screen
-            // (sim-engine.js's enrichment-tag) — a student/teacher browsing
-            // cards should see "this goes beyond the named 2026-27 topic"
-            // BEFORE opening it, not discover it only after clicking in.
-            const badge = sim.enrichment
-                ? `<span class="sim-card-badge" title="${tEngine('engine.enrichmentTag', '✨ Enrichment — beyond the 2026–27 unit list for this topic')}">✨</span>`
-                : '';
             // Note: each grid needs its own card element with its own click
             // handler attached directly. cloneNode(true) does NOT copy
             // JS-assigned event handlers (like .onclick), so cards created
             // by cloning were previously unresponsive to clicks.
             if (grids[sim.module]) {
-                const card = document.createElement('div');
-                card.className = `sim-card sim-card--${sim.module}`;
-                card.innerHTML = `${badge}<h3>${title}</h3><p>${desc}</p>`;
-                card.onclick = () => openSim(sim.id);
+                const card = createSimCard(sim, title, desc);
                 grids[sim.module].appendChild(card);
             }
             if (grids['all']) {
-                const sysCard = document.createElement('div');
-                sysCard.className = `sim-card sim-card--${sim.module}`;
-                sysCard.innerHTML = `${badge}<h3>${title}</h3><p>${desc}</p>`;
-                sysCard.onclick = () => openSim(sim.id);
+                const sysCard = createSimCard(sim, title, desc);
                 grids['all'].appendChild(sysCard);
             }
         });
