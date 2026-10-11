@@ -688,6 +688,30 @@ function extractNodePos(html, label) {
     });
 })();
 
+(function testBuildControlsHeaderSecurity() {
+    const buildControls = context.buildControls;
+    const sim = findSim('micro-ppf');
+    if (!sim || typeof buildControls !== 'function') return;
+
+    const createdSpans = [];
+    const origCreateElement = sandbox.document.createElement;
+    sandbox.document.createElement = (tagName) => {
+        const el = stubEl();
+        el.tagName = tagName.toUpperCase();
+        el.querySelector = () => stubEl();
+        if (el.tagName === 'SPAN') createdSpans.push(el);
+        return el;
+    };
+
+    try {
+        buildControls(sim);
+        const titleSpan = createdSpans.find(s => s.textContent && s.textContent.includes('Adjust the Variables'));
+        ok(!!titleSpan, 'buildControls: header title span created using textContent safely');
+    } finally {
+        sandbox.document.createElement = origCreateElement;
+    }
+})();
+
 (function testCentralTendency() {
     const sim = findSim('stats-central-tendency');
     const rows = [{ label: 'a', value: 2 }, { label: 'b', value: 4 }, { label: 'c', value: 4 }, { label: 'd', value: 6 }];
