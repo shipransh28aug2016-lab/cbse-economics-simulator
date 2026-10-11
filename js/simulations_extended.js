@@ -708,15 +708,18 @@ if (typeof SIMS !== 'undefined') {
                     { commodity: 'Sugar (per kg)', p0: 38, p1: 41 }
                 ],
                 calculate(rows) {
-                    const sumP0 = rows.reduce((s, r) => s + r.p0, 0);
-                    const sumP1 = rows.reduce((s, r) => s + r.p1, 0);
+                    const commodities = rows.map(r => r.commodity);
+                    const p0s = rows.map(r => r.p0);
+                    const p1s = rows.map(r => r.p1);
+                    const sumP0 = p0s.reduce((s, p) => s + p, 0);
+                    const sumP1 = p1s.reduce((s, p) => s + p, 0);
                     const index = sumP0 > 0 ? (sumP1 / sumP0) * 100 : 100;
                     const inflation = index - 100;
-                    const categories = [...rows.map(r => r.commodity), 'Price Index'];
+                    const categories = [...commodities, 'Price Index'];
                     return {
                         traces: [
-                            { x: rows.map(r => r.commodity), y: rows.map(r => r.p0), name: 'Base Year Price', type: 'bar', marker: { color: '#9ca3af' } },
-                            { x: rows.map(r => r.commodity), y: rows.map(r => r.p1), name: 'Current Year Price', type: 'bar', marker: { color: '#2563eb' } },
+                            { x: commodities, y: p0s, name: 'Base Year Price', type: 'bar', marker: { color: '#9ca3af' } },
+                            { x: commodities, y: p1s, name: 'Current Year Price', type: 'bar', marker: { color: '#2563eb' } },
                             // The index number itself — the actual answer to "how much
                             // costlier is the basket?" — was previously only a % in the
                             // readings panel, disconnected from the price bars above it.
