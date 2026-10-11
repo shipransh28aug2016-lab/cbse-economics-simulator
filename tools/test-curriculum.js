@@ -132,6 +132,7 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const glSnap = vm.runInContext('glSnap', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -419,6 +420,40 @@ function checkExplorer(sim) {
 // ── 4. Targeted formula-correctness spot checks ─────────────────
 function findSim(id) { return SIMS.find(s => s.id === id); }
 function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (got ${a}, expected ≈${b})`); }
+
+(function testGlSnapEdgeCases() {
+    // Falsy or zero step
+    ok(glSnap(5.5, undefined) === 5.5, 'glSnap: returns value when step is undefined');
+    ok(glSnap(5.5, null) === 5.5, 'glSnap: returns value when step is null');
+    ok(glSnap(5.5, 0) === 5.5, 'glSnap: returns value when step is 0');
+
+    // Float dust elimination (like 3.0000000000000004)
+    ok(glSnap(3.0000000000000004, 0.1) === 3, 'glSnap: eliminates float dust for 3.0000000000000004 with step 0.1');
+    ok(glSnap(0.1 + 0.2, 0.01) === 0.3, 'glSnap: eliminates 0.1 + 0.2 float dust with step 0.01');
+    ok(glSnap(3.0000000000000004, 1) === 3, 'glSnap: eliminates float dust with step 1');
+
+    // Integer steps
+    ok(glSnap(3.7, 1) === 4, 'glSnap: rounds to nearest integer step 1');
+    ok(glSnap(12.4, 5) === 10, 'glSnap: rounds to nearest integer step 5');
+    ok(glSnap(13.6, 5) === 15, 'glSnap: rounds to nearest integer step 5');
+
+    // Decimal steps
+    ok(glSnap(3.14159, 0.1) === 3.1, 'glSnap: rounds to nearest step 0.1');
+    ok(glSnap(3.16159, 0.1) === 3.2, 'glSnap: rounds to nearest step 0.1');
+    ok(glSnap(2.345, 0.05) === 2.35, 'glSnap: rounds to nearest step 0.05');
+    ok(glSnap(2.32, 0.05) === 2.3, 'glSnap: rounds to nearest step 0.05');
+
+    // Negative numbers
+    ok(glSnap(-3.0000000000000004, 0.1) === -3, 'glSnap: handles negative values with float dust');
+    ok(glSnap(-2.7, 1) === -3, 'glSnap: rounds negative values to nearest integer step 1');
+    ok(glSnap(-2.3, 0.5) === -2.5, 'glSnap: rounds negative values to nearest decimal step 0.5');
+
+    // Zero value
+    ok(glSnap(0, 0.5) === 0, 'glSnap: returns 0 when val is 0');
+
+    // Small decimal steps
+    ok(glSnap(0.12345, 0.0001) === 0.1235, 'glSnap: handles small step 0.0001');
+})();
 
 // Regression guard for the circular-flow layout-jump bug: switching the
 // Economy Model (2/3/4-Sector) or the Financial Market toggle must never
