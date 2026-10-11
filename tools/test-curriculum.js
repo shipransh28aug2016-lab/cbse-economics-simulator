@@ -132,6 +132,8 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const renderDataLab = context.renderDataLab;
+const recomputeDataLab = context.recomputeDataLab;
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -844,6 +846,81 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testDataLabEngineCalculationFallback() {
+    const domElements = {};
+    const origGetElementById = context.document.getElementById;
+
+    context.document.getElementById = (id) => {
+        if (!domElements[id]) domElements[id] = stubEl();
+        return domElements[id];
+    };
+
+    try {
+        // Scenario 1: sim.dataLab.calculate throws an exception
+        const throwingSim = {
+            id: 'test-throwing-datalab',
+            mode: 'datalab',
+            dataLab: {
+                columns: [{ id: 'val', label: 'Value', type: 'number' }],
+                defaultRows: [{ val: 10 }],
+                calculate: () => { throw new Error('Calculation error simulation'); }
+            }
+        };
+
+        renderDataLab(throwingSim);
+        const readingsHTML = domElements['readings-body'].innerHTML;
+        ok(readingsHTML.includes('Could not compute with the current data'),
+            'DataLab engine: calculate() exception falls back to error message in readings-body');
+
+        // Scenario 2: sim.dataLab.calculate returns null or undefined
+        const nullSim = {
+            id: 'test-null-datalab',
+            mode: 'datalab',
+            dataLab: {
+                columns: [{ id: 'val', label: 'Value', type: 'number' }],
+                defaultRows: [{ val: 10 }],
+                calculate: () => null
+            }
+        };
+
+        domElements['readings-body'].innerHTML = '';
+        renderDataLab(nullSim);
+        ok(typeof domElements['readings-body'].innerHTML === 'string',
+            'DataLab engine: calculate() returning null falls back to safe empty result without throwing');
+
+        // Scenario 3: sim.dataLab.calculate returns formulas and metrics
+        let challengeRefreshed = false;
+        context.refreshChallenge = () => { challengeRefreshed = true; };
+
+        const formulasSim = {
+            id: 'test-formulas-datalab',
+            mode: 'datalab',
+            dataLab: {
+                columns: [{ id: 'val', label: 'Value', type: 'number' }],
+                defaultRows: [{ val: 10 }],
+                calculate: () => ({
+                    stats: [{ label: 'Mean', value: 10 }],
+                    interpretation: 'Valid result',
+                    formulas: ['Mean = \\Sigma x / n'],
+                    metrics: { mean: 10 }
+                })
+            }
+        };
+
+        renderDataLab(formulasSim);
+        ok(domElements['readings-body'].innerHTML.includes('Mean') && domElements['readings-body'].innerHTML.includes('Valid result'),
+            'DataLab engine: valid calculate() updates readings-body stats and interpretation');
+        ok(domElements['formula-body'].innerHTML.includes('Mean = \\Sigma x / n'),
+            'DataLab engine: valid calculate() updates formula-body with custom formulas');
+        ok(challengeRefreshed,
+            'DataLab engine: valid calculate() triggers refreshChallenge');
+
+        delete context.refreshChallenge;
+    } finally {
+        context.document.getElementById = origGetElementById;
+    }
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
