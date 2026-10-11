@@ -73,9 +73,12 @@ const FILES = [
 
 function noop() {}
 function stubEl() {
+    const children = [];
     return {
+        children,
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop, setAttribute: noop,
+        appendChild(child) { children.push(child); },
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
         get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
         get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
@@ -477,6 +480,39 @@ function extractNodePos(html, label) {
     ok(gov3 && gov4, 'Circular Flow: Government node is present in 3-sector and 4-sector+bank');
     approx(gov3.x, gov4.x, 0.01, 'Circular Flow: Government.x unchanged across every combination');
     approx(gov3.y, gov4.y, 0.01, 'Circular Flow: Government.y unchanged across every combination');
+
+    // Formula rendering XSS safety check: formulas containing HTML tags/injection
+    // strings must be rendered via textContent without executing raw HTML.
+    (function testFormulaRenderingXSSSafety() {
+        const renderFormulaDataLab = context.recomputeDataLab || vm.runInContext('recomputeDataLab', context);
+        const formulaBody = stubEl();
+        const elMap = {
+            'sim-dom-overlay': stubEl(),
+            'readings-body': stubEl(),
+            'controls-panel': stubEl(),
+            'formula-body': formulaBody
+        };
+        const origGetById = context.document.getElementById;
+        context.document.getElementById = (id) => elMap[id] || stubEl();
+
+        const xssPayload = '<img src=x onerror=alert(1)> & <script>alert("xss")</script>';
+        const mockSim = {
+            id: 'xss-test-sim',
+            dataLab: {
+                columns: [{ id: 'col1', type: 'number', default: 1 }],
+                defaultRows: [{ col1: 1 }],
+                calculate: () => ({ formulas: [xssPayload] })
+            }
+        };
+
+        if (typeof renderFormulaDataLab === 'function') {
+            renderFormulaDataLab(mockSim, false);
+            const childText = formulaBody.children && formulaBody.children[0] ? formulaBody.children[0]._text : '';
+            ok(childText === xssPayload, 'DataLab Engine: formula rendered text via textContent without innerHTML parsing');
+        }
+
+        context.document.getElementById = origGetById;
+    })();
 
     // No two simultaneously-visible nodes may collide (a hard-coded anchor
     // typo could silently overlap two nodes at the same point).
