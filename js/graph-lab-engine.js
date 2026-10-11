@@ -311,7 +311,13 @@ function glSyncChip(v) {
     const out = document.getElementById(`gl-val-${v.id}`);
     if (fill) fill.style.width = pct.toFixed(1) + '%';
     if (knob) { knob.style.left = pct.toFixed(1) + '%'; knob.setAttribute('aria-valuenow', String(val)); }
-    if (out) out.innerHTML = `${glFmtVar(val, v)}<em>${glEsc(hiPath(glSim, `graphLab.vars.${v.id}.unit`) || v.unit || '')}</em>`;
+    if (out) {
+        const unitStr = (typeof hiPath === 'function' ? hiPath(glSim, `graphLab.vars.${v.id}.unit`) : null) || v.unit || '';
+        out.textContent = glFmtVar(val, v);
+        const em = document.createElement('em');
+        em.textContent = unitStr;
+        out.appendChild(em);
+    }
 }
 
 function glWireChip(sim, host, v) {
