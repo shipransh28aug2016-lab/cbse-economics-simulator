@@ -491,6 +491,104 @@ function extractNodePos(html, label) {
     }
 })();
 
+// ── Panel collapse (js/panel-collapse.js) ────────────────────────
+(function testPanelCollapseStorageAndErrors() {
+    const loadPanelCollapsed = vm.runInContext('loadPanelCollapsed', context);
+    const savePanelCollapsed = vm.runInContext('savePanelCollapsed', context);
+
+    const origLocalStorage = sandbox.localStorage;
+    const store = {};
+
+    // Mock functional localStorage
+    sandbox.localStorage = {
+        getItem: (k) => (k in store ? store[k] : null),
+        setItem: (k, v) => { store[k] = String(v); }
+    };
+
+    // 1. Normal retrieval
+    store['econsim-panel-test1'] = '1';
+    store['econsim-panel-test2'] = '0';
+    ok(loadPanelCollapsed('test1', false) === true, 'loadPanelCollapsed: returns true when stored value is "1"');
+    ok(loadPanelCollapsed('test2', true) === false, 'loadPanelCollapsed: returns false when stored value is "0"');
+
+    // 2. Default fallbacks when key is missing (getItem returns null)
+    ok(loadPanelCollapsed('missing', true) === true, 'loadPanelCollapsed: returns defaultCollapsed (true) when key missing');
+    ok(loadPanelCollapsed('missing', false) === false, 'loadPanelCollapsed: returns defaultCollapsed (false) when key missing');
+    ok(loadPanelCollapsed('missing', undefined) === false, 'loadPanelCollapsed: handles undefined defaultCollapsed correctly');
+
+    // 3. Error handling on load (e.g., private browsing / localStorage blocked)
+    sandbox.localStorage.getItem = () => { throw new Error('SecurityError: Access is denied'); };
+    ok(loadPanelCollapsed('test1', true) === true, 'loadPanelCollapsed: falls back to defaultCollapsed (true) when getItem throws');
+    ok(loadPanelCollapsed('test1', false) === false, 'loadPanelCollapsed: falls back to defaultCollapsed (false) when getItem throws');
+
+    // 4. Save behavior
+    let savedKey = null, savedVal = null;
+    sandbox.localStorage.setItem = (k, v) => { savedKey = k; savedVal = v; };
+    savePanelCollapsed('saveKey', true);
+    ok(savedKey === 'econsim-panel-saveKey' && savedVal === '1', 'savePanelCollapsed: saves "1" for collapsed=true');
+    savePanelCollapsed('saveKey', false);
+    ok(savedKey === 'econsim-panel-saveKey' && savedVal === '0', 'savePanelCollapsed: saves "0" for collapsed=false');
+
+    // 5. Error handling on save
+    sandbox.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+    let saveThrew = false;
+    try {
+        savePanelCollapsed('saveKey', true);
+    } catch {
+        saveThrew = true;
+    }
+    ok(!saveThrew, 'savePanelCollapsed: safely catches storage errors when setItem throws');
+
+    // Restore original localStorage mock
+    sandbox.localStorage = origLocalStorage;
+})();
+
+(function testInitPanelCollapseDOM() {
+    const initPanelCollapse = vm.runInContext('initPanelCollapse', context);
+
+    function makeEl() {
+        const classes = new Set();
+        const attrs = {};
+        const listeners = {};
+        return {
+            classList: {
+                toggle: (cls, flag) => { flag ? classes.add(cls) : classes.delete(cls); },
+                contains: (cls) => classes.has(cls)
+            },
+            setAttribute: (k, v) => { attrs[k] = String(v); },
+            getAttribute: (k) => attrs[k],
+            dataset: {},
+            addEventListener: (evt, fn) => {
+                listeners[evt] = listeners[evt] || [];
+                listeners[evt].push(fn);
+            },
+            _trigger: (evt, eObj = {}) => {
+                (listeners[evt] || []).forEach(fn => fn(eObj));
+            },
+            _classes: classes,
+            _attrs: attrs
+        };
+    }
+
+    const panel = makeEl();
+    const header = makeEl();
+
+    initPanelCollapse(panel, header, 'domTestKey', true);
+    ok(panel._classes.has('collapsed'), 'initPanelCollapse: panel gets "collapsed" class when defaultCollapsed is true');
+    ok(header._attrs['aria-expanded'] === 'false', 'initPanelCollapse: header aria-expanded is "false" when collapsed');
+    ok(header.dataset.collapseWired === '1', 'initPanelCollapse: marks header dataset.collapseWired = "1"');
+
+    // Simulate click toggle
+    header._trigger('click');
+    ok(!panel._classes.has('collapsed'), 'initPanelCollapse: click toggle uncollapses panel');
+    ok(header._attrs['aria-expanded'] === 'true', 'initPanelCollapse: click toggle sets aria-expanded = "true"');
+
+    // Calling initPanelCollapse again on already wired header does not double wire
+    initPanelCollapse(panel, header, 'domTestKey', true);
+    header._trigger('click');
+    ok(panel._classes.has('collapsed'), 'initPanelCollapse: idempotency prevents duplicate listener stacking on second init call');
+})();
+
 // ── Shared transition layer (js/transition-layer.js) ─────────────
 // The cause→effect half of the learning loop. These assert the layer's
 // two load-bearing properties: it names only effects that are real
