@@ -579,7 +579,16 @@ function glRenderScenarios(sim, panel) {
         btn.className = 'gl-scenario-btn';
         const label = hiPath(sim, `graphLab.scenarios.${i}.label`) || sc.label;
         const note = hiPath(sim, `graphLab.scenarios.${i}.note`) || sc.note || '';
-        btn.innerHTML = `<span class="gl-scenario-label">${glEsc(label)}</span>${note ? `<span class="gl-scenario-note">${glEsc(note)}</span>` : ''}`;
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'gl-scenario-label';
+        labelSpan.textContent = label;
+        btn.appendChild(labelSpan);
+        if (note) {
+            const noteSpan = document.createElement('span');
+            noteSpan.className = 'gl-scenario-note';
+            noteSpan.textContent = note;
+            btn.appendChild(noteSpan);
+        }
         const applyScenario = () => {
             (sim.graphLab.vars || []).forEach(v => { glState[v.id] = v.value; });
             Object.keys(sc.set || {}).forEach(k => { glState[k] = sc.set[k]; });
