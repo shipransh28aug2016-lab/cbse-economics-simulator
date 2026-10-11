@@ -12,6 +12,7 @@
   {
     "imports": {
       "react": "https://esm.sh/react@18.3.1",
+      "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
       "react-dom": "https://esm.sh/react-dom@18.3.1",
       "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
       "three": "https://esm.sh/three@0.168.0",
@@ -30,6 +31,7 @@
       errorDiv.style.color = '#000';
       errorDiv.style.padding = '12px';
       errorDiv.style.zIndex = '99999';
+      errorDiv.style.pointerEvents = 'none';
       errorDiv.style.fontSize = '12px';
       errorDiv.style.fontFamily = 'monospace';
       errorDiv.style.whiteSpace = 'pre-wrap';
@@ -349,16 +351,6 @@
   </div>
 </div>
 
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-    "three": "https://esm.sh/three@0.160.0",
-    "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12?external=react,react-dom,three"
-  }
-}
-</script>
 <script type="module">
   import { render3DCircularFlow } from './js/circular-flow-3d.js';
   window.render3DCircularFlow = render3DCircularFlow;
