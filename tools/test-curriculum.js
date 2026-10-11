@@ -429,7 +429,8 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
 // from which OTHER sectors happen to be active) — see
 // docs/economics/models/circular-flow.md.
 function extractNodePos(html, label) {
-    const re = new RegExp(`<circle cx="([\\d.]+)" cy="([\\d.]+)"[^>]*><\\/circle>\\s*<text[^>]*>[^<]*<\\/text>\\s*<text[^>]*>${label}<\\/text>`);
+    const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`<circle cx="([\\d.]+)" cy="([\\d.]+)"[^>]*><\\/circle>\\s*<text[^>]*>[^<]*<\\/text>\\s*<text[^>]*>${escapedLabel}<\\/text>`);
     const m = html.match(re);
     return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : null;
 }
@@ -457,8 +458,8 @@ function extractNodePos(html, label) {
 
     // The actual bug: Financial Market's anchor must be IDENTICAL whether
     // or not Foreign Sector also happens to be on screen.
-    const bank3 = extractNodePos(html3bank, 'Financial Market \\(Banks\\)');
-    const bank4 = extractNodePos(html4bank, 'Financial Market \\(Banks\\)');
+    const bank3 = extractNodePos(html3bank, 'Financial Market (Banks)');
+    const bank4 = extractNodePos(html4bank, 'Financial Market (Banks)');
     ok(bank3 && bank4, 'Circular Flow: Financial Market node is present with the bank ON in both 3- and 4-sector');
     approx(bank3.x, bank4.x, 0.01, 'Circular Flow: Financial Market.x does NOT move when Foreign Sector is added (the regression this guards)');
     approx(bank3.y, bank4.y, 0.01, 'Circular Flow: Financial Market.y does NOT move when Foreign Sector is added');
@@ -480,7 +481,7 @@ function extractNodePos(html, label) {
 
     // No two simultaneously-visible nodes may collide (a hard-coded anchor
     // typo could silently overlap two nodes at the same point).
-    const allNodes4 = ['Households', 'Firms', 'Government', 'Financial Market \\(Banks\\)', 'Foreign Sector']
+    const allNodes4 = ['Households', 'Firms', 'Government', 'Financial Market (Banks)', 'Foreign Sector']
         .map(l => ({ l, p: extractNodePos(html4bank, l) }));
     for (let i = 0; i < allNodes4.length; i++) {
         for (let j = i + 1; j < allNodes4.length; j++) {
