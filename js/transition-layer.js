@@ -171,7 +171,7 @@ function traceMoved(prevTrace, nextTrace) {
     const a = prevTrace.y, b = nextTrace.y;
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return true;
     let maxDelta = 0, lo = Infinity, hi = -Infinity;
-    for (let i = 0; i < a.length; i++) {
+    for (let i = 0, len = a.length; i < len; i++) {
         const av = a[i], bv = b[i];
         if (typeof av !== 'number' || typeof bv !== 'number' || !isFinite(av) || !isFinite(bv)) continue;
         maxDelta = Math.max(maxDelta, Math.abs(bv - av));
