@@ -75,10 +75,22 @@ function noop() {}
 function stubEl() {
     return {
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop,
+        children: [],
+        appendChild(child) {
+            this.children.push(child);
+            return child;
+        },
+        setAttribute: noop,
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
         get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
-        get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
+        get textContent() {
+            if (this.children.length > 0) {
+                return this.children.map(c => c.textContent || '').join('');
+            }
+            return this._text || '';
+        },
+        set textContent(v) { this._text = v; this.children = []; },
         offsetWidth: 100
     };
 }
@@ -90,6 +102,7 @@ const sandbox = {
         querySelectorAll: () => [],
         querySelector: () => null,
         createElement: () => stubEl(),
+        createTextNode: (text) => ({ textContent: String(text) }),
         addEventListener: noop,
         documentElement: { lang: 'en' }
     },
@@ -892,6 +905,50 @@ SIMS.forEach(sim => {
     }
 });
 console.log(`\nQuiz bank coverage: ${quizBankCoverage} / ${SIMS.length} sims have a quiz bank generating >=10 questions.`);
+
+(function testQuizEngineDOMSafety() {
+    const renderQuizQuestion = vm.runInContext('renderQuizQuestion', context);
+    const selectQuizAnswer = vm.runInContext('selectQuizAnswer', context);
+    const quizState = vm.runInContext('quizState', context);
+
+    const questionEl = stubEl();
+    const feedbackEl = stubEl();
+    const optsEl = stubEl();
+
+    // Wire elements into sandbox document
+    const origGetById = context.document.getElementById;
+    context.document.getElementById = (id) => {
+        if (id === 'quiz-question') return questionEl;
+        if (id === 'quiz-feedback') return feedbackEl;
+        if (id === 'quiz-options') return optsEl;
+        return stubEl();
+    };
+
+    quizState.questions = [{
+        level: 'understand',
+        question: 'What is <script>alert(1)</script>?',
+        options: ['Option <img src=x onerror=alert(1)>', 'Option B'],
+        correctIndex: 1,
+        explain: 'Explanation with <b onmouseover=alert(1)>HTML</b> & payload',
+        misconceptions: {
+            'Option <img src=x onerror=alert(1)>': 'Misconception with <svg/onload=alert(1)> payload'
+        }
+    }];
+    quizState.index = 0;
+    quizState.score = 0;
+    quizState.answered = false;
+
+    renderQuizQuestion();
+
+    ok(questionEl.textContent.includes('<script>alert(1)</script>'), 'Quiz Engine XSS: question text is safely set as text content');
+
+    selectQuizAnswer(0); // Pick wrong option with misconception
+
+    ok(feedbackEl.textContent.includes('<b onmouseover=alert(1)>HTML</b>'), 'Quiz Engine XSS: explanation string is safely escaped in text content');
+    ok(feedbackEl.textContent.includes('<svg/onload=alert(1)>'), 'Quiz Engine XSS: misconception text is safely escaped in text content');
+
+    context.document.getElementById = origGetById;
+})();
 
 // ── 6. Hindi (i18n) content validation ────────────────────────────
 // Every sim's SIM_I18N_HI['<id>'] entry (js/i18n_hi*.js), when present, is
