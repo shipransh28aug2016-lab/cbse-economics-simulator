@@ -68,16 +68,21 @@ const FILES = [
     'js/i18n_hi_statistics.js',
     'js/i18n_hi_macro_datalab.js',
     'js/i18n_hi_ied.js',
-    'js/i18n_hi_graphlab.js'
+    'js/i18n_hi_graphlab.js',
+    'js/app.js'
 ];
 
 function noop() {}
 function stubEl() {
+    const children = [];
     return {
+        children,
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop, remove: noop,
+        appendChild(child) { children.push(child); return child; },
+        setAttribute: noop,
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
-        get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
+        get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; if (v === '') children.length = 0; },
         get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
         offsetWidth: 100
     };
@@ -1044,6 +1049,34 @@ SIMS.forEach(sim => {
 });
 console.log(`\nHindi content coverage: ${i18nCoverage} / ${SIMS.length} sims have translated core content.`);
 
+// ── 8. Safe home grid card creation validation ────────────────────
+(function testRebuildHomeGridsDOM() {
+    const createSimCard = vm.runInContext('createSimCard', context);
+    ok(typeof createSimCard === 'function', 'createSimCard is defined in app.js');
+
+    const testSim = {
+        id: 'test-xss-sim',
+        module: 'micro',
+        enrichment: true
+    };
+    const xssTitle = '<img src=x onerror=alert(1)>';
+    const xssDesc = '<script>alert(2)</script>';
+
+    const card = createSimCard(testSim, xssTitle, xssDesc);
+    ok(card.className === 'sim-card sim-card--micro', 'createSimCard sets correct className');
+    ok(card.children.length === 3, 'createSimCard creates badge, h3, and p elements for enrichment sim');
+
+    const badge = card.children[0];
+    ok(badge.className === 'sim-card-badge', 'badge element has sim-card-badge class');
+    ok(badge.textContent === '✨', 'badge element textContent is ✨');
+
+    const h3 = card.children[1];
+    ok(h3.textContent === xssTitle, 'h3 element textContent equals input title without unescaped HTML execution');
+
+    const p = card.children[2];
+    ok(p.textContent === xssDesc, 'p element textContent equals input description without unescaped HTML execution');
+})();
+
 // ── 7. Dynamic readings translation (READINGS_I18N_HI) ───────────
 // Exercises each sim's compute()/dataLab.calculate()/customRender() across
 // a sweep of states (reusing the same sweep as section 3's numeric check)
@@ -1060,6 +1093,7 @@ let readingsDictCoverage = 0, readingsPatternsChecked = 0;
 // defaults to 'en' for every other section's checks, so switch it for the
 // duration of this one.
 context.currentLang = 'hi';
+vm.runInContext("currentLang = 'hi';", context);
 Object.keys(READINGS_I18N_HI).forEach(simId => {
     const sim = findSim(simId);
     if (!ok(!!sim, `${simId}: READINGS_I18N_HI key matches a real sim`)) return;
@@ -1104,6 +1138,7 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
     });
 });
 context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
+vm.runInContext("currentLang = 'en';", context);
 console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
