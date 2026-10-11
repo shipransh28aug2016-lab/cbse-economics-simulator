@@ -227,7 +227,12 @@ function renderQuizQuestion() {
 
     const questionEl = document.getElementById('quiz-question');
     if (questionEl) {
-        questionEl.innerHTML = `<span class="quiz-bloom-badge quiz-bloom-${q.level}">${bloomLabel(q.level)}</span>${q.question}`;
+        questionEl.innerHTML = '';
+        const badgeSpan = document.createElement('span');
+        badgeSpan.className = `quiz-bloom-badge quiz-bloom-${q.level}`;
+        badgeSpan.textContent = bloomLabel(q.level);
+        questionEl.appendChild(badgeSpan);
+        questionEl.appendChild(document.createTextNode(q.question));
     }
 
     const optsEl = document.getElementById('quiz-options');

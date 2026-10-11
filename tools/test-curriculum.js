@@ -90,6 +90,7 @@ const sandbox = {
         querySelectorAll: () => [],
         querySelector: () => null,
         createElement: () => stubEl(),
+        createTextNode: (text) => ({ nodeType: 3, nodeValue: String(text), textContent: String(text) }),
         addEventListener: noop,
         documentElement: { lang: 'en' }
     },
@@ -844,6 +845,89 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testQuizEngineQuestionXss() {
+    // Tests renderQuizQuestion safety against XSS payloads in question text.
+    function createTestEl() {
+        const children = [];
+        return {
+            style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+            addEventListener: noop, removeEventListener: noop, setAttribute: noop,
+            querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
+            children,
+            appendChild(child) { children.push(child); },
+            get innerHTML() {
+                if (children.length === 0) return this._html || '';
+                return children.map(c => {
+                    if (c.className) return `<span class="${c.className}">${c.textContent}</span>`;
+                    return c.textContent || c.nodeValue || '';
+                }).join('');
+            },
+            set innerHTML(v) {
+                this._html = v;
+                if (v === '') children.length = 0;
+            },
+            get textContent() {
+                if (children.length === 0) return this._text || '';
+                return children.map(c => c.textContent || c.nodeValue || '').join('');
+            },
+            set textContent(v) { this._text = v; }
+        };
+    }
+
+    const qEl = createTestEl();
+    const docGet = sandbox.document.getElementById;
+    const docCreateElem = sandbox.document.createElement;
+    const docCreateText = sandbox.document.createTextNode;
+
+    sandbox.document.getElementById = (id) => (id === 'quiz-question' ? qEl : stubEl());
+    sandbox.document.createElement = (tag) => {
+        const el = stubEl();
+        el.tagName = tag.toUpperCase();
+        return el;
+    };
+    sandbox.document.createTextNode = (text) => ({
+        nodeType: 3,
+        nodeValue: text,
+        textContent: text
+    });
+
+    // Access quizState & renderQuizQuestion via vm context
+    const quizStateInContext = vm.runInContext('quizState', context);
+    const renderQuizQuestionInContext = context.renderQuizQuestion;
+
+    const oldState = Object.assign({}, quizStateInContext);
+    const testState = {
+        sim: { id: 'test-sim' },
+        questions: [{
+            level: 'apply',
+            question: 'What is <img src=x onerror=alert(1)> GDP?',
+            options: ['Option A', 'Option B'],
+            correctIndex: 0
+        }],
+        index: 0,
+        score: 0,
+        answered: false
+    };
+
+    vm.runInContext(`quizState = ${JSON.stringify(testState)};`, context);
+
+    renderQuizQuestionInContext();
+
+    const children = qEl.children;
+    const hasBadge = children.some(c => c.className && c.className.indexOf('quiz-bloom-badge') !== -1);
+    const combinedText = qEl.textContent;
+
+    ok(hasBadge, 'renderQuizQuestion: renders bloom badge element safely');
+    ok(combinedText.indexOf('<img src=x onerror=alert(1)>') !== -1, 'renderQuizQuestion: renders raw question text as text node');
+    ok(children.some(c => c.nodeType === 3 && c.nodeValue === 'What is <img src=x onerror=alert(1)> GDP?'), 'renderQuizQuestion: question text is appended as a text node');
+
+    // Restore
+    sandbox.document.getElementById = docGet;
+    sandbox.document.createElement = docCreateElem;
+    sandbox.document.createTextNode = docCreateText;
+    vm.runInContext(`quizState = ${JSON.stringify(oldState)};`, context);
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
