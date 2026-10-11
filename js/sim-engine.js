@@ -837,7 +837,13 @@ function renderSimChart(sim) {
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
         if (formulaBody) {
-            formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${translateReadings(sim, f)}</div>`).join('');
+            formulaBody.textContent = '';
+            result.formulas.forEach(f => {
+                const line = document.createElement('div');
+                line.className = 'formula-line';
+                line.textContent = translateReadings(sim, f);
+                formulaBody.appendChild(line);
+            });
         }
     }
 
@@ -909,9 +915,13 @@ function renderSim(sim) {
     }
     if (formulaBody) {
         const formulas = hiPath(sim, 'formulas') || sim.formulas || [];
-        formulaBody.innerHTML = formulas
-            .map(f => `<div class="formula-line">${f}</div>`)
-            .join('');
+        formulaBody.textContent = '';
+        formulas.forEach(f => {
+            const line = document.createElement('div');
+            line.className = 'formula-line';
+            line.textContent = f;
+            formulaBody.appendChild(line);
+        });
     }
     // Charts render into #sim-dom-overlay via Plotly; the raw canvas
     // underneath isn't used by any simulation, so keep it out of the way.
