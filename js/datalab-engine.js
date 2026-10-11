@@ -79,28 +79,35 @@ function renderDataLabTable(sim, container) {
     const canRemove = dataLabRows.length > minRows;
     const canAdd = dataLabRows.length < maxRows;
 
+    const colLabels = cols.map(c => dataLabColLabel(sim, c));
+    const rowLabel = tEngine('engine.row', 'row');
+    const removeRowLabel = tEngine('engine.removeRow', 'Remove row');
+
     let html = `<div class="controls-panel-header collapsible-header" data-panel-key="controls" role="button" tabindex="0"><span>${tEngine('engine.yourData', '📋 Your Data — edit any cell')}</span>
             <button type="button" class="reset-btn" id="datalab-reset">${tEngine('engine.reset', '↺ Reset')}</button>
             <span class="panel-chevron" aria-hidden="true">⌄</span>
         </div>
         <p class="controls-panel-hint">${tEngine('engine.dataLabHint', 'Type your own numbers directly into the table below — the calculation, chart and interpretation update instantly. Add or remove rows to try a dataset of your own, not just the sample.')}</p>
         <div class="datalab-table-wrap"><table class="datalab-table"><thead><tr>`;
-    cols.forEach(c => { const label = dataLabColLabel(sim, c); html += `<th>${label}${c.unit ? ` (${c.unit})` : ''}</th>`; });
+    cols.forEach((c, idx) => { html += `<th>${colLabels[idx]}${c.unit ? ` (${c.unit})` : ''}</th>`; });
     html += `<th class="datalab-row-action-col"></th></tr></thead><tbody>`;
-    dataLabRows.forEach((row, i) => {
+    for (let i = 0; i < dataLabRows.length; i++) {
+        const row = dataLabRows[i];
+        const rowNum = i + 1;
         html += '<tr>';
-        cols.forEach(c => {
+        for (let j = 0; j < cols.length; j++) {
+            const c = cols[j];
             const val = row[c.id] === undefined ? '' : row[c.id];
-            const label = dataLabColLabel(sim, c);
+            const label = colLabels[j];
             if (c.type === 'text') {
-                html += `<td><input type="text" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${String(val).replace(/"/g, '&quot;')}" aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`;
+                html += `<td><input type="text" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${String(val).replace(/"/g, '&quot;')}" aria-label="${label}, ${rowLabel} ${rowNum}"></td>`;
             } else {
-                html += `<td><input type="number" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${val}" step="${c.step || 1}"${typeof c.min === 'number' ? ` min="${c.min}"` : ''}${typeof c.max === 'number' ? ` max="${c.max}"` : ''} aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`;
+                html += `<td><input type="number" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${val}" step="${c.step || 1}"${typeof c.min === 'number' ? ` min="${c.min}"` : ''}${typeof c.max === 'number' ? ` max="${c.max}"` : ''} aria-label="${label}, ${rowLabel} ${rowNum}"></td>`;
             }
-        });
-        html += `<td>${canRemove ? `<button type="button" class="datalab-row-remove" data-row="${i}" title="${tEngine('engine.removeRow', 'Remove row')}" aria-label="${tEngine('engine.removeRow', 'Remove row')} ${i + 1}">✕</button>` : ''}</td>`;
+        }
+        html += `<td>${canRemove ? `<button type="button" class="datalab-row-remove" data-row="${i}" title="${removeRowLabel}" aria-label="${removeRowLabel} ${rowNum}">✕</button>` : ''}</td>`;
         html += '</tr>';
-    });
+    }
     html += `</tbody></table></div>
         <div class="datalab-toolbar">
             <button type="button" class="datalab-btn" id="datalab-add-row" ${canAdd ? '' : 'disabled'}>${tEngine('engine.addRow', '+ Add Row')}</button>
