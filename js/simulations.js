@@ -18,6 +18,18 @@
 //   compute(values)                  — returns {traces, layout, readings, metrics?} for Plotly
 //   practice, challenge              — optional guided-practice checklist + auto-checked challenge
 
+function renderCircularFlowSvg(sectorLabel, hasBank, flowsSVG, nodesSVG, labelsSVG, legendSVG) {
+    const ariaLabel = `${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure`;
+    return `
+        <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+             aria-label="${ariaLabel}">
+            ${flowsSVG}
+            ${nodesSVG}
+            ${labelsSVG}
+            ${legendSVG}
+        </svg>`;
+}
+
 const _corrRandN = makeRandN(42);
 const _corrX = range(30).map(() => _corrRandN());
 const _corrNoise = range(30).map(() => _corrRandN());
@@ -473,14 +485,7 @@ const SIMS = [
             if (typeof window.render3DCircularFlow === 'function') {
                 window.render3DCircularFlow(container, v);
             } else {
-                container.innerHTML = `
-                    <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                         aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
-                        ${flowsSVG}
-                        ${nodesSVG}
-                        ${labelsSVG}
-                        ${legendSVG}
-                    </svg>`;
+                container.innerHTML = renderCircularFlowSvg(sectorLabel, hasBank, flowsSVG, nodesSVG, labelsSVG, legendSVG);
             }
 
             // Injections vs Leakages — the actual CBSE-taught rule for

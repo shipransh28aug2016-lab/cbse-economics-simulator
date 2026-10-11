@@ -43,6 +43,14 @@ function explorerFade(overlay) {
     overlay.classList.add('chart-fresh');
 }
 
+function renderScoreRingSvg(scorePct, ringCirc = 100.5) {
+    const dashOffset = ringCirc - ringCirc * scorePct;
+    return `<svg viewBox="0 0 36 36" width="52" height="52">
+        <circle class="ring-bg" cx="18" cy="18" r="16"></circle>
+        <circle class="ring-fg" cx="18" cy="18" r="16" stroke-dasharray="${ringCirc}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 18 18)"></circle>
+    </svg>`;
+}
+
 // ── Timeline (Five-Year Plans, LPG reforms, colonial-era economy, …) ──
 function renderTimelineExplorer(sim, panel, overlay) {
     const eras = sim.explorer.eras;
@@ -145,13 +153,9 @@ function renderCardsExplorer(sim, panel, overlay) {
 
         const liveScore = score();
         const scorePct = liveScore.answered === 0 ? 0 : liveScore.correct / liveScore.answered;
-        const ringCirc = 100.5; // 2*pi*16, matches r=16 below
         overlay.innerHTML = `<div class="explorer-cards-stage">
         <div class="explorer-score-ring" title="${liveScore.correct} / ${liveScore.total} correct so far" role="img" aria-label="${liveScore.correct} of ${liveScore.total} correct">
-            <svg viewBox="0 0 36 36" width="52" height="52">
-                <circle class="ring-bg" cx="18" cy="18" r="16"></circle>
-                <circle class="ring-fg" cx="18" cy="18" r="16" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringCirc - ringCirc * scorePct}" transform="rotate(-90 18 18)"></circle>
-            </svg>
+            ${renderScoreRingSvg(scorePct)}
             <div class="explorer-score-ring-label"><b>${liveScore.correct}</b>/${liveScore.total}</div>
         </div>
         <div class="explorer-cards-list">${cards.map((c, idx) => {

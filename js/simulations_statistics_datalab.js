@@ -3,6 +3,11 @@
 // pass (Unit 1 Introduction, Unit 2 Collection/Organisation/Presentation
 // of Data, Unit 3 Central Tendency). See CLAUDE.md for the data contract.
 
+const CONCEPT_CENTRAL_TENDENCY = '<p>Central tendency measures try to summarise a whole dataset with one representative number. The <b>Arithmetic Mean</b> uses every value but is pulled by outliers; the <b>Median</b> is the middle value when sorted, so it resists outliers; the <b>Mode</b> is simply the most frequent value. Edit the data below — a class\'s test marks, by default — and watch all three recalculate, and where they sit relative to each other, live.</p>';
+const CONCEPT_DATA_ORGANISATION = '<p>Raw, unclassified data is hard to read at a glance. <b>Organisation of Data</b> groups it into a <b>frequency distribution</b> — equal-width class intervals, each with a count (frequency) of how many observations fall in it. That frequency distribution is then <b>presented</b> as a <b>Histogram</b> (bars, no gaps, area ∝ frequency), a <b>Frequency Polygon</b> (line joining each class\'s midpoint, closed to zero at both ends), and an <b>Ogive</b> (cumulative "less than" frequency curve). Type in raw numbers below — marks, ages, incomes, anything — and this lab classifies them into 5 class intervals automatically and draws all three.</p>';
+const CONCEPT_DATA_PRESENTATION = '<p>The same tabulated data can be presented several ways. <b>Bar diagrams</b> make categories easy to compare by height; <b>Pie diagrams</b> make each category\'s <i>share of the total</i> easy to see at a glance. Both come from exactly the same table — edit any category or value below and both diagrams update together, so you can see they are two views of one dataset, not two different datasets. (An <b>arithmetic line/time-series graph</b> — the third named presentation form — is simply this same idea plotted with Year on the X-axis instead of a category; see the Index Numbers Data Lab for a worked time-series line chart.)</p>';
+const CONCEPT_DATA_COLLECTION = '<p>Before any calculation, statistics starts with a question: where does the data come from? This explorer walks through what economics and statistics study, and the two big data-collection choices every study makes: <b>primary vs secondary data</b>, and <b>sampling vs a full census</b>.</p>';
+
 if (typeof SIMS !== 'undefined') {
     SIMS.push(
         {
@@ -13,7 +18,7 @@ if (typeof SIMS !== 'undefined') {
             class: 'XI', part: 'A', unit: 3, unitTitle: 'Statistical Tools and Interpretation', topicLabel: 'Mean, Median, Mode',
             syllabusIds: ['XI-A-U3-CENTRAL-TENDENCY'],
             mode: 'datalab',
-            concept: '<p>Central tendency measures try to summarise a whole dataset with one representative number. The <b>Arithmetic Mean</b> uses every value but is pulled by outliers; the <b>Median</b> is the middle value when sorted, so it resists outliers; the <b>Mode</b> is simply the most frequent value. Edit the data below — a class\'s test marks, by default — and watch all three recalculate, and where they sit relative to each other, live.</p>',
+            concept: CONCEPT_CENTRAL_TENDENCY,
             formulas: ['Mean (x̄) = Σx / n', 'Median = middle value (sorted); average of the two middle values if n is even', 'Mode = most frequently occurring value'],
             dataLab: {
                 columns: [
@@ -113,7 +118,7 @@ if (typeof SIMS !== 'undefined') {
             class: 'XI', part: 'A', unit: 2, unitTitle: 'Collection, Organisation and Presentation of Data', topicLabel: 'Organisation & Frequency Diagrams',
             syllabusIds: ['XI-A-U2-ORG', 'XI-A-U2-PRESENT'],
             mode: 'datalab',
-            concept: '<p>Raw, unclassified data is hard to read at a glance. <b>Organisation of Data</b> groups it into a <b>frequency distribution</b> — equal-width class intervals, each with a count (frequency) of how many observations fall in it. That frequency distribution is then <b>presented</b> as a <b>Histogram</b> (bars, no gaps, area ∝ frequency), a <b>Frequency Polygon</b> (line joining each class\'s midpoint, closed to zero at both ends), and an <b>Ogive</b> (cumulative "less than" frequency curve). Type in raw numbers below — marks, ages, incomes, anything — and this lab classifies them into 5 class intervals automatically and draws all three.</p>',
+            concept: CONCEPT_DATA_ORGANISATION,
             formulas: ['Class Width = (Max − Min) / Number of Classes', 'Frequency = count of observations within a class interval', 'Cumulative ("less than") Frequency = running total up to a class\'s upper boundary'],
             dataLab: {
                 columns: [{ id: 'value', label: 'Raw Observation', type: 'number', step: 1, default: 50 }],
@@ -199,7 +204,7 @@ if (typeof SIMS !== 'undefined') {
             class: 'XI', part: 'A', unit: 2, unitTitle: 'Collection, Organisation and Presentation of Data', topicLabel: 'Tabulation & Geometric (Bar/Pie) Diagrams',
             syllabusIds: ['XI-A-U2-PRESENT'],
             mode: 'datalab',
-            concept: '<p>The same tabulated data can be presented several ways. <b>Bar diagrams</b> make categories easy to compare by height; <b>Pie diagrams</b> make each category\'s <i>share of the total</i> easy to see at a glance. Both come from exactly the same table — edit any category or value below and both diagrams update together, so you can see they are two views of one dataset, not two different datasets. (An <b>arithmetic line/time-series graph</b> — the third named presentation form — is simply this same idea plotted with Year on the X-axis instead of a category; see the Index Numbers Data Lab for a worked time-series line chart.)</p>',
+            concept: CONCEPT_DATA_PRESENTATION,
             formulas: ['Category Share (%) = (Category Value / Total) × 100'],
             dataLab: {
                 columns: [
@@ -251,7 +256,7 @@ if (typeof SIMS !== 'undefined') {
             class: 'XI', part: 'A', unit: 1, unitTitle: 'Introduction', topicLabel: 'Economics, Statistics & Data Collection',
             syllabusIds: ['XI-A-U1-ECONOMICS', 'XI-A-U1-STATS-ROLE', 'XI-A-U2-COLLECTION'],
             mode: 'explorer',
-            concept: '<p>Before any calculation, statistics starts with a question: where does the data come from? This explorer walks through what economics and statistics study, and the two big data-collection choices every study makes: <b>primary vs secondary data</b>, and <b>sampling vs a full census</b>.</p>',
+            concept: CONCEPT_DATA_COLLECTION,
             formulas: [],
             explorer: {
                 type: 'scenario',
