@@ -75,9 +75,11 @@ function noop() {}
 function stubEl() {
     return {
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop, setAttribute: noop,
+        children: [],
+        appendChild: function(child) { (this.children = this.children || []).push(child); return child; },
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
-        get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
+        get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; if (v === '') this.children = []; },
         get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
         offsetWidth: 100
     };
@@ -844,6 +846,34 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testGraphLabErrorHandling() {
+    const glRender = vm.runInContext('glRender', context);
+    const mockOverlay = stubEl();
+    const origGetElementById = sandbox.document.getElementById;
+    const origConsoleError = sandbox.console.error;
+    sandbox.console.error = noop;
+    sandbox.document.getElementById = (id) => id === 'sim-dom-overlay' ? mockOverlay : stubEl();
+
+    const mockSim = {
+        id: 'mock-error-sim',
+        graphLab: {
+            x: { min: 0, max: 10 },
+            y: { min: 0, max: 10 },
+            model: () => { throw new Error('Simulated model failure'); }
+        }
+    };
+
+    glRender(mockSim, false);
+
+    ok(mockOverlay.children.length > 0, 'GraphLab error handling: overlay contains children on error');
+    const errChild = mockOverlay.children.find(c => c.className === 'gl-error');
+    ok(!!errChild, 'GraphLab error handling: creates element with class "gl-error" on error');
+    ok(errChild && errChild.textContent.includes('Could not draw this diagram'), 'GraphLab error handling: element text contains error message');
+
+    sandbox.document.getElementById = origGetElementById;
+    sandbox.console.error = origConsoleError;
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
