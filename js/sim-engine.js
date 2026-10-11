@@ -480,10 +480,13 @@ function renderQuickCheck(sim, qc, host) {
 function buildControls(sim) {
     const panel = document.getElementById('controls-panel');
     if (!panel) return;
-    panel.innerHTML = '';
+    panel.textContent = '';
 
     if (!sim.controls || !sim.controls.length) {
-        panel.innerHTML = `<p class="empty-hint">${tEngine('engine.noInputs', 'No adjustable inputs for this lab — explore the chart on the left.')}</p>`;
+        const hintP = document.createElement('p');
+        hintP.className = 'empty-hint';
+        hintP.textContent = tEngine('engine.noInputs', 'No adjustable inputs for this lab — explore the chart on the left.');
+        panel.appendChild(hintP);
         return;
     }
 
@@ -492,7 +495,10 @@ function buildControls(sim) {
     header.dataset.panelKey = 'controls';
     header.setAttribute('role', 'button');
     header.setAttribute('tabindex', '0');
-    header.innerHTML = `<span>${tEngine('engine.adjustVariables', '🎛️ Adjust the Variables')}</span>`;
+
+    const headerSpan = document.createElement('span');
+    headerSpan.textContent = tEngine('engine.adjustVariables', '🎛️ Adjust the Variables');
+    header.appendChild(headerSpan);
 
     const hint = document.createElement('p');
     hint.className = 'controls-panel-hint';
@@ -501,7 +507,7 @@ function buildControls(sim) {
     const resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'reset-btn';
-    resetBtn.innerHTML = tEngine('engine.reset', '↺ Reset');
+    resetBtn.textContent = tEngine('engine.reset', '↺ Reset');
     // Reset sits inside the same header that toggles collapse (a bigger,
     // more ergonomic click target than a chevron alone) — stop the click
     // from bubbling up and also toggling the panel collapsed/expanded.
@@ -568,14 +574,23 @@ function buildControls(sim) {
             // ~200px grid column, so it spans the full compact-controls
             // grid width (see .control-row--wide in css/styles.css).
             row.classList.add('control-row--wide');
-            row.innerHTML = `
-                <div class="control-label-row">
-                    <label>${label}</label>
-                </div>
-                <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${label}"></div>
-            `;
+
+            const labelRow = document.createElement('div');
+            labelRow.className = 'control-label-row';
+            const labelEl = document.createElement('label');
+            labelEl.textContent = label;
+            labelRow.appendChild(labelEl);
+
+            const group = document.createElement('div');
+            group.className = 'control-segmented';
+            group.id = `ctl-${c.id}`;
+            group.setAttribute('role', 'group');
+            group.setAttribute('aria-label', label);
+
+            row.appendChild(labelRow);
+            row.appendChild(group);
             panel.appendChild(row);
-            const group = row.querySelector('.control-segmented');
+
             c.options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -601,20 +616,49 @@ function buildControls(sim) {
 
         const label = controlLabel(sim, c);
         const unit = hiPath(sim, `controls.${c.id}.unit`) || c.unit;
-        row.innerHTML = `
-            <div class="control-label-row">
-                <label for="ctl-${c.id}">${label}</label>
-                ${unit ? `<span class="control-unit">${unit}</span>` : ''}
-            </div>
-            <div class="control-input-group">
-                <input type="range" id="ctl-${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}">
-                <input type="number" id="ctl-${c.id}-num" class="control-number" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}" aria-label="${label} (${tEngine('engine.exactValue', 'exact value')})">
-            </div>
-        `;
-        panel.appendChild(row);
 
-        const rangeEl = row.querySelector('input[type="range"]');
-        const numEl = row.querySelector('input[type="number"]');
+        const labelRow = document.createElement('div');
+        labelRow.className = 'control-label-row';
+
+        const labelEl = document.createElement('label');
+        labelEl.htmlFor = `ctl-${c.id}`;
+        labelEl.textContent = label;
+        labelRow.appendChild(labelEl);
+
+        if (unit) {
+            const unitSpan = document.createElement('span');
+            unitSpan.className = 'control-unit';
+            unitSpan.textContent = unit;
+            labelRow.appendChild(unitSpan);
+        }
+
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'control-input-group';
+
+        const rangeEl = document.createElement('input');
+        rangeEl.type = 'range';
+        rangeEl.id = `ctl-${c.id}`;
+        rangeEl.min = c.min;
+        rangeEl.max = c.max;
+        rangeEl.step = c.step;
+        rangeEl.value = c.value;
+
+        const numEl = document.createElement('input');
+        numEl.type = 'number';
+        numEl.id = `ctl-${c.id}-num`;
+        numEl.className = 'control-number';
+        numEl.min = c.min;
+        numEl.max = c.max;
+        numEl.step = c.step;
+        numEl.value = c.value;
+        numEl.setAttribute('aria-label', `${label} (${tEngine('engine.exactValue', 'exact value')})`);
+
+        inputGroup.appendChild(rangeEl);
+        inputGroup.appendChild(numEl);
+
+        row.appendChild(labelRow);
+        row.appendChild(inputGroup);
+        panel.appendChild(row);
 
         // Dragging the slider always stays within bounds (native behaviour).
         rangeEl.addEventListener('input', () => {
