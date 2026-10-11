@@ -68,29 +68,90 @@ const FILES = [
     'js/i18n_hi_statistics.js',
     'js/i18n_hi_macro_datalab.js',
     'js/i18n_hi_ied.js',
-    'js/i18n_hi_graphlab.js'
+    'js/i18n_hi_graphlab.js',
+    'js/ai-tutor.js'
 ];
 
 function noop() {}
-function stubEl() {
-    return {
-        style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
-        querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
+const elementsById = {};
+function stubEl(tag) {
+    const children = [];
+    const el = {
+        tagName: (tag || 'DIV').toUpperCase(),
+        style: {}, dataset: {},
+        classList: {
+            add: function(...cls) { el._classes = el._classes || new Set(); cls.forEach(c => el._classes.add(c)); },
+            remove: function(...cls) { if (el._classes) cls.forEach(c => el._classes.delete(c)); },
+            toggle: function(c, force) {
+                el._classes = el._classes || new Set();
+                if (force === true) { el._classes.add(c); return true; }
+                if (force === false) { el._classes.delete(c); return false; }
+                if (el._classes.has(c)) { el._classes.delete(c); return false; }
+                el._classes.add(c); return true;
+            },
+            contains: function(c) { return el._classes ? el._classes.has(c) : false; }
+        },
+        children: children,
+        listeners: {},
+        addEventListener: function(evt, fn) { el.listeners[evt] = el.listeners[evt] || []; el.listeners[evt].push(fn); },
+        removeEventListener: noop,
+        click: function() { (el.listeners['click'] || []).forEach(fn => fn({ type: 'click', preventDefault: noop, stopPropagation: noop })); },
+        appendChild: function(child) { children.push(child); return child; },
+        replaceChildren: function(...newChildren) {
+            children.length = 0;
+            newChildren.forEach(c => {
+                if (typeof c === 'string') {
+                    children.push({ textContent: c });
+                } else if (c) {
+                    children.push(c);
+                }
+            });
+        },
+        setAttribute: function(k, v) { el.dataset[k] = v; },
+        getAttribute: function(k) { return el.dataset[k] || null; },
+        querySelectorAll: function(sel) {
+            const results = [];
+            function walk(node) {
+                (node.children || []).forEach(child => {
+                    if (sel.startsWith('.') && child.className && child.className.split(' ').includes(sel.slice(1))) {
+                        results.push(child);
+                    } else if (sel.startsWith('#') && child.id === sel.slice(1)) {
+                        results.push(child);
+                    }
+                    walk(child);
+                });
+            }
+            walk(el);
+            return results;
+        },
+        querySelector: function(sel) {
+            return el.querySelectorAll(sel)[0] || null;
+        },
         get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
-        get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
+        get textContent() { return this._text !== undefined ? this._text : children.map(c => c.textContent || '').join(''); },
+        set textContent(v) { this._text = v; children.length = 0; },
         offsetWidth: 100
     };
+    return el;
+}
+function getOrCreateEl(id) {
+    if (!elementsById[id]) {
+        elementsById[id] = stubEl('DIV');
+        elementsById[id].id = id;
+    }
+    return elementsById[id];
 }
 const sandbox = {
     console,
     window: {},
     document: {
-        getElementById: () => stubEl(),
+        listeners: {},
+        getElementById: (id) => getOrCreateEl(id),
         querySelectorAll: () => [],
         querySelector: () => null,
-        createElement: () => stubEl(),
-        addEventListener: noop,
+        createElement: (tag) => stubEl(tag),
+        addEventListener: function(evt, fn) { sandbox.document.listeners[evt] = sandbox.document.listeners[evt] || []; sandbox.document.listeners[evt].push(fn); },
+        removeEventListener: noop,
         documentElement: { lang: 'en' }
     },
     localStorage: { getItem: () => null, setItem: noop },
@@ -686,6 +747,36 @@ function extractNodePos(html, label) {
             });
         });
     });
+
+    // Test DOM rendering and quiz/mission DOM creation in js/ai-tutor.js safely without innerHTML XSS vulnerabilities.
+    const aiTutorOnSimSwitch = context.window.aiTutorOnSimSwitch;
+    const aiTutorOnRender = context.window.aiTutorOnRender;
+
+    if (typeof aiTutorOnSimSwitch === 'function') {
+        aiTutorOnSimSwitch(sim);
+        const metrics = sim.compute(collectDefaults(sim)).metrics;
+        aiTutorOnRender(sim, metrics);
+
+        const missionsEl = sandbox.document.getElementById('ai-tutor-missions');
+        ok(missionsEl.children.length > 0, 'AI Tutor DOM: renderMissions rendered mission nodes safely into DOM');
+
+        // Wire events by triggering DOMContentLoaded listeners
+        (sandbox.document.listeners['DOMContentLoaded'] || []).forEach(fn => fn());
+
+        const quizBtn = sandbox.document.getElementById('ai-tutor-quiz-btn');
+        if (quizBtn) {
+            quizBtn.click();
+        }
+
+        const quizBody = sandbox.document.getElementById('ai-tutor-quiz-body');
+        ok(quizBody.children.length > 0, 'AI Tutor DOM: renderQuiz rendered quiz elements safely into DOM');
+
+        const scenarioEl = sandbox.document.getElementById('ai-tutor-scenario');
+        ok(scenarioEl.children.length > 0, 'AI Tutor DOM: renderScenario rendered scenario element safely into DOM');
+
+        const htmlStr = (quizBody._html || '').toLowerCase() + (scenarioEl._html || '').toLowerCase();
+        ok(!htmlStr.includes('<script>') && !htmlStr.includes('onload='), 'AI Tutor DOM: no dangerous HTML tags or inline event attributes in rendered quiz/scenario HTML');
+    }
 })();
 
 (function testCentralTendency() {
