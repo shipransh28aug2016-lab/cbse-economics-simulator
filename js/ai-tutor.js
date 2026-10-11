@@ -157,16 +157,22 @@
     function renderScenario(sim) {
         if (!scenarioEl) return;
         const bank = sim.aiTutor && sim.aiTutor.scenarios;
-        if (!bank) { scenarioEl.innerHTML = ''; return; }
+        if (!bank) { scenarioEl.textContent = ''; return; }
         const last = history.length ? history[history.length - 1] : null;
         if (!last || last.dir === 0) {
-            scenarioEl.innerHTML = `<p class="ai-tutor-scenario-hint">${t('Change a variable (or ask me to) to see a real-world example.', 'वास्तविक दुनिया का उदाहरण देखने के लिए कोई चर बदलें (या मुझसे कहें)।')}</p>`;
+            const p = document.createElement('p');
+            p.className = 'ai-tutor-scenario-hint';
+            p.textContent = t('Change a variable (or ask me to) to see a real-world example.', 'वास्तविक दुनिया का उदाहरण देखने के लिए कोई चर बदलें (या मुझसे कहें)।');
+            scenarioEl.replaceChildren(p);
             return;
         }
         const generator = bank[last.id] && bank[last.id][last.dir > 0 ? 'up' : 'down'];
-        if (!generator) { scenarioEl.innerHTML = ''; return; }
+        if (!generator) { scenarioEl.textContent = ''; return; }
         const text = generator(simEngineState[last.id], lang() === 'hi');
-        scenarioEl.innerHTML = `<p class="ai-tutor-scenario-text">🌍 ${text}</p>`;
+        const p = document.createElement('p');
+        p.className = 'ai-tutor-scenario-text';
+        p.textContent = `🌍 ${text}`;
+        scenarioEl.replaceChildren(p);
     }
 
     // ── Adaptive quiz generation (Phase 3) ──────────────────────────
@@ -230,28 +236,50 @@
     function renderQuiz(sim) {
         if (!quizBodyEl) return;
         const q = generateQuiz(sim);
-        if (!q) { quizBodyEl.innerHTML = `<p class="empty-hint">${t('Move a slider first, then generate a question.', 'पहले कोई स्लाइडर हिलाएँ, फिर प्रश्न बनाएँ।')}</p>`; return; }
-        quizBodyEl.innerHTML = `
-            <p class="ai-tutor-quiz-q">${q.question}</p>
-            <div class="ai-tutor-quiz-opts">
-                ${q.options.map((opt, i) => `<button type="button" class="ai-tutor-quiz-opt" data-i="${i}">${q.unit}${fmt(opt)}${q.suffix}</button>`).join('')}
-            </div>
-            <p class="ai-tutor-quiz-result" id="ai-tutor-quiz-result"></p>
-        `;
+        if (!q) {
+            const p = document.createElement('p');
+            p.className = 'empty-hint';
+            p.textContent = t('Move a slider first, then generate a question.', 'पहले कोई स्लाइडर हिलाएँ, फिर प्रश्न बनाएँ।');
+            quizBodyEl.replaceChildren(p);
+            return;
+        }
+
+        const qEl = document.createElement('p');
+        qEl.className = 'ai-tutor-quiz-q';
+        qEl.textContent = q.question;
+
+        const optsDiv = document.createElement('div');
+        optsDiv.className = 'ai-tutor-quiz-opts';
+
+        q.options.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ai-tutor-quiz-opt';
+            btn.dataset.i = String(i);
+            btn.textContent = `${q.unit}${fmt(opt)}${q.suffix}`;
+            optsDiv.appendChild(btn);
+        });
+
+        const resultEl = document.createElement('p');
+        resultEl.className = 'ai-tutor-quiz-result';
+        resultEl.id = 'ai-tutor-quiz-result';
+
+        quizBodyEl.replaceChildren(qEl, optsDiv, resultEl);
+
         quizBodyEl.querySelectorAll('.ai-tutor-quiz-opt').forEach(btn => {
             btn.addEventListener('click', () => {
                 const i = parseInt(btn.dataset.i, 10);
-                const resultEl = document.getElementById('ai-tutor-quiz-result');
+                const resEl = document.getElementById('ai-tutor-quiz-result');
                 quizBodyEl.querySelectorAll('.ai-tutor-quiz-opt').forEach(b => b.disabled = true);
                 if (i === q.correctIndex) {
                     btn.classList.add('correct');
-                    if (resultEl) resultEl.textContent = t('✅ Correct!', '✅ सही!');
+                    if (resEl) resEl.textContent = t('✅ Correct!', '✅ सही!');
                     awardXP(10);
                 } else {
                     btn.classList.add('incorrect');
                     const correctBtn = quizBodyEl.querySelector(`[data-i="${q.correctIndex}"]`);
                     if (correctBtn) correctBtn.classList.add('correct');
-                    if (resultEl) resultEl.textContent = t('❌ Not quite — correct answer highlighted.', '❌ सही नहीं — सही उत्तर हाइलाइट किया गया।');
+                    if (resEl) resEl.textContent = t('❌ Not quite — correct answer highlighted.', '❌ सही नहीं — सही उत्तर हाइलाइट किया गया।');
                 }
             });
         });
@@ -267,21 +295,40 @@
         if (el) el.textContent = t(`Session XP: ${sessionXP}`, `सत्र XP: ${sessionXP}`);
     }
     function safeCheck(mission) {
-        try { return !!mission.check(simEngineState, lastMetrics); } catch (e) { return false; }
+        try { return !!mission.check(simEngineState, lastMetrics); } catch { return false; }
     }
     function renderMissions(sim) {
         if (!missionsEl) return;
         const missions = (sim.aiTutor && sim.aiTutor.missions) || [];
-        if (!missions.length) { missionsEl.innerHTML = ''; return; }
-        missionsEl.innerHTML = missions.map(m => {
+        if (!missions.length) { missionsEl.textContent = ''; return; }
+        const nodes = [];
+        missions.forEach(m => {
             const done = safeCheck(m);
             if (done && !completedMissions.has(m.id)) {
                 completedMissions.add(m.id);
                 awardXP(m.xp);
             }
             const label = lang() === 'hi' ? (m.hiPrompt || m.prompt) : m.prompt;
-            return `<div class="ai-tutor-mission${completedMissions.has(m.id) ? ' done' : ''}">${completedMissions.has(m.id) ? '✅' : '⬜'} ${label} <span class="ai-tutor-mission-xp">+${m.xp} XP</span></div>`;
-        }).join('') + `<div class="ai-tutor-xp-total" id="ai-tutor-xp-total">${t(`Session XP: ${sessionXP}`, `सत्र XP: ${sessionXP}`)}</div>`;
+
+            const div = document.createElement('div');
+            div.className = `ai-tutor-mission${completedMissions.has(m.id) ? ' done' : ''}`;
+
+            const xpSpan = document.createElement('span');
+            xpSpan.className = 'ai-tutor-mission-xp';
+            xpSpan.textContent = `+${m.xp} XP`;
+
+            div.textContent = `${completedMissions.has(m.id) ? '✅' : '⬜'} ${label} `;
+            div.appendChild(xpSpan);
+            nodes.push(div);
+        });
+
+        const xpTotalDiv = document.createElement('div');
+        xpTotalDiv.className = 'ai-tutor-xp-total';
+        xpTotalDiv.id = 'ai-tutor-xp-total';
+        xpTotalDiv.textContent = t(`Session XP: ${sessionXP}`, `सत्र XP: ${sessionXP}`);
+        nodes.push(xpTotalDiv);
+
+        missionsEl.replaceChildren(...nodes);
     }
 
     // ── Chat log ─────────────────────────────────────────────────────
@@ -302,8 +349,8 @@
         completedMissions = new Set();
         sessionXP = 0;
         lastMetrics = null;
-        if (logEl) logEl.innerHTML = '';
-        if (quizBodyEl) quizBodyEl.innerHTML = '';
+        if (logEl) logEl.textContent = '';
+        if (quizBodyEl) quizBodyEl.textContent = '';
         if (!cardEl) return;
         cardEl.classList.toggle('hidden', !activeSim);
         if (activeSim) {
