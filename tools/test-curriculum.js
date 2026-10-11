@@ -72,24 +72,101 @@ const FILES = [
 ];
 
 function noop() {}
-function stubEl() {
-    return {
-        style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
-        querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
-        get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
-        get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
-        offsetWidth: 100
+const elementsById = new Map();
+
+function createMockDOMElement(tagName) {
+    const children = [];
+    const listeners = {};
+    const classSet = new Set();
+    let idVal = '';
+    const el = {
+        tagName: tagName ? tagName.toUpperCase() : 'DIV',
+        nodeType: 1,
+        style: {},
+        dataset: {},
+        get id() { return idVal; },
+        set id(val) {
+            idVal = val;
+            if (val) elementsById.set(val, el);
+        },
+        get className() {
+            return Array.from(classSet).join(' ');
+        },
+        set className(val) {
+            classSet.clear();
+            if (val) String(val).split(/\s+/).filter(Boolean).forEach(c => classSet.add(c));
+        },
+        classList: {
+            add(...cls) { cls.forEach(c => classSet.add(c)); },
+            remove(...cls) { cls.forEach(c => classSet.delete(c)); },
+            toggle(c, val) { val ? classSet.add(c) : classSet.delete(c); },
+            contains(c) { return classSet.has(c); }
+        },
+        children,
+        listeners,
+        appendChild(child) {
+            children.push(child);
+            return child;
+        },
+        replaceChildren(...nodes) {
+            children.length = 0;
+            nodes.forEach(n => this.appendChild(n));
+        },
+        addEventListener(evt, fn) {
+            listeners[evt] = listeners[evt] || [];
+            listeners[evt].push(fn);
+        },
+        querySelectorAll(selector) {
+            const results = [];
+            function search(node) {
+                if (!node || !node.children) return;
+                node.children.forEach(c => {
+                    if (selector.startsWith('.') && c.classList && c.classList.contains(selector.slice(1))) {
+                        results.push(c);
+                    } else if (selector.startsWith('#') && c.id === selector.slice(1)) {
+                        results.push(c);
+                    }
+                    search(c);
+                });
+            }
+            search(el);
+            return results;
+        },
+        querySelector(selector) {
+            return this.querySelectorAll(selector)[0] || null;
+        },
+        get innerHTML() {
+            return this._html !== undefined ? this._html : children.map(c => c.nodeType === 3 ? c.textContent : (c.outerHTML || c.textContent || '')).join('');
+        },
+        set innerHTML(v) {
+            this._html = v;
+            children.length = 0;
+            children.push({ nodeType: 3, textContent: v });
+        },
+        get textContent() {
+            return children.map(c => c.textContent || '').join('');
+        },
+        set textContent(v) {
+            children.length = 0;
+            children.push({ nodeType: 3, textContent: String(v) });
+        }
     };
+    return el;
 }
+
+function stubEl() {
+    return createMockDOMElement('div');
+}
+
 const sandbox = {
     console,
     window: {},
     document: {
-        getElementById: () => stubEl(),
+        getElementById: (id) => elementsById.get(id) || stubEl(),
         querySelectorAll: () => [],
         querySelector: () => null,
-        createElement: () => stubEl(),
+        createElement: (tag) => createMockDOMElement(tag),
+        createTextNode: (text) => ({ nodeType: 3, textContent: String(text) }),
         addEventListener: noop,
         documentElement: { lang: 'en' }
     },
@@ -844,6 +921,43 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testRenderQuickCheckXSSSafety() {
+    const renderQuickCheck = vm.runInContext('renderQuickCheck', context);
+    const host = sandbox.document.createElement('div');
+    const xssPayload = '<img src=x onerror=alert("xss")>';
+    const sim = { id: 'test-sim' };
+    const qc = {
+        question: '<script>alert("question_xss")</script>',
+        options: ['<svg onload=alert(1)>', 'Option B'],
+        correctIndex: 0,
+        explain: xssPayload
+    };
+
+    renderQuickCheck(sim, qc, host);
+
+    // Check question and options were created safely as text
+    const qEl = host.querySelector('.tlm-qc-question');
+    ok(!!qEl, 'renderQuickCheck: creates question element');
+    ok(qEl.textContent === qc.question, 'renderQuickCheck: sets question via textContent');
+
+    const btns = host.querySelectorAll('.tlm-qc-btn');
+    ok(btns.length === 2, 'renderQuickCheck: creates option buttons');
+    ok(btns[0].textContent === qc.options[0], 'renderQuickCheck: sets option label via textContent');
+
+    // Trigger option click handler
+    const clickHandler = (btns[0].listeners && btns[0].listeners['click'] && btns[0].listeners['click'][0]);
+    if (typeof clickHandler === 'function') clickHandler();
+
+    // Inspect feedback element
+    const feedback = host.querySelectorAll('.tlm-qc-feedback')[0];
+    ok(!!feedback, 'renderQuickCheck: creates feedback element');
+    ok(feedback.textContent.indexOf(xssPayload) !== -1, 'renderQuickCheck: feedback contains explanation text');
+
+    // Confirm that xssPayload is present strictly as a text node, NOT parsed as an element
+    const hasImgElement = feedback.children.some(c => c.tagName === 'IMG');
+    ok(!hasImgElement, 'renderQuickCheck: HTML payload in explanation is NOT parsed into a DOM element (XSS mitigated)');
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
