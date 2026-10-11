@@ -766,6 +766,15 @@ function renderSimChart(sim) {
         result = sim.compute(simEngineState);
         const base = plotlyDefaultLayout();
         const layout = Object.assign({}, base, result.layout || {});
+        if (layout.xaxis && typeof layout.xaxis.title === 'string') {
+            layout.xaxis.title = translateReadings(sim, layout.xaxis.title);
+        }
+        if (layout.yaxis && typeof layout.yaxis.title === 'string') {
+            layout.yaxis.title = translateReadings(sim, layout.yaxis.title);
+        }
+        if (layout.yaxis2 && typeof layout.yaxis2.title === 'string') {
+            layout.yaxis2.title = translateReadings(sim, layout.yaxis2.title);
+        }
         // A shallow merge would let a simulation's own `xaxis: { title,
         // range }` silently replace (not extend) the shared axis styling
         // above — so every X/Y axis line, gridline and title font would
@@ -777,6 +786,14 @@ function renderSimChart(sim) {
         // bar chart) isn't covered by the shared defaults above, but its
         // title still needs the same bold-legible treatment.
         if (layout.yaxis2) layout.yaxis2 = styledAxisTitle(layout.yaxis2);
+
+        const traces = (result.traces || []).map(t => {
+            if (!t) return t;
+            const copy = Object.assign({}, t);
+            if (typeof copy.name === 'string') copy.name = translateReadings(sim, copy.name);
+            return copy;
+        });
+
         // Ghosts are drawn FIRST so the live curves sit on top of them,
         // and only on a real transition (never the first render of a sim,
         // and never a repaint with unchanged controls such as a language
@@ -785,7 +802,7 @@ function renderSimChart(sim) {
         // different "previous" references on one chart.
         const isTransition = !suppressedThisRender && prevSimResult && whatChangedHTML;
         const ghosts = (isTransition && sim.autoGhost !== false && typeof buildGhostTraces === 'function')
-            ? buildGhostTraces(prevSimResult.traces, result.traces || [])
+            ? buildGhostTraces(prevSimResult.traces, traces)
             : [];
         // A ghost's name is "<curve name> (before)" (see buildGhostTraces) —
         // stripping that suffix gives Mima the exact list of curves that
@@ -793,7 +810,7 @@ function renderSimChart(sim) {
         // guessed from the sim's economics.
         var _mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
         if (typeof Plotly !== 'undefined') {
-            Plotly.react(overlay, ghosts.concat(result.traces || []), layout, { displayModeBar: false, responsive: true }).catch(() => {});
+            Plotly.react(overlay, ghosts.concat(traces), layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
         if (sim.predict) checkPredictReveal(sim, result);
     } else {

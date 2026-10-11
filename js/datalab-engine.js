@@ -167,10 +167,28 @@ function recomputeDataLab(sim, rebuildTable) {
 
     const base = plotlyDefaultLayout();
     const layout = Object.assign({}, base, result.layout || {});
+    if (layout.xaxis && typeof layout.xaxis.title === 'string') {
+        layout.xaxis.title = translateReadings(sim, layout.xaxis.title);
+    }
+    if (layout.yaxis && typeof layout.yaxis.title === 'string') {
+        layout.yaxis.title = translateReadings(sim, layout.yaxis.title);
+    }
+    if (layout.yaxis2 && typeof layout.yaxis2.title === 'string') {
+        layout.yaxis2.title = translateReadings(sim, layout.yaxis2.title);
+    }
     layout.xaxis = styledAxisTitle(Object.assign({}, base.xaxis, (result.layout && result.layout.xaxis) || {}));
     layout.yaxis = styledAxisTitle(Object.assign({}, base.yaxis, (result.layout && result.layout.yaxis) || {}));
+    if (layout.yaxis2) layout.yaxis2 = styledAxisTitle(layout.yaxis2);
+
+    const traces = (result.traces || []).map(t => {
+        if (!t) return t;
+        const copy = Object.assign({}, t);
+        if (typeof copy.name === 'string') copy.name = translateReadings(sim, copy.name);
+        return copy;
+    });
+
     if (typeof Plotly !== 'undefined') {
-        Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
+        Plotly.react(overlay, traces, layout, { displayModeBar: false, responsive: true }).catch(() => {});
     }
     overlay.classList.remove('chart-fresh');
     void overlay.offsetWidth; // restart the CSS "just updated" fade
