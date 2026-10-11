@@ -563,7 +563,16 @@ function glRenderScenarios(sim, panel) {
     header.dataset.panelKey = 'controls';
     header.setAttribute('role', 'button');
     header.setAttribute('tabindex', '0');
-    header.innerHTML = `<span>${tEngine('gl.scenarios', '🎬 Textbook Scenarios')}</span><span class="panel-chevron" aria-hidden="true">⌄</span>`;
+
+    const headerTitle = document.createElement('span');
+    headerTitle.textContent = tEngine('gl.scenarios', '🎬 Textbook Scenarios');
+    const headerChevron = document.createElement('span');
+    headerChevron.className = 'panel-chevron';
+    headerChevron.setAttribute('aria-hidden', 'true');
+    headerChevron.textContent = '⌄';
+    header.appendChild(headerTitle);
+    header.appendChild(headerChevron);
+
     panel.appendChild(header);
 
     const hint = document.createElement('p');
