@@ -846,6 +846,33 @@ function extractNodePos(html, label) {
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
 })();
 
+(function testGlClamp() {
+    const glClamp = vm.runInContext('glClamp', context);
+    ok(typeof glClamp === 'function', 'glClamp is defined in graph-lab-engine');
+
+    // Bounds checking tests for glClamp(v, a, b):
+    // 1. Value strictly within bounds
+    ok(glClamp(5, 0, 10) === 5, 'glClamp: returns value when strictly within bounds (0 < 5 < 10)');
+
+    // 2. Value below lower bound
+    ok(glClamp(-5, 0, 10) === 0, 'glClamp: clamps value to lower bound when below min (-5 < 0)');
+
+    // 3. Value above upper bound
+    ok(glClamp(15, 0, 10) === 10, 'glClamp: clamps value to upper bound when above max (15 > 10)');
+
+    // 4. Boundary equality
+    ok(glClamp(0, 0, 10) === 0, 'glClamp: returns exact lower bound when value equals min');
+    ok(glClamp(10, 0, 10) === 10, 'glClamp: returns exact upper bound when value equals max');
+
+    // 5. Negative numbers and floats
+    ok(glClamp(-1.5, -2.0, -1.0) === -1.5, 'glClamp: handles negative float within bounds');
+    ok(glClamp(-2.5, -2.0, -1.0) === -2.0, 'glClamp: clamps negative value below min');
+    ok(glClamp(0, -2.0, -1.0) === -1.0, 'glClamp: clamps value above negative max');
+
+    // 6. Equal lower and upper bounds
+    ok(glClamp(5, 3, 3) === 3, 'glClamp: clamps to bound when min === max');
+})();
+
 // ── 5. Quiz bank coverage + structural validation ────────────────
 // Every sim must carry a QUIZ_BANK entry that generateQuiz() can turn
 // into >=10 well-formed questions, on repeated (randomized) trials —
