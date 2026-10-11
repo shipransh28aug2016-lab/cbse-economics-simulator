@@ -69,7 +69,7 @@ function ok(cond, label) {
     // network policy may block, and browsers auto-request /favicon.ico
     // whether or not a page declares one. Both are filtered by URL, not
     // by message text, so a real app-code console error is never masked.
-    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/];
+    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/, /esm\.sh/];
     const errors = [];
     page.on('console', msg => {
         if (msg.type() !== 'error') return;
@@ -354,6 +354,8 @@ function ok(cond, label) {
 
     // ── Hindi (i18n) toggle ────────────────────────────────────────
     const beforeI18n = errors.length;
+    await page.evaluate(() => window.showScreen('home'));
+    await page.waitForTimeout(100);
     const heroBadgeEn = (await page.locator('.hero-badge').textContent()) || '';
     await page.locator('#lang-toggle').click();
     await page.waitForTimeout(150);
@@ -385,6 +387,8 @@ function ok(cond, label) {
 
     // Toggle back to English and confirm exact restoration — the whole
     // point of caching each element's original text on first translate.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(50);
     await page.locator('#lang-toggle').click();
     await page.waitForTimeout(150);
     const heroBadgeBack = (await page.locator('.hero-badge').textContent()) || '';

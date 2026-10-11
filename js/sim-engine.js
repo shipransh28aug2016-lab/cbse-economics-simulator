@@ -734,8 +734,11 @@ function applyControlVisibility(sim) {
     const panel = document.getElementById('controls-panel');
     if (!panel) return;
     panel.querySelectorAll('.control-row[data-show-when-id]').forEach(row => {
-        const allowed = row.dataset.showWhenEquals.split(',');
-        const match = allowed.includes(String(simEngineState[row.dataset.showWhenId]));
+        if (!row._allowedSet || row._allowedEquals !== row.dataset.showWhenEquals) {
+            row._allowedEquals = row.dataset.showWhenEquals;
+            row._allowedSet = new Set(row.dataset.showWhenEquals.split(','));
+        }
+        const match = row._allowedSet.has(String(simEngineState[row.dataset.showWhenId]));
         row.classList.toggle('hidden', !match);
     });
 }
