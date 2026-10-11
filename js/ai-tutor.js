@@ -157,16 +157,24 @@
     function renderScenario(sim) {
         if (!scenarioEl) return;
         const bank = sim.aiTutor && sim.aiTutor.scenarios;
-        if (!bank) { scenarioEl.innerHTML = ''; return; }
+        if (!bank) { scenarioEl.textContent = ''; return; }
         const last = history.length ? history[history.length - 1] : null;
         if (!last || last.dir === 0) {
-            scenarioEl.innerHTML = `<p class="ai-tutor-scenario-hint">${t('Change a variable (or ask me to) to see a real-world example.', 'वास्तविक दुनिया का उदाहरण देखने के लिए कोई चर बदलें (या मुझसे कहें)।')}</p>`;
+            scenarioEl.textContent = '';
+            const p = document.createElement('p');
+            p.className = 'ai-tutor-scenario-hint';
+            p.textContent = t('Change a variable (or ask me to) to see a real-world example.', 'वास्तविक दुनिया का उदाहरण देखने के लिए कोई चर बदलें (या मुझसे कहें)।');
+            scenarioEl.appendChild(p);
             return;
         }
         const generator = bank[last.id] && bank[last.id][last.dir > 0 ? 'up' : 'down'];
-        if (!generator) { scenarioEl.innerHTML = ''; return; }
+        if (!generator) { scenarioEl.textContent = ''; return; }
         const text = generator(simEngineState[last.id], lang() === 'hi');
-        scenarioEl.innerHTML = `<p class="ai-tutor-scenario-text">🌍 ${text}</p>`;
+        scenarioEl.textContent = '';
+        const p = document.createElement('p');
+        p.className = 'ai-tutor-scenario-text';
+        p.textContent = `🌍 ${text}`;
+        scenarioEl.appendChild(p);
     }
 
     // ── Adaptive quiz generation (Phase 3) ──────────────────────────

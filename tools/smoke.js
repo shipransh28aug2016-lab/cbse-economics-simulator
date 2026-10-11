@@ -354,6 +354,8 @@ function ok(cond, label) {
 
     // ── Hindi (i18n) toggle ────────────────────────────────────────
     const beforeI18n = errors.length;
+    await page.evaluate(() => window.showScreen('home'));
+    await page.waitForTimeout(80);
     const heroBadgeEn = (await page.locator('.hero-badge').textContent()) || '';
     await page.locator('#lang-toggle').click();
     await page.waitForTimeout(150);
