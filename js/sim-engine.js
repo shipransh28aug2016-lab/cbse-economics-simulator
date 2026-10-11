@@ -198,7 +198,7 @@ function hiPath(sim, path) {
     if (typeof currentLang === 'undefined' || currentLang !== 'hi') return undefined;
     let node = sim.hi;
     const parts = path.split('.');
-    for (let i = 0; i < parts.length; i++) {
+    for (let i = 0, len = parts.length; i < len; i++) {
         if (node === null || typeof node !== 'object') return undefined;
         node = node[parts[i]];
     }
