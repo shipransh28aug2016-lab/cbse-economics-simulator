@@ -688,6 +688,29 @@ function extractNodePos(html, label) {
     });
 })();
 
+(function testFmtUtility() {
+    // Valid numbers with default d = 2
+    ok(fmt(12.3456) === '12.35', 'fmt: 12.3456 defaults to 2 decimal places "12.35"');
+    ok(fmt(12) === '12.00', 'fmt: integer 12 defaults to "12.00"');
+    ok(fmt(0) === '0.00', 'fmt: 0 defaults to "0.00"');
+    ok(fmt(-5.1) === '-5.10', 'fmt: negative -5.1 defaults to "-5.10"');
+
+    // Valid numbers with specified d
+    ok(fmt(12.3456, 0) === '12', 'fmt: 12.3456 formatted to 0 decimals is "12"');
+    ok(fmt(12.3456, 1) === '12.3', 'fmt: 12.3456 formatted to 1 decimal is "12.3"');
+    ok(fmt(12.3456, 3) === '12.346', 'fmt: 12.3456 formatted to 3 decimals is "12.346"');
+
+    // Non-numeric / non-finite inputs
+    ok(fmt(NaN) === '—', 'fmt: NaN returns "—"');
+    ok(fmt(Infinity) === '—', 'fmt: Infinity returns "—"');
+    ok(fmt(-Infinity) === '—', 'fmt: -Infinity returns "—"');
+    ok(fmt("12.34") === '—', 'fmt: string "12.34" returns "—"');
+    ok(fmt(null) === '—', 'fmt: null returns "—"');
+    ok(fmt(undefined) === '—', 'fmt: undefined returns "—"');
+    ok(fmt({}) === '—', 'fmt: object returns "—"');
+    ok(fmt(true) === '—', 'fmt: boolean true returns "—"');
+})();
+
 (function testCentralTendency() {
     const sim = findSim('stats-central-tendency');
     const rows = [{ label: 'a', value: 2 }, { label: 'b', value: 4 }, { label: 'c', value: 4 }, { label: 'd', value: 6 }];
