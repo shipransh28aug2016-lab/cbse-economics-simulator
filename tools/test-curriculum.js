@@ -1104,7 +1104,6 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
     });
 });
 context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
-console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {
