@@ -42,9 +42,14 @@ if (typeof SIMS !== 'undefined') {
                     const modeLabel = maxFreq <= 1 ? 'No mode (all values unique)' : modes.sort((a, b) => a - b).join(', ');
                     const modeValue = maxFreq <= 1 ? null : modes[0];
 
-                    const skew = mean > median + 0.5 ? 'Positively skewed (a few high values pull the mean above the median)'
-                        : mean < median - 0.5 ? 'Negatively skewed (a few low values pull the mean below the median)'
-                            : 'Roughly symmetric (mean ≈ median)';
+                    let skew;
+                    if (mean > median + 0.5) {
+                        skew = 'Positively skewed (a few high values pull the mean above the median)';
+                    } else if (mean < median - 0.5) {
+                        skew = 'Negatively skewed (a few low values pull the mean below the median)';
+                    } else {
+                        skew = 'Roughly symmetric (mean ≈ median)';
+                    }
 
                     const traces = [{ x: rows.map(r => r.label), y: values, type: 'bar', name: 'Marks', marker: { color: '#2563eb' } }];
                     if (isFinite(mean)) traces.push({ x: rows.map(r => r.label), y: rows.map(() => mean), mode: 'lines', name: 'Mean', line: { color: '#10b981', width: 2, dash: 'dash' } });
