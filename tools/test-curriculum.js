@@ -429,9 +429,25 @@ function approx(a, b, eps, label) { return ok(Math.abs(a - b) < eps, `${label} (
 // from which OTHER sectors happen to be active) — see
 // docs/economics/models/circular-flow.md.
 function extractNodePos(html, label) {
-    const re = new RegExp(`<circle cx="([\\d.]+)" cy="([\\d.]+)"[^>]*><\\/circle>\\s*<text[^>]*>[^<]*<\\/text>\\s*<text[^>]*>${label}<\\/text>`);
-    const m = html.match(re);
-    return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : null;
+    const plainLabel = label.replace(/\\([()])/g, '$1');
+    const safeLabel = plainLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const gBlocks = html.match(/<g\b[^>]*>[\s\S]*?<\/g>/gi) || [];
+    const labelRe = new RegExp(`<text[^>]*>${safeLabel}<\\/text>`, 'i');
+    const targetG = gBlocks.find(b => labelRe.test(b));
+    if (!targetG) return null;
+
+    const circleMatch = targetG.match(/<circle\b[^>]*>/i);
+    if (!circleMatch) return null;
+
+    const circleTag = circleMatch[0];
+    const cxM = circleTag.match(/\bcx=["']([\d.]+)["']/i);
+    const cyM = circleTag.match(/\bcy=["']([\d.]+)["']/i);
+
+    if (cxM && cyM) {
+        return { x: parseFloat(cxM[1]), y: parseFloat(cyM[1]) };
+    }
+    return null;
 }
 (function testCircularFlowTopology() {
     const sim = findSim('macro-gdp');
