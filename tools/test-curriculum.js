@@ -628,6 +628,33 @@ function extractNodePos(html, label) {
     ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
 })();
 
+(function testMimaUnknownIntentAndPartialContext() {
+    const ctx = { lang: 'en', mode: 'simulator', title: 'Fixture Sim', isFirstRender: false };
+    const result = mimaExplain(ctx, 'unknown_intent_string');
+    ok(result.text.indexOf("I'm not sure which of those you're asking") !== -1, 'Mima: returns unknownIntent message when given an unrecognized intent');
+
+    // Partial context missing array properties (changedControls, effects, etc.) should not throw TypeError
+    const partialResult = mimaExplain(ctx, 'explain');
+    ok(typeof partialResult.text === 'string', 'Mima: handles partial context without throwing TypeError');
+})();
+
+(function testMimaStripTagsAndHindiPlurals() {
+    const mimaStripTags = vm.runInContext('mimaStripTags', context);
+    ok(mimaStripTags('<p>Demand &amp; Supply &lt;Market&gt;</p>') === 'Demand & Supply <Market>', 'mimaStripTags: unescapes HTML entities');
+
+    const singleCurveHi = mimaExplain({
+        lang: 'hi', mode: 'simulator', isFirstRender: false,
+        ghostedNames: ['मांग'], allTraceNames: ['मांग', 'पूर्ति']
+    }, 'movementOrShift');
+    ok(singleCurveHi.text.indexOf('बिल्कुल वहीं रहा') !== -1, 'Mima (Hindi): uses singular form for 1 unchanged curve');
+
+    const multiCurveHi = mimaExplain({
+        lang: 'hi', mode: 'simulator', isFirstRender: false,
+        ghostedNames: ['कीमत'], allTraceNames: ['कीमत', 'मांग', 'पूर्ति']
+    }, 'movementOrShift');
+    ok(multiCurveHi.text.indexOf('बिल्कुल वहीं रहे') !== -1, 'Mima (Hindi): uses plural form for multiple unchanged curves');
+})();
+
 // ── AI Tutor (js/ai-tutor.js) config on macro-multiplier ──────────
 // js/ai-tutor.js itself is DOM-wiring code (chat panel, quiz buttons);
 // what actually needs economic-correctness coverage is the DATA it
