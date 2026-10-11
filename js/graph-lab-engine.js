@@ -437,7 +437,11 @@ function glRender(sim, syncChips) {
         m = cfg.model(Object.assign({}, glState), { prev: glPrevState, base: glSnapshot }) || {};
     } catch (err) {
         // A model that throws must not blank the whole screen mid-drag.
-        overlay.innerHTML = `<div class="gl-error">${tEngine('gl.renderError', 'Could not draw this diagram — reset and try again.')}</div>`;
+        const errDiv = document.createElement('div');
+        errDiv.className = 'gl-error';
+        errDiv.textContent = tEngine('gl.renderError', 'Could not draw this diagram — reset and try again.');
+        overlay.innerHTML = '';
+        overlay.appendChild(errDiv);
         if (typeof console !== 'undefined') console.error('[graphlab]', sim.id, err);
         return;
     }
