@@ -1078,6 +1078,12 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
         (r.stats || []).forEach(s => { englishHTMLs.push(String(s.label)); englishHTMLs.push(String(s.value)); });
         if (r.interpretation) englishHTMLs.push(r.interpretation);
         (r.formulas || []).forEach(f => englishHTMLs.push(f));
+        (r.traces || []).forEach(t => { if (t && typeof t.name === 'string') englishHTMLs.push(t.name); });
+        if (r.layout) {
+            if (r.layout.xaxis && typeof r.layout.xaxis.title === 'string') englishHTMLs.push(r.layout.xaxis.title);
+            if (r.layout.yaxis && typeof r.layout.yaxis.title === 'string') englishHTMLs.push(r.layout.yaxis.title);
+            if (r.layout.yaxis2 && typeof r.layout.yaxis2.title === 'string') englishHTMLs.push(r.layout.yaxis2.title);
+        }
     } else if (typeof sim.compute === 'function') {
         const base = collectDefaults(sim);
         (sim.controls || []).forEach(control => {
@@ -1086,6 +1092,12 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
                 const r = sim.compute(state);
                 if (r.readings) englishHTMLs.push(r.readings);
                 (r.formulas || []).forEach(f => englishHTMLs.push(f));
+                (r.traces || []).forEach(t => { if (t && typeof t.name === 'string') englishHTMLs.push(t.name); });
+                if (r.layout) {
+                    if (r.layout.xaxis && typeof r.layout.xaxis.title === 'string') englishHTMLs.push(r.layout.xaxis.title);
+                    if (r.layout.yaxis && typeof r.layout.yaxis.title === 'string') englishHTMLs.push(r.layout.yaxis.title);
+                    if (r.layout.yaxis2 && typeof r.layout.yaxis2.title === 'string') englishHTMLs.push(r.layout.yaxis2.title);
+                }
             });
         });
     } else if (typeof sim.customRender === 'function') {
