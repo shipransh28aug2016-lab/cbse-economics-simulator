@@ -846,6 +846,48 @@ function extractNodePos(html, label) {
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
 })();
 
+(function testGraphLabScenarioXSS() {
+    const glRenderScenarios = vm.runInContext('glRenderScenarios', context);
+    const mockSim = {
+        id: 'test-xss',
+        graphLab: {
+            scenarios: [
+                { label: '<img src=x onerror=alert(1)>', note: '<script>alert(2)</script>' }
+            ]
+        }
+    };
+    const createdElements = [];
+    const origCreateElement = sandbox.document.createElement;
+    sandbox.document.createElement = (tag) => {
+        const el = {
+            tagName: tag.toUpperCase(),
+            style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+            addEventListener: noop, removeEventListener: noop, setAttribute: noop,
+            querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
+            children: [],
+            appendChild(child) { this.children.push(child); },
+            get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
+            get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
+            offsetWidth: 100
+        };
+        createdElements.push(el);
+        return el;
+    };
+    const mockPanel = sandbox.document.createElement('div');
+    glRenderScenarios(mockSim, mockPanel);
+
+    const scenarioBtns = createdElements.filter(e => e.className === 'gl-scenario-btn');
+    ok(scenarioBtns.length === 1, 'GraphLab Scenarios: creates scenario button');
+    if (scenarioBtns.length === 1) {
+        const btn = scenarioBtns[0];
+        ok(btn.innerHTML === '', 'GraphLab Scenarios: button innerHTML is NOT set directly (XSS mitigated)');
+        ok(btn.children.length === 2, 'GraphLab Scenarios: label and note spans created via DOM methods');
+        ok(btn.children[0].textContent === '<img src=x onerror=alert(1)>', 'GraphLab Scenarios: label textContent strictly preserves raw text');
+        ok(btn.children[1].textContent === '<script>alert(2)</script>', 'GraphLab Scenarios: note textContent strictly preserves raw text');
+    }
+    sandbox.document.createElement = origCreateElement;
+})();
+
 // ── 5. Quiz bank coverage + structural validation ────────────────
 // Every sim must carry a QUIZ_BANK entry that generateQuiz() can turn
 // into >=10 well-formed questions, on repeated (randomized) trials —
