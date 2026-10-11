@@ -29,6 +29,7 @@ if (typeof SIMS !== 'undefined') {
                     { label: 'Vihaan', value: 58 }, { label: 'Sara', value: 52 }
                 ],
                 calculate(rows) {
+                    const labels = rows.map(r => r.label);
                     const values = rows.map(r => r.value);
                     const n = values.length;
                     const mean = values.reduce((s, x) => s + x, 0) / n;
@@ -46,9 +47,9 @@ if (typeof SIMS !== 'undefined') {
                         : mean < median - 0.5 ? 'Negatively skewed (a few low values pull the mean below the median)'
                             : 'Roughly symmetric (mean ≈ median)';
 
-                    const traces = [{ x: rows.map(r => r.label), y: values, type: 'bar', name: 'Marks', marker: { color: '#2563eb' } }];
-                    if (isFinite(mean)) traces.push({ x: rows.map(r => r.label), y: rows.map(() => mean), mode: 'lines', name: 'Mean', line: { color: '#10b981', width: 2, dash: 'dash' } });
-                    if (isFinite(median)) traces.push({ x: rows.map(r => r.label), y: rows.map(() => median), mode: 'lines', name: 'Median', line: { color: '#f59e0b', width: 2, dash: 'dot' } });
+                    const traces = [{ x: labels, y: values, type: 'bar', name: 'Marks', marker: { color: '#2563eb' } }];
+                    if (isFinite(mean)) traces.push({ x: labels, y: Array(n).fill(mean), mode: 'lines', name: 'Mean', line: { color: '#10b981', width: 2, dash: 'dash' } });
+                    if (isFinite(median)) traces.push({ x: labels, y: Array(n).fill(median), mode: 'lines', name: 'Median', line: { color: '#f59e0b', width: 2, dash: 'dot' } });
 
                     return {
                         traces,
@@ -214,15 +215,17 @@ if (typeof SIMS !== 'undefined') {
                     { category: 'Transport', value: 10 }, { category: 'Health', value: 8 }, { category: 'Other', value: 12 }
                 ],
                 calculate(rows) {
-                    const total = rows.reduce((s, r) => s + r.value, 0);
-                    const withShare = rows.map(r => ({ ...r, share: total > 0 ? (r.value / total) * 100 : 0 }));
+                    const categories = rows.map(r => r.category);
+                    const values = rows.map(r => r.value);
+                    const total = values.reduce((s, v) => s + v, 0);
+                    const withShare = rows.map((r, i) => ({ ...r, share: total > 0 ? (values[i] / total) * 100 : 0 }));
                     const largest = withShare.reduce((m, r) => r.value > m.value ? r : m, withShare[0]);
                     const smallest = withShare.reduce((m, r) => r.value < m.value ? r : m, withShare[0]);
 
                     return {
                         traces: [
-                            { x: rows.map(r => r.category), y: rows.map(r => r.value), type: 'bar', name: 'Bar Diagram', marker: { color: '#2563eb' }, xaxis: 'x', yaxis: 'y' },
-                            { labels: rows.map(r => r.category), values: rows.map(r => r.value), type: 'pie', name: 'Pie Diagram', domain: { x: [0.58, 1], y: [0.08, 0.95] }, textinfo: 'label+percent', showlegend: false }
+                            { x: categories, y: values, type: 'bar', name: 'Bar Diagram', marker: { color: '#2563eb' }, xaxis: 'x', yaxis: 'y' },
+                            { labels: categories, values: values, type: 'pie', name: 'Pie Diagram', domain: { x: [0.58, 1], y: [0.08, 0.95] }, textinfo: 'label+percent', showlegend: false }
                         ],
                         layout: { xaxis: { title: 'Category', domain: [0, 0.42] }, yaxis: { title: 'Value' }, showlegend: false, margin: { t: 20, r: 10, b: 55, l: 60 } },
                         stats: [

@@ -200,6 +200,10 @@ if (typeof SIMS !== 'undefined') {
                     { country: 'China', growth: 5.0, population: 1411, agriShare: 7, hdi: 0.79 }
                 ],
                 calculate(rows) {
+                    const countries = rows.map(r => r.country);
+                    const growths = rows.map(r => r.growth);
+                    const hdis = rows.map(r => r.hdi * 100);
+                    const agriShares = rows.map(r => r.agriShare);
                     const byHDI = [...rows].sort((a, b) => b.hdi - a.hdi);
                     const byGrowth = [...rows].sort((a, b) => b.growth - a.growth);
                     // Agriculture Share had its own column and its own callout
@@ -211,9 +215,9 @@ if (typeof SIMS !== 'undefined') {
                     // share one secondary axis without a confusing rescale.
                     return {
                         traces: [
-                            { x: rows.map(r => r.country), y: rows.map(r => r.growth), name: 'GDP Growth Rate (%)', type: 'bar', marker: { color: '#2563eb' } },
-                            { x: rows.map(r => r.country), y: rows.map(r => r.hdi * 100), name: 'HDI (×100, right axis)', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' },
-                            { x: rows.map(r => r.country), y: rows.map(r => r.agriShare), name: 'Agriculture Share of GDP (%, right axis)', type: 'bar', marker: { color: '#84cc16' }, yaxis: 'y2' }
+                            { x: countries, y: growths, name: 'GDP Growth Rate (%)', type: 'bar', marker: { color: '#2563eb' } },
+                            { x: countries, y: hdis, name: 'HDI (×100, right axis)', type: 'bar', marker: { color: '#f59e0b' }, yaxis: 'y2' },
+                            { x: countries, y: agriShares, name: 'Agriculture Share of GDP (%, right axis)', type: 'bar', marker: { color: '#84cc16' }, yaxis: 'y2' }
                         ],
                         layout: {
                             xaxis: { title: 'Country' },
