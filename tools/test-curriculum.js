@@ -1106,6 +1106,51 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
 context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
 console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
 
+// ── 8. Security XSS mitigation check (buildControls) ───────────────
+(function testBuildControlsXSSMitigation() {
+    const buildControls = vm.runInContext('buildControls', context);
+    if (typeof buildControls !== 'function') return;
+
+    let appendedChildren = [];
+    const panelStub = {
+        style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+        addEventListener: noop, removeEventListener: noop,
+        appendChild(c) { appendedChildren.push(c); return c; },
+        setAttribute: noop, querySelectorAll: () => [], querySelector: () => null,
+        get innerHTML() { return this._html || ''; },
+        set innerHTML(v) { this._html = v; },
+        get textContent() { return this._text || ''; },
+        set textContent(v) { this._text = v; appendedChildren = []; }
+    };
+
+    const doc = context.document;
+    const origGetById = doc.getElementById;
+    const origCreateEl = doc.createElement;
+
+    doc.getElementById = (id) => (id === 'controls-panel' ? panelStub : stubEl());
+    doc.createElement = (tag) => {
+        const el = stubEl();
+        el.tagName = tag.toUpperCase();
+        return el;
+    };
+
+    const unsafeSim = {
+        id: 'test-xss-sim',
+        controls: [
+            { id: 'testCtrl', label: '<script>alert("xss")</script>', min: 0, max: 10, step: 1, value: 5 }
+        ]
+    };
+
+    try {
+        buildControls(unsafeSim);
+        ok(panelStub.innerHTML === '', 'buildControls does not use innerHTML on panel directly');
+        ok(appendedChildren.length > 0, 'buildControls appends elements to controls-panel via DOM methods');
+    } finally {
+        doc.getElementById = origGetById;
+        doc.createElement = origCreateEl;
+    }
+})();
+
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {
     console.error(`\n❌ tools/test-curriculum.js FAILED (${failures} failing assertions).`);
