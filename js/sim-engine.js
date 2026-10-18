@@ -688,11 +688,12 @@ function resetPredictCard(sim) {
         </div>
         <div class="predict-result hidden" id="predict-result"></div>
     `;
-    card.querySelectorAll('.predict-btn').forEach(btn => {
+    const predictButtons = card.querySelectorAll('.predict-btn');
+    predictButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             if (predictState.resolved || predictState.guess) return; // one guess per question
             predictState.guess = btn.dataset.value;
-            card.querySelectorAll('.predict-btn').forEach(b => {
+            predictButtons.forEach(b => {
                 b.classList.toggle('predict-btn--chosen', b === btn);
                 b.disabled = true;
             });
