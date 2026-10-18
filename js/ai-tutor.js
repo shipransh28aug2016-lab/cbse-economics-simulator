@@ -238,11 +238,12 @@
             </div>
             <p class="ai-tutor-quiz-result" id="ai-tutor-quiz-result"></p>
         `;
-        quizBodyEl.querySelectorAll('.ai-tutor-quiz-opt').forEach(btn => {
+        const optBtns = quizBodyEl.querySelectorAll('.ai-tutor-quiz-opt');
+        optBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const i = parseInt(btn.dataset.i, 10);
                 const resultEl = document.getElementById('ai-tutor-quiz-result');
-                quizBodyEl.querySelectorAll('.ai-tutor-quiz-opt').forEach(b => b.disabled = true);
+                optBtns.forEach(b => b.disabled = true);
                 if (i === q.correctIndex) {
                     btn.classList.add('correct');
                     if (resultEl) resultEl.textContent = t('✅ Correct!', '✅ सही!');
