@@ -893,6 +893,82 @@ SIMS.forEach(sim => {
 });
 console.log(`\nQuiz bank coverage: ${quizBankCoverage} / ${SIMS.length} sims have a quiz bank generating >=10 questions.`);
 
+(function testGenerateQuizTemplateErrorHandling() {
+    // Verifies that generateQuiz safely catches errors thrown during template
+    // application across all simulation modes (compute, graphlab, datalab, customRender)
+    // without crashing, skipping faulty templates while keeping valid questions.
+    const staticQ = {
+        level: 'remember',
+        question: { en: 'Static Q', hi: 'Static Q' },
+        options: [{ en: 'A', hi: 'A' }, { en: 'B', hi: 'B' }],
+        correctIndex: 0,
+        explain: { en: 'Exp', hi: 'Exp' }
+    };
+
+    // 1. Simulator mode with compute()
+    const simCompute = {
+        id: 'test-err-compute',
+        mode: 'simulator',
+        controls: [{ id: 'p', min: 0, max: 10, step: 1, value: 5 }],
+        compute: () => ({ metrics: { val: 10 } })
+    };
+    QUIZ_BANK['test-err-compute'] = {
+        static: [staticQ],
+        applyTemplates: [
+            { level: 'apply', build: () => { throw new Error('Faulty compute template'); } },
+            { level: 'apply', build: () => ({ question: 'Valid Q', options: ['1', '2'], correctIndex: 0, explain: 'Valid Exp' }) }
+        ]
+    };
+    let qCompute = generateQuiz(simCompute, 2);
+    ok(Array.isArray(qCompute) && qCompute.length > 0, 'generateQuiz: returns questions when compute template throws');
+    ok(qCompute.some(q => q.question === 'Valid Q'), 'generateQuiz: includes valid template questions despite a faulty compute template');
+
+    // 2. GraphLab mode
+    const simGraphLab = {
+        id: 'test-err-graphlab',
+        mode: 'graphlab',
+        graphLab: {
+            vars: [{ id: 'x', min: 0, max: 10, step: 1, value: 5 }],
+            model: () => { throw new Error('GraphLab model failed'); }
+        }
+    };
+    QUIZ_BANK['test-err-graphlab'] = {
+        static: [staticQ],
+        applyTemplates: [{ level: 'apply', build: () => ({ question: 'GL Q', options: ['A', 'B'], correctIndex: 0, explain: 'E' }) }]
+    };
+    let qGraphLab = generateQuiz(simGraphLab, 1);
+    ok(Array.isArray(qGraphLab) && qGraphLab.length > 0, 'generateQuiz: handles GraphLab model throw gracefully');
+
+    // 3. DataLab mode
+    const simDataLab = {
+        id: 'test-err-datalab',
+        mode: 'datalab',
+        dataLab: {
+            defaultRows: [{ a: 1 }],
+            calculate: () => { throw new Error('DataLab calculate failed'); }
+        }
+    };
+    QUIZ_BANK['test-err-datalab'] = {
+        static: [staticQ],
+        applyTemplates: [{ level: 'apply', build: () => ({ question: 'DL Q', options: ['A', 'B'], correctIndex: 0, explain: 'E' }) }]
+    };
+    let qDataLab = generateQuiz(simDataLab, 1);
+    ok(Array.isArray(qDataLab) && qDataLab.length > 0, 'generateQuiz: handles DataLab calculate throw gracefully');
+
+    // 4. customRender mode
+    const simCustomRender = {
+        id: 'test-err-customrender',
+        mode: 'simulator',
+        customRender: () => { throw new Error('customRender failed'); }
+    };
+    QUIZ_BANK['test-err-customrender'] = {
+        static: [staticQ],
+        applyTemplates: [{ level: 'apply', build: () => ({ question: 'CR Q', options: ['A', 'B'], correctIndex: 0, explain: 'E' }) }]
+    };
+    let qCustomRender = generateQuiz(simCustomRender, 1);
+    ok(Array.isArray(qCustomRender) && qCustomRender.length > 0, 'generateQuiz: handles customRender throw gracefully');
+})();
+
 // ── 6. Hindi (i18n) content validation ────────────────────────────
 // Every sim's SIM_I18N_HI['<id>'] entry (js/i18n_hi*.js), when present, is
 // checked structurally against its own SIMS shape — every translated
