@@ -289,7 +289,7 @@ function glVarChip(sim, v) {
 function glFmtVar(val, v) {
     const dec = (String(v.step || 1).split('.')[1] || '').length;
     const s = Number(val).toFixed(dec);
-    return (v.signed && val > 0 ? '+' : '') + s;
+    return glEsc((v.signed && val > 0 ? '+' : '') + s);
 }
 
 function glSetVar(id, value, opts) {
