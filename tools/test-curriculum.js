@@ -82,11 +82,17 @@ function stubEl() {
         offsetWidth: 100
     };
 }
+const elementMap = {};
+function getStubEl(id) {
+    if (!id) return stubEl();
+    if (!elementMap[id]) elementMap[id] = stubEl();
+    return elementMap[id];
+}
 const sandbox = {
     console,
     window: {},
     document: {
-        getElementById: () => stubEl(),
+        getElementById: (id) => getStubEl(id),
         querySelectorAll: () => [],
         querySelector: () => null,
         createElement: () => stubEl(),
@@ -132,6 +138,8 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const recomputeDataLab = vm.runInContext('recomputeDataLab', context);
+const tEngine = vm.runInContext('tEngine', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -844,6 +852,27 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testDataLabCalculateErrorPath() {
+    const realSim = findSim('stats-central-tendency');
+    ok(!!realSim && !!realSim.dataLab, 'DataLab error path test: found real DataLab sim');
+
+    const originalCalc = realSim.dataLab.calculate;
+    try {
+        realSim.dataLab.calculate = function() {
+            throw new Error('Simulated calculation exception');
+        };
+
+        recomputeDataLab(realSim, false);
+
+        const readingsBody = context.document.getElementById('readings-body');
+        const expectedErrorMsg = tEngine('engine.calcError', 'Could not compute with the current data — check that every cell has a valid number.');
+
+        ok(readingsBody.innerHTML.includes(expectedErrorMsg), 'DataLab error path: recomputeDataLab catches calculate() exception and renders fallback error message');
+    } finally {
+        realSim.dataLab.calculate = originalCalc;
+    }
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
