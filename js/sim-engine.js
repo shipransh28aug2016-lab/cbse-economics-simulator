@@ -477,16 +477,7 @@ function renderQuickCheck(sim, qc, host) {
     });
 }
 
-function buildControls(sim) {
-    const panel = document.getElementById('controls-panel');
-    if (!panel) return;
-    panel.innerHTML = '';
-
-    if (!sim.controls || !sim.controls.length) {
-        panel.innerHTML = `<p class="empty-hint">${tEngine('engine.noInputs', 'No adjustable inputs for this lab — explore the chart on the left.')}</p>`;
-        return;
-    }
-
+function buildControlsHeader(sim, panel) {
     const header = document.createElement('div');
     header.className = 'controls-panel-header collapsible-header';
     header.dataset.panelKey = 'controls';
@@ -530,14 +521,127 @@ function buildControls(sim) {
         renderSimChart(sim);
     });
     header.appendChild(resetBtn);
+
     const chevron = document.createElement('span');
     chevron.className = 'panel-chevron';
     chevron.setAttribute('aria-hidden', 'true');
     chevron.textContent = '⌄';
     header.appendChild(chevron);
+
     panel.appendChild(header);
     panel.appendChild(hint);
     if (typeof initPanelCollapse === 'function') initPanelCollapse(panel, header, 'controls', false);
+}
+
+function createControlRowElement(c) {
+    const row = document.createElement('div');
+    row.className = 'control-row';
+    if (c.showWhen) {
+        row.dataset.showWhenId = c.showWhen.id;
+        row.dataset.showWhenEquals = Array.isArray(c.showWhen.equals)
+            ? c.showWhen.equals.map(String).join(',')
+            : String(c.showWhen.equals);
+    }
+    return row;
+}
+
+function buildSelectControlRow(sim, c, panel) {
+    const row = createControlRowElement(c);
+    const label = controlLabel(sim, c);
+    // A row of segmented buttons reads poorly squeezed into one
+    // ~200px grid column, so it spans the full compact-controls
+    // grid width (see .control-row--wide in css/styles.css).
+    row.classList.add('control-row--wide');
+    row.innerHTML = `
+        <div class="control-label-row">
+            <label>${label}</label>
+        </div>
+        <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${label}"></div>
+    `;
+    panel.appendChild(row);
+
+    const group = row.querySelector('.control-segmented');
+    c.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'segmented-btn';
+        btn.textContent = hiPath(sim, `controls.${c.id}.options.${opt.value}`) || opt.label;
+        btn.setAttribute('aria-pressed', String(opt.value === c.value));
+        if (opt.value === c.value) btn.classList.add('active');
+        btn.addEventListener('click', () => {
+            simEngineState[c.id] = opt.value;
+            group.querySelectorAll('.segmented-btn').forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-pressed', 'false');
+            });
+            btn.classList.add('active');
+            btn.setAttribute('aria-pressed', 'true');
+            applyControlVisibility(sim);
+            renderSimChart(sim);
+        });
+        group.appendChild(btn);
+    });
+}
+
+function buildNumericControlRow(sim, c, panel) {
+    const row = createControlRowElement(c);
+    const label = controlLabel(sim, c);
+    const unit = hiPath(sim, `controls.${c.id}.unit`) || c.unit;
+    row.innerHTML = `
+        <div class="control-label-row">
+            <label for="ctl-${c.id}">${label}</label>
+            ${unit ? `<span class="control-unit">${unit}</span>` : ''}
+        </div>
+        <div class="control-input-group">
+            <input type="range" id="ctl-${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}">
+            <input type="number" id="ctl-${c.id}-num" class="control-number" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}" aria-label="${label} (${tEngine('engine.exactValue', 'exact value')})">
+        </div>
+    `;
+    panel.appendChild(row);
+
+    const rangeEl = row.querySelector('input[type="range"]');
+    const numEl = row.querySelector('input[type="number"]');
+
+    // Dragging the slider always stays within bounds (native behaviour).
+    rangeEl.addEventListener('input', () => {
+        const v = parseFloat(rangeEl.value);
+        simEngineState[c.id] = v;
+        numEl.value = v;
+        renderSimChart(sim);
+    });
+
+    // Typing a value updates live as soon as it parses, without
+    // hard-clamping mid-keystroke (so typing "45" doesn't get cut
+    // off after the first digit) — it snaps into range on blur.
+    numEl.addEventListener('input', () => {
+        const v = parseFloat(numEl.value);
+        if (!isNaN(v)) {
+            simEngineState[c.id] = v;
+            rangeEl.value = clamp(v, c.min, c.max);
+            renderSimChart(sim);
+        }
+    });
+    numEl.addEventListener('blur', () => {
+        const v = parseFloat(numEl.value);
+        const clamped = isNaN(v) ? c.value : clamp(v, c.min, c.max);
+        numEl.value = clamped;
+        rangeEl.value = clamped;
+        simEngineState[c.id] = clamped;
+        renderSimChart(sim);
+    });
+}
+
+function buildControls(sim) {
+    const panel = document.getElementById('controls-panel');
+    if (!panel) return;
+    panel.innerHTML = '';
+
+    if (!sim.controls || !sim.controls.length) {
+        panel.innerHTML = `<p class="empty-hint">${tEngine('engine.noInputs', 'No adjustable inputs for this lab — explore the chart on the left.')}</p>`;
+        return;
+    }
+
+    buildControlsHeader(sim, panel);
 
     if (sim.predict) {
         const card = document.createElement('div');
@@ -548,101 +652,11 @@ function buildControls(sim) {
 
     sim.controls.forEach(c => {
         simEngineState[c.id] = c.value;
-
-        const row = document.createElement('div');
-        row.className = 'control-row';
-        if (c.showWhen) {
-            row.dataset.showWhenId = c.showWhen.id;
-            row.dataset.showWhenEquals = Array.isArray(c.showWhen.equals)
-                ? c.showWhen.equals.map(String).join(',')
-                : String(c.showWhen.equals);
-        }
-
         if (c.type === 'select') {
-            // A small segmented-button group for a categorical choice
-            // (e.g. "which elasticity?" or "which view?") rather than a
-            // continuous slider — some variables in the syllabus are a
-            // choice of mode, not a number.
-            const label = controlLabel(sim, c);
-            // A row of segmented buttons reads poorly squeezed into one
-            // ~200px grid column, so it spans the full compact-controls
-            // grid width (see .control-row--wide in css/styles.css).
-            row.classList.add('control-row--wide');
-            row.innerHTML = `
-                <div class="control-label-row">
-                    <label>${label}</label>
-                </div>
-                <div class="control-segmented" id="ctl-${c.id}" role="group" aria-label="${label}"></div>
-            `;
-            panel.appendChild(row);
-            const group = row.querySelector('.control-segmented');
-            c.options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'segmented-btn';
-                btn.textContent = hiPath(sim, `controls.${c.id}.options.${opt.value}`) || opt.label;
-                btn.setAttribute('aria-pressed', String(opt.value === c.value));
-                if (opt.value === c.value) btn.classList.add('active');
-                btn.addEventListener('click', () => {
-                    simEngineState[c.id] = opt.value;
-                    group.querySelectorAll('.segmented-btn').forEach(b => {
-                        b.classList.remove('active');
-                        b.setAttribute('aria-pressed', 'false');
-                    });
-                    btn.classList.add('active');
-                    btn.setAttribute('aria-pressed', 'true');
-                    applyControlVisibility(sim);
-                    renderSimChart(sim);
-                });
-                group.appendChild(btn);
-            });
-            return;
+            buildSelectControlRow(sim, c, panel);
+        } else {
+            buildNumericControlRow(sim, c, panel);
         }
-
-        const label = controlLabel(sim, c);
-        const unit = hiPath(sim, `controls.${c.id}.unit`) || c.unit;
-        row.innerHTML = `
-            <div class="control-label-row">
-                <label for="ctl-${c.id}">${label}</label>
-                ${unit ? `<span class="control-unit">${unit}</span>` : ''}
-            </div>
-            <div class="control-input-group">
-                <input type="range" id="ctl-${c.id}" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}">
-                <input type="number" id="ctl-${c.id}-num" class="control-number" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.value}" aria-label="${label} (${tEngine('engine.exactValue', 'exact value')})">
-            </div>
-        `;
-        panel.appendChild(row);
-
-        const rangeEl = row.querySelector('input[type="range"]');
-        const numEl = row.querySelector('input[type="number"]');
-
-        // Dragging the slider always stays within bounds (native behaviour).
-        rangeEl.addEventListener('input', () => {
-            const v = parseFloat(rangeEl.value);
-            simEngineState[c.id] = v;
-            numEl.value = v;
-            renderSimChart(sim);
-        });
-
-        // Typing a value updates live as soon as it parses, without
-        // hard-clamping mid-keystroke (so typing "45" doesn't get cut
-        // off after the first digit) — it snaps into range on blur.
-        numEl.addEventListener('input', () => {
-            const v = parseFloat(numEl.value);
-            if (!isNaN(v)) {
-                simEngineState[c.id] = v;
-                rangeEl.value = clamp(v, c.min, c.max);
-                renderSimChart(sim);
-            }
-        });
-        numEl.addEventListener('blur', () => {
-            const v = parseFloat(numEl.value);
-            const clamped = isNaN(v) ? c.value : clamp(v, c.min, c.max);
-            numEl.value = clamped;
-            rangeEl.value = clamped;
-            simEngineState[c.id] = clamped;
-            renderSimChart(sim);
-        });
     });
 
     applyControlVisibility(sim);
