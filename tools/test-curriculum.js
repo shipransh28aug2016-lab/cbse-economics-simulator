@@ -846,6 +846,60 @@ function extractNodePos(html, label) {
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
 })();
 
+(function testExplorerTimelineSecurity() {
+    const sim = {
+        id: 'test-timeline-security',
+        mode: 'explorer',
+        explorer: {
+            type: 'timeline',
+            eras: [
+                { period: '<img src=x onerror=alert(1)>', title: '<b>Title 1</b>', body: 'Body 1' },
+                { period: '1990', title: 'Title 2', body: 'Body 2' }
+            ]
+        }
+    };
+    function makeEl(tag) {
+        const el = stubEl();
+        el.tagName = tag ? tag.toUpperCase() : 'DIV';
+        el.children = [];
+        el.appendChild = (child) => el.children.push(child);
+        return el;
+    }
+    const navButtons = [];
+    const navEl = makeEl('div');
+    navEl.appendChild = (child) => navButtons.push(child);
+
+    const docMock = {
+        getElementById: (id) => {
+            if (id === 'explorer-timeline-nav') return navEl;
+            return makeEl('div');
+        },
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        createElement: (tag) => makeEl(tag),
+        addEventListener: noop,
+        documentElement: { lang: 'en' }
+    };
+
+    const renderExplorer = vm.runInContext('renderExplorer', context);
+    const oldDoc = context.document;
+    context.document = docMock;
+    try {
+        renderExplorer(sim);
+        ok(navButtons.length === 2, 'Explorer Timeline Security: created 2 nav buttons');
+        if (navButtons.length >= 1) {
+            const btn0 = navButtons[0];
+            ok(btn0.children && btn0.children.length === 2, 'Explorer Timeline Security: button has 2 span children');
+            if (btn0.children && btn0.children.length === 2) {
+                ok(btn0.children[0].textContent === '<img src=x onerror=alert(1)>', 'Explorer Timeline Security: period set via textContent');
+                ok(btn0.children[1].textContent === '<b>Title 1</b>', 'Explorer Timeline Security: title set via textContent');
+            }
+        }
+    } finally {
+        context.document = oldDoc;
+    }
+})();
+
 // ── 5. Quiz bank coverage + structural validation ────────────────
 // Every sim must carry a QUIZ_BANK entry that generateQuiz() can turn
 // into >=10 well-formed questions, on repeated (randomized) trials —
