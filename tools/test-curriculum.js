@@ -75,9 +75,11 @@ function noop() {}
 function stubEl() {
     return {
         style: {}, dataset: {}, classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
-        addEventListener: noop, removeEventListener: noop, appendChild: noop, setAttribute: noop,
+        addEventListener: noop, removeEventListener: noop, setAttribute: noop,
         querySelectorAll: () => [], querySelector: () => null, getAttribute: () => null,
-        get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; },
+        children: [],
+        appendChild(child) { this.children = this.children || []; this.children.push(child); },
+        get innerHTML() { return this._html || ''; }, set innerHTML(v) { this._html = v; if (v === '') this.children = []; },
         get textContent() { return this._text || ''; }, set textContent(v) { this._text = v; },
         offsetWidth: 100
     };
@@ -132,6 +134,7 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const renderChallengeShell = vm.runInContext('renderChallengeShell', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -626,6 +629,46 @@ function extractNodePos(html, label) {
 (function testMimaHandlesNoActiveSimulation() {
     const result = mimaExplain(null, 'explain');
     ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
+})();
+
+(function testRenderChallengeShellXSS() {
+    const cardEl = stubEl();
+    const bodyEl = stubEl();
+
+    const elements = {
+        'challenge-card': cardEl,
+        'challenge-body': bodyEl
+    };
+
+    const origGetById = sandbox.document.getElementById;
+    const origCreateElem = sandbox.document.createElement;
+
+    sandbox.document.getElementById = (id) => elements[id] || null;
+    sandbox.document.createElement = (tag) => {
+        const el = stubEl();
+        el.tagName = tag.toUpperCase();
+        return el;
+    };
+
+    const simWithXSS = {
+        challenge: {
+            prompt: '<script>alert("XSS")</script> & MR < AR',
+            check: () => false
+        }
+    };
+
+    renderChallengeShell(simWithXSS);
+
+    const promptEl = bodyEl.children.find(child => child.className === 'challenge-prompt');
+    const statusEl = bodyEl.children.find(child => child.className === 'challenge-status');
+
+    ok(!!promptEl, 'renderChallengeShell: prompt element created safely');
+    ok(!!statusEl, 'renderChallengeShell: status element created safely');
+    ok(promptEl && promptEl.textContent === '<script>alert("XSS")</script> & MR < AR', 'renderChallengeShell: textContent safely preserves exact prompt string without raw HTML injection');
+    ok(bodyEl.innerHTML === '', 'renderChallengeShell: body.innerHTML set to empty string before appending safe DOM children');
+
+    sandbox.document.getElementById = origGetById;
+    sandbox.document.createElement = origCreateElem;
 })();
 
 // ── AI Tutor (js/ai-tutor.js) config on macro-multiplier ──────────
