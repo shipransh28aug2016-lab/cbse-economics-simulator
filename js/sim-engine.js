@@ -576,6 +576,7 @@ function buildControls(sim) {
             `;
             panel.appendChild(row);
             const group = row.querySelector('.control-segmented');
+            const segmentedBtns = [];
             c.options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -583,9 +584,10 @@ function buildControls(sim) {
                 btn.textContent = hiPath(sim, `controls.${c.id}.options.${opt.value}`) || opt.label;
                 btn.setAttribute('aria-pressed', String(opt.value === c.value));
                 if (opt.value === c.value) btn.classList.add('active');
+                segmentedBtns.push(btn);
                 btn.addEventListener('click', () => {
                     simEngineState[c.id] = opt.value;
-                    group.querySelectorAll('.segmented-btn').forEach(b => {
+                    segmentedBtns.forEach(b => {
                         b.classList.remove('active');
                         b.setAttribute('aria-pressed', 'false');
                     });
