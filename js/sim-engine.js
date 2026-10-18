@@ -110,18 +110,18 @@ function flowStreamSVG(id, d, color, value, maxValue, opts) {
         : `<circle r="${size}" fill="${color}">`;
     const particleClose = opts.shape === 'square' ? '</rect>' : '</circle>';
 
-    let particles = '';
+    const particleList = [];
     for (let i = 0; i < count; i++) {
         const begin = (-(duration / count) * i).toFixed(2);
-        particles += `
+        particleList.push(`
             ${particleTag}
                 <animateMotion dur="${duration}s" begin="${begin}s" repeatCount="indefinite" rotate="auto">
                     <mpath href="#${id}" xlink:href="#${id}"></mpath>
                 </animateMotion>
-            ${particleClose}`;
+            ${particleClose}`);
     }
 
-    return `<path id="${id}" d="${d}" fill="none" stroke="${color}" stroke-opacity="0.28" stroke-width="${strokeWidth}"${dashAttr} stroke-linecap="round"></path>${particles}`;
+    return `<path id="${id}" d="${d}" fill="none" stroke="${color}" stroke-opacity="0.28" stroke-width="${strokeWidth}"${dashAttr} stroke-linecap="round"></path>${particleList.join('')}`;
 }
 
 function plotlyDefaultLayout() {
