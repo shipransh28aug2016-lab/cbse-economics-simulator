@@ -32,7 +32,7 @@
         } catch (e) { return null; }
     }
     function savePos(pos) {
-        try { sessionStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch (e) { /* private mode: position just won't persist */ }
+        try { sessionStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch (e) { console.warn('[Mima UI] Unable to save position to sessionStorage:', e); }
     }
 
     function mimaLabel(key, en, hi) {
@@ -102,7 +102,7 @@
     function openPanel(persist) {
         panelEl.classList.remove('hidden');
         bubbleEl.classList.add('mima-bubble--active');
-        if (persist !== false) { try { sessionStorage.setItem(OPEN_KEY, '1'); } catch (e) { /* ignore */ } }
+        if (persist !== false) { try { sessionStorage.setItem(OPEN_KEY, '1'); } catch (e) { console.warn('[Mima UI] Unable to save open state to sessionStorage:', e); } }
         refreshLangTag();
         if (!textEl.textContent) showResult(mimaExplain(getMimaContext(), 'explain'));
     }
@@ -111,7 +111,7 @@
         bubbleEl.classList.remove('mima-bubble--active');
         MimaVoice.stop();
         updateSpeakButton();
-        try { sessionStorage.setItem(OPEN_KEY, '0'); } catch (e) { /* ignore */ }
+        try { sessionStorage.setItem(OPEN_KEY, '0'); } catch (e) { console.warn('[Mima UI] Unable to save close state to sessionStorage:', e); }
     }
 
     function refreshLangTag() {
@@ -147,7 +147,7 @@
         panelEl.querySelector('#mima-close-btn').addEventListener('click', closePanel);
         panelEl.querySelector('#mima-min-btn').addEventListener('click', () => {
             const nowMin = panelEl.classList.toggle('mima-minimized');
-            try { sessionStorage.setItem(MIN_KEY, nowMin ? '1' : '0'); } catch (e) { /* ignore */ }
+            try { sessionStorage.setItem(MIN_KEY, nowMin ? '1' : '0'); } catch (e) { console.warn('[Mima UI] Unable to save minimize state to sessionStorage:', e); }
         });
 
         panelEl.querySelectorAll('.mima-action-btn').forEach(btn => {
