@@ -745,6 +745,8 @@ function renderSimChart(sim) {
     const readingsBody = document.getElementById('readings-body');
     if (!overlay) return;
 
+    let mimaGhostedNames = [];
+
     // Snapshot the diff BEFORE recording this render's state as
     // "previous" — it names exactly what the student just moved. Computed
     // once as structured data so the HTML row and js/mima-context.js read
@@ -791,7 +793,7 @@ function renderSimChart(sim) {
         // stripping that suffix gives Mima the exact list of curves that
         // moved, read from the same geometry the student sees, never
         // guessed from the sim's economics.
-        var _mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
+        mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
         if (typeof Plotly !== 'undefined') {
             Plotly.react(overlay, ghosts.concat(result.traces || []), layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
@@ -850,7 +852,7 @@ function renderSimChart(sim) {
             isFirstRender: suppressedThisRender,
             changedControls: structuredChanges,
             effects: effects,
-            ghostedNames: typeof _mimaGhostedNames !== 'undefined' ? _mimaGhostedNames : [],
+            ghostedNames: mimaGhostedNames,
             allTraceNames: (result.traces || []).map(t => t.name).filter(Boolean),
             currentMetrics: result.metrics || {},
             readingsHTML: result.readings || ''
