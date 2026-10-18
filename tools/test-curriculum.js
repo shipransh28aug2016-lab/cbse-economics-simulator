@@ -491,6 +491,79 @@ function extractNodePos(html, label) {
     }
 })();
 
+// ── sim.challenge.check error path & state update (js/sim-engine.js) ─
+(function testRefreshChallengeErrorAndSuccessPaths() {
+    const refreshChallenge = context.refreshChallenge;
+    ok(typeof refreshChallenge === 'function', 'refreshChallenge exists in sim-engine.js');
+
+    const classes = new Set();
+    const mockStatusEl = {
+        textContent: '',
+        classList: {
+            add: (c) => classes.add(c),
+            remove: (c) => classes.delete(c),
+            toggle: (c, force) => {
+                if (force === undefined) {
+                    if (classes.has(c)) classes.delete(c); else classes.add(c);
+                } else if (force) {
+                    classes.add(c);
+                } else {
+                    classes.delete(c);
+                }
+            },
+            contains: (c) => classes.has(c)
+        }
+    };
+
+    const origGetElementById = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => {
+        if (id === 'challenge-status') return mockStatusEl;
+        return origGetElementById(id);
+    };
+
+    // Case 1: sim.challenge.check throws an error (e.g. against mid-edit state)
+    const throwingSim = {
+        challenge: {
+            check: () => {
+                throw new Error('Mid-edit state error');
+            }
+        }
+    };
+
+    let threw = false;
+    try {
+        refreshChallenge(throwingSim, {});
+    } catch (e) {
+        threw = true;
+    }
+
+    ok(!threw, 'refreshChallenge catches throwing challenge.check() without propagating exception');
+    ok(mockStatusEl.textContent.includes('Not yet'), 'refreshChallenge sets status text to "Not yet" when check() throws');
+    ok(!mockStatusEl.classList.contains('challenge-solved'), 'refreshChallenge removes challenge-solved class when check() throws');
+
+    // Case 2: sim.challenge.check returns true (solved)
+    const solvedSim = {
+        challenge: {
+            check: () => true
+        }
+    };
+    refreshChallenge(solvedSim, {});
+    ok(mockStatusEl.textContent.includes('Challenge complete'), 'refreshChallenge sets status text to solved message when check() returns true');
+    ok(mockStatusEl.classList.contains('challenge-solved'), 'refreshChallenge adds challenge-solved class when check() returns true');
+
+    // Case 3: sim.challenge.check returns false (unsolved)
+    const unsolvedSim = {
+        challenge: {
+            check: () => false
+        }
+    };
+    refreshChallenge(unsolvedSim, {});
+    ok(mockStatusEl.textContent.includes('Not yet'), 'refreshChallenge sets status text to "Not yet" when check() returns false');
+    ok(!mockStatusEl.classList.contains('challenge-solved'), 'refreshChallenge removes challenge-solved class when check() returns false');
+
+    sandbox.document.getElementById = origGetElementById;
+})();
+
 // ── Shared transition layer (js/transition-layer.js) ─────────────
 // The cause→effect half of the learning loop. These assert the layer's
 // two load-bearing properties: it names only effects that are real
