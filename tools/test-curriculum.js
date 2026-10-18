@@ -534,6 +534,61 @@ function extractNodePos(html, label) {
     ok(buildGhostTraces(axisPrev, axisNext)[0].yaxis === 'y2', 'Transition layer: a secondary-axis curve ghosts onto its own axis, not the primary one');
 })();
 
+(function testRefreshChallengeErrorHandling() {
+    const refreshChallenge = context.refreshChallenge;
+    const document = sandbox.document;
+    const origGetElementById = document.getElementById;
+
+    let mockStatusEl = {
+        textContent: '',
+        classList: {
+            classes: new Set(),
+            toggle(className, val) {
+                if (val) this.classes.add(className);
+                else this.classes.delete(className);
+            }
+        }
+    };
+
+    document.getElementById = (id) => {
+        if (id === 'challenge-status') return mockStatusEl;
+        return origGetElementById(id);
+    };
+
+    // Test 1: challenge.check throws an exception (Error Path)
+    const throwingSim = {
+        challenge: {
+            check: () => { throw new Error('Mid-edit invalid state'); }
+        }
+    };
+    refreshChallenge(throwingSim, {});
+    ok(mockStatusEl.textContent === 'Not yet — keep adjusting the inputs.', 'refreshChallenge: handles challenge.check throwing exception gracefully');
+    ok(!mockStatusEl.classList.classes.has('challenge-solved'), 'refreshChallenge: challenge-solved class is false when check throws');
+
+    // Test 2: challenge.check returns false
+    const unsolvedSim = {
+        challenge: {
+            check: () => false
+        }
+    };
+    refreshChallenge(unsolvedSim, {});
+    ok(mockStatusEl.textContent === 'Not yet — keep adjusting the inputs.', 'refreshChallenge: handles solved=false correctly');
+    ok(!mockStatusEl.classList.classes.has('challenge-solved'), 'refreshChallenge: challenge-solved class is false when check returns false');
+
+    // Test 3: challenge.check returns true
+    const solvedSim = {
+        challenge: {
+            check: () => true
+        }
+    };
+    refreshChallenge(solvedSim, {});
+    ok(mockStatusEl.textContent === '✅ Challenge complete — nice work!', 'refreshChallenge: handles solved=true correctly');
+    ok(mockStatusEl.classList.classes.has('challenge-solved'), 'refreshChallenge: challenge-solved class is true when check returns true');
+
+    // Restore original getElementById
+    document.getElementById = origGetElementById;
+})();
+
 (function testTransitionLayerOnRealModel() {
     // Raising the price control from equilibrium (60) to a floor (80)
     // must be reported as a real, correctly-directed economic effect.
