@@ -18,8 +18,8 @@
 // CALLED (only before they run) — js/app.js only invokes them from
 // applyLanguage(), itself only called after every <script> tag, including
 // every simulations_*.js and quiz-data*.js file, has already executed.
-if (typeof I18N_HI === 'undefined') {
-    var I18N_HI = {
+if (typeof globalThis.I18N_HI === 'undefined') {
+    globalThis.I18N_HI = {
         'nav.profileTitle': 'मेरी प्रोफ़ाइल',
 
         'hero.badge': '🎓 सीबीएसई XI–XII',
@@ -152,10 +152,10 @@ if (typeof I18N_HI === 'undefined') {
         'engine.scenarioDefaultInsight': 'इस परिदृश्य की तुलना सूची के अन्य परिदृश्यों से करें — पाठ्यक्रम दोनों पक्षों को तौलने की अपेक्षा करता है, केवल एक का वर्णन करने की नहीं।'
     };
 }
-if (typeof SIM_I18N_HI === 'undefined') {
-    var SIM_I18N_HI = {}; // populated by js/i18n_hi.js: SIM_I18N_HI['sim-id'] = {...}
+if (typeof globalThis.SIM_I18N_HI === 'undefined') {
+    globalThis.SIM_I18N_HI = {}; // populated by js/i18n_hi.js: SIM_I18N_HI['sim-id'] = {...}
 }
-if (typeof READINGS_I18N_HI === 'undefined') {
+if (typeof globalThis.READINGS_I18N_HI === 'undefined') {
     // Ordered [English, Hindi] literal-substring pairs per sim, applied by
     // js/sim-engine.js's/js/datalab-engine.js's translateReadings() against
     // a compute()/dataLab.calculate()'s already-rendered English readings/
@@ -163,7 +163,7 @@ if (typeof READINGS_I18N_HI === 'undefined') {
     // comment for why this (rather than pre-translating readings as static
     // content) is how DYNAMICALLY COMPUTED text gets translated. Populated
     // by js/i18n_hi*.js: READINGS_I18N_HI['sim-id'] = [['English label', 'हिन्दी लेबल'], ...].
-    var READINGS_I18N_HI = {};
+    globalThis.READINGS_I18N_HI = {};
     if (typeof window !== 'undefined') window.READINGS_I18N_HI = READINGS_I18N_HI;
 }
 
