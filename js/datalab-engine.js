@@ -87,20 +87,24 @@ function renderDataLabTable(sim, container) {
         <div class="datalab-table-wrap"><table class="datalab-table"><thead><tr>`;
     cols.forEach(c => { const label = dataLabColLabel(sim, c); html += `<th>${label}${c.unit ? ` (${c.unit})` : ''}</th>`; });
     html += `<th class="datalab-row-action-col"></th></tr></thead><tbody>`;
+
+    const rowParts = [];
     dataLabRows.forEach((row, i) => {
-        html += '<tr>';
+        rowParts.push('<tr>');
         cols.forEach(c => {
             const val = row[c.id] === undefined ? '' : row[c.id];
             const label = dataLabColLabel(sim, c);
             if (c.type === 'text') {
-                html += `<td><input type="text" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${String(val).replace(/"/g, '&quot;')}" aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`;
+                rowParts.push(`<td><input type="text" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${String(val).replace(/"/g, '&quot;')}" aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`);
             } else {
-                html += `<td><input type="number" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${val}" step="${c.step || 1}"${typeof c.min === 'number' ? ` min="${c.min}"` : ''}${typeof c.max === 'number' ? ` max="${c.max}"` : ''} aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`;
+                rowParts.push(`<td><input type="number" class="datalab-cell" data-row="${i}" data-col="${c.id}" value="${val}" step="${c.step || 1}"${typeof c.min === 'number' ? ` min="${c.min}"` : ''}${typeof c.max === 'number' ? ` max="${c.max}"` : ''} aria-label="${label}, ${tEngine('engine.row', 'row')} ${i + 1}"></td>`);
             }
         });
-        html += `<td>${canRemove ? `<button type="button" class="datalab-row-remove" data-row="${i}" title="${tEngine('engine.removeRow', 'Remove row')}" aria-label="${tEngine('engine.removeRow', 'Remove row')} ${i + 1}">✕</button>` : ''}</td>`;
-        html += '</tr>';
+        rowParts.push(`<td>${canRemove ? `<button type="button" class="datalab-row-remove" data-row="${i}" title="${tEngine('engine.removeRow', 'Remove row')}" aria-label="${tEngine('engine.removeRow', 'Remove row')} ${i + 1}">✕</button>` : ''}</td>`);
+        rowParts.push('</tr>');
     });
+    html += rowParts.join('');
+
     html += `</tbody></table></div>
         <div class="datalab-toolbar">
             <button type="button" class="datalab-btn" id="datalab-add-row" ${canAdd ? '' : 'disabled'}>${tEngine('engine.addRow', '+ Add Row')}</button>
