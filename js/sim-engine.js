@@ -453,13 +453,14 @@ function renderQuickCheck(sim, qc, host) {
         <div class="tlm-qc-feedback hidden" id="tlm-qc-feedback"></div>
     `;
     let answered = false;
-    host.querySelectorAll('.tlm-qc-btn').forEach(btn => {
+    const buttons = host.querySelectorAll('.tlm-qc-btn');
+    buttons.forEach(btn => {
         btn.addEventListener('click', () => {
             if (answered) return;
             answered = true;
             const i = Number(btn.dataset.i);
             const correct = i === qc.correctIndex;
-            host.querySelectorAll('.tlm-qc-btn').forEach((b, bi) => {
+            buttons.forEach((b, bi) => {
                 b.disabled = true;
                 if (bi === qc.correctIndex) b.classList.add('tlm-qc-btn--correct');
                 else if (bi === i) b.classList.add('tlm-qc-btn--wrong');
