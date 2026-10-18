@@ -132,6 +132,7 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const glComputeScenarioVerdict = vm.runInContext('glComputeScenarioVerdict', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -844,6 +845,49 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testGlComputeScenarioVerdict() {
+    // 1. Happy path with a real Graph Lab simulation
+    const glSim = SIMS.find(s => (s.mode || 'simulator') === 'graphlab' && s.graphLab && (s.graphLab.scenarios || []).length > 0);
+    ok(!!glSim, 'glComputeScenarioVerdict: found a Graph Lab sim with scenarios');
+    if (glSim) {
+        const sc = glSim.graphLab.scenarios[0];
+        const verdict = glComputeScenarioVerdict(glSim, sc);
+        ok(verdict !== null && typeof verdict === 'object', 'glComputeScenarioVerdict: returns verdict object for valid scenario');
+        ok(typeof verdict.title === 'string' && verdict.title.length > 0, 'glComputeScenarioVerdict: verdict has a non-empty title');
+        ok(['movement', 'shift', 'both', 'none'].includes(verdict.kind), 'glComputeScenarioVerdict: verdict has a valid kind');
+    }
+
+    // 2. Error path: sim.graphLab.model throws an exception
+    const throwingSim = {
+        graphLab: {
+            vars: [{ id: 'p', value: 10 }],
+            model: () => { throw new Error('Forced error in model'); }
+        }
+    };
+    const nullVerdictOnError = glComputeScenarioVerdict(throwingSim, { set: { p: 15 } });
+    ok(nullVerdictOnError === null, 'glComputeScenarioVerdict: catches thrown error in model and returns null');
+
+    // 3. Edge case: scenario has no set property
+    const emptyScenarioSim = {
+        graphLab: {
+            vars: [{ id: 'p', value: 10 }],
+            model: (trial) => ({ verdict: { kind: 'none', title: `Price ${trial.p}` } })
+        }
+    };
+    const verdictNoSet = glComputeScenarioVerdict(emptyScenarioSim, {});
+    ok(verdictNoSet !== null && verdictNoSet.title === 'Price 10', 'glComputeScenarioVerdict: handles scenario without set property');
+
+    // 4. Edge case: model returns empty object or object without verdict
+    const noVerdictSim = {
+        graphLab: {
+            vars: [{ id: 'p', value: 10 }],
+            model: () => ({})
+        }
+    };
+    const nullVerdictNoProperty = glComputeScenarioVerdict(noVerdictSim, { set: { p: 20 } });
+    ok(nullVerdictNoProperty === null, 'glComputeScenarioVerdict: returns null when model result has no verdict');
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
