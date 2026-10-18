@@ -723,6 +723,57 @@ function extractNodePos(html, label) {
     function range8() { return Array.from({ length: 8 }, (_, i) => i); }
 })();
 
+(function testDataLabEscaping() {
+    const dataLabEsc = vm.runInContext('dataLabEsc', context);
+    ok(typeof dataLabEsc === 'function', 'DataLab escaping: dataLabEsc function is defined');
+    ok(dataLabEsc('<script>alert(1)</script>') === '&lt;script&gt;alert(1)&lt;/script&gt;', 'DataLab escaping: escapes <script> tags');
+    ok(dataLabEsc('a & b "c" \'d\'') === 'a &amp; b &quot;c&quot; &#39;d&#39;', 'DataLab escaping: escapes ampersand, quotes, and apostrophes');
+    ok(dataLabEsc(null) === '', 'DataLab escaping: handles null safely');
+    ok(dataLabEsc(123) === '123', 'DataLab escaping: converts numbers to string');
+
+    // Test recomputeDataLab innerHTML escaping of stats and formulas with HTML injection
+    const recomputeDataLab = vm.runInContext('recomputeDataLab', context);
+    const mockSim = {
+        id: 'test-xss-sim',
+        dataLab: {
+            columns: [{ id: 'val', label: 'Val', type: 'number' }],
+            defaultRows: [{ val: 10 }],
+            calculate: () => ({
+                stats: [{ label: '<img src=x onerror=alert(1)>', value: '<script>evil()</script>' }],
+                interpretation: 'This is <i>safe</i> <script>alert("xss")</script> <img src=x onerror=bad()>',
+                formulas: ['<b>1 + 1</b> <script>alert(2)</script>']
+            })
+        }
+    };
+
+    // Stubs for DOM elements used in recomputeDataLab
+    const overlayEl = stubEl();
+    const readingsBodyEl = stubEl();
+    const formulaBodyEl = stubEl();
+
+    const origGetElementById = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => {
+        if (id === 'sim-dom-overlay') return overlayEl;
+        if (id === 'readings-body') return readingsBodyEl;
+        if (id === 'formula-body') return formulaBodyEl;
+        return stubEl();
+    };
+
+    recomputeDataLab(mockSim, false);
+
+    sandbox.document.getElementById = origGetElementById;
+
+    ok(readingsBodyEl.innerHTML.includes('&lt;img src=x onerror=alert(1)&gt;'), 'DataLab XSS: stats label is properly HTML-escaped in innerHTML');
+    ok(readingsBodyEl.innerHTML.includes('&lt;script&gt;evil()&lt;/script&gt;'), 'DataLab XSS: stats value is properly HTML-escaped in innerHTML');
+    ok(!readingsBodyEl.innerHTML.includes('<script>evil()</script>'), 'DataLab XSS: raw script tag is not present in readingsBody innerHTML');
+
+    ok(readingsBodyEl.innerHTML.includes('This is <i>safe</i> &lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt; &lt;img src=x onerror=bad()&gt;'), 'DataLab XSS: interpretation preserves safe tags while escaping malicious tags');
+    ok(!readingsBodyEl.innerHTML.includes('<script>alert("xss")</script>'), 'DataLab XSS: raw script tag is not present in interpretation');
+
+    ok(formulaBodyEl.innerHTML.includes('&lt;b&gt;1 + 1&lt;/b&gt; &lt;script&gt;alert(2)&lt;/script&gt;'), 'DataLab XSS: formulas are properly HTML-escaped in innerHTML');
+    ok(!formulaBodyEl.innerHTML.includes('<script>alert(2)</script>'), 'DataLab XSS: raw script tag is not present in formulaBody innerHTML');
+})();
+
 (function testIndexNumbers() {
     const sim = findSim('stats-index-numbers');
     const rows = [{ commodity: 'A', p0: 10, p1: 20 }, { commodity: 'B', p0: 10, p1: 20 }];
