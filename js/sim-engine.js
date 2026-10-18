@@ -350,7 +350,19 @@ function renderChallengeShell(sim) {
     const initialStatus = sim.challenge.check
         ? tEngine('challenge.notYet', 'Not yet — keep adjusting the inputs.')
         : tEngine('challenge.workItOut', 'Work it out, then check your reasoning against the readings panel.');
-    body.innerHTML = `<p class="challenge-prompt">${prompt}</p><div class="challenge-status" id="challenge-status">${initialStatus}</div>`;
+
+    body.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'challenge-prompt';
+    p.textContent = prompt || '';
+
+    const statusDiv = document.createElement('div');
+    statusDiv.className = 'challenge-status';
+    statusDiv.id = 'challenge-status';
+    statusDiv.textContent = initialStatus || '';
+
+    body.appendChild(p);
+    body.appendChild(statusDiv);
 }
 
 function refreshChallenge(sim, metrics) {
