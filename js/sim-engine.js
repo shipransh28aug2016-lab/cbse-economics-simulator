@@ -757,6 +757,7 @@ function renderSimChart(sim) {
     suppressNextWhatChanged = false;
 
     let result;
+    let _mimaGhostedNames = [];
     if (typeof sim.customRender === 'function') {
         // Simulations that need something Plotly can't express (e.g. an
         // animated flow diagram) draw straight into the overlay div and
@@ -791,7 +792,7 @@ function renderSimChart(sim) {
         // stripping that suffix gives Mima the exact list of curves that
         // moved, read from the same geometry the student sees, never
         // guessed from the sim's economics.
-        var _mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
+        _mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
         if (typeof Plotly !== 'undefined') {
             Plotly.react(overlay, ghosts.concat(result.traces || []), layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
