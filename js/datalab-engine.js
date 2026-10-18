@@ -85,7 +85,7 @@ function renderDataLabTable(sim, container) {
         </div>
         <p class="controls-panel-hint">${tEngine('engine.dataLabHint', 'Type your own numbers directly into the table below — the calculation, chart and interpretation update instantly. Add or remove rows to try a dataset of your own, not just the sample.')}</p>
         <div class="datalab-table-wrap"><table class="datalab-table"><thead><tr>`;
-    cols.forEach(c => { const label = dataLabColLabel(sim, c); html += `<th>${label}${c.unit ? ` (${c.unit})` : ''}</th>`; });
+    html += cols.map(c => { const label = dataLabColLabel(sim, c); return `<th>${label}${c.unit ? ` (${c.unit})` : ''}</th>`; }).join('');
     html += `<th class="datalab-row-action-col"></th></tr></thead><tbody>`;
     dataLabRows.forEach((row, i) => {
         html += '<tr>';
