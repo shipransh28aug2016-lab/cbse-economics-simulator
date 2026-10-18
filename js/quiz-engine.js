@@ -227,12 +227,17 @@ function renderQuizQuestion() {
 
     const questionEl = document.getElementById('quiz-question');
     if (questionEl) {
-        questionEl.innerHTML = `<span class="quiz-bloom-badge quiz-bloom-${q.level}">${bloomLabel(q.level)}</span>${q.question}`;
+        questionEl.textContent = '';
+        const badge = document.createElement('span');
+        badge.className = `quiz-bloom-badge quiz-bloom-${q.level}`;
+        badge.textContent = bloomLabel(q.level);
+        questionEl.appendChild(badge);
+        questionEl.appendChild(document.createTextNode(q.question));
     }
 
     const optsEl = document.getElementById('quiz-options');
     if (optsEl) {
-        optsEl.innerHTML = '';
+        optsEl.textContent = '';
         q.options.forEach((opt, i) => {
             const btn = document.createElement('button');
             btn.type = 'button';
@@ -244,7 +249,7 @@ function renderQuizQuestion() {
     }
 
     const feedbackEl = document.getElementById('quiz-feedback');
-    if (feedbackEl) { feedbackEl.classList.add('hidden'); feedbackEl.innerHTML = ''; }
+    if (feedbackEl) { feedbackEl.classList.add('hidden'); feedbackEl.textContent = ''; }
     const nextBtn = document.getElementById('quiz-next-btn');
     if (nextBtn) nextBtn.classList.add('hidden');
     quizState.answered = false;
@@ -267,12 +272,19 @@ function selectQuizAnswer(i) {
     const feedbackEl = document.getElementById('quiz-feedback');
     if (feedbackEl) {
         feedbackEl.classList.remove('hidden');
+        feedbackEl.textContent = '';
+        const statusB = document.createElement('b');
         const correctText = localize
             ? localize({ en: '✅ Correct!', hi: '✅ सही जवाब!' })
             : '✅ Correct!';
         const incorrectText = localize
             ? localize({ en: '❌ Not quite.', hi: '❌ यह सही नहीं है।' })
             : '❌ Not quite.';
+        statusB.textContent = (correct ? correctText : incorrectText) + ' ';
+        feedbackEl.appendChild(statusB);
+
+        feedbackEl.appendChild(document.createTextNode(q.explain || ''));
+
         // A wrong option can carry its OWN targeted misconception text
         // (q.misconceptions, see normalizeQuizQuestion) — distinct from
         // `explain`'s general "here's the right answer" — naming exactly
@@ -280,10 +292,13 @@ function selectQuizAnswer(i) {
         // it's wrong. Shown only for the option the student actually
         // picked, in addition to (not instead of) the usual explanation.
         const misconception = !correct && q.misconceptions ? q.misconceptions[q.options[i]] : null;
-        const misconceptionHTML = misconception
-            ? `<div class="quiz-misconception">⚠️ ${localize ? localize({ en: 'Common mistake:', hi: 'सामान्य भूल:' }) : 'Common mistake:'} ${misconception}</div>`
-            : '';
-        feedbackEl.innerHTML = `<b>${correct ? correctText : incorrectText}</b> ${q.explain}${misconceptionHTML}`;
+        if (misconception) {
+            const miscDiv = document.createElement('div');
+            miscDiv.className = 'quiz-misconception';
+            const labelText = localize ? localize({ en: 'Common mistake:', hi: 'सामान्य भूल:' }) : 'Common mistake:';
+            miscDiv.textContent = `⚠️ ${labelText} ${misconception}`;
+            feedbackEl.appendChild(miscDiv);
+        }
     }
     const nextBtn = document.getElementById('quiz-next-btn');
     if (nextBtn) {
