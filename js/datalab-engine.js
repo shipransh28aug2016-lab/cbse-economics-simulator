@@ -24,6 +24,15 @@
 let dataLabRows = [];
 let dataLabPrevRows = null;
 
+function dataLabEsc(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function cloneRows(rows) {
     return (rows || []).map(r => Object.assign({}, r));
 }
@@ -177,8 +186,10 @@ function recomputeDataLab(sim, rebuildTable) {
     overlay.classList.add('chart-fresh');
 
     if (readingsBody) {
-        const statsHTML = (result.stats || []).map(s => `<div class="reading-row"><span>${translateReadings(sim, s.label)}</span><b>${translateReadings(sim, String(s.value))}</b></div>`).join('');
-        const interpretation = result.interpretation ? translateReadings(sim, result.interpretation) : '';
+        const statsHTML = (result.stats || []).map(s => `<div class="reading-row"><span>${dataLabEsc(translateReadings(sim, s.label))}</span><b>${dataLabEsc(translateReadings(sim, String(s.value)))}</b></div>`).join('');
+        const rawInterp = result.interpretation ? translateReadings(sim, result.interpretation) : '';
+        // If interpretation contains trusted HTML tags like <i>, preserve them safely while escaping dangerous scripts/attributes
+        const interpretation = rawInterp ? dataLabEsc(rawInterp).replace(/&lt;(\/?(?:i|b|em|strong|span))&gt;/gi, '<$1>') : '';
         readingsBody.innerHTML = whatChangedHTML + statsHTML + (interpretation ? `<div class="reading-row insight-row">💡 ${interpretation}</div>` : '');
         readingsBody.classList.remove('pulse');
         void readingsBody.offsetWidth;
@@ -187,7 +198,7 @@ function recomputeDataLab(sim, rebuildTable) {
 
     if (Array.isArray(result.formulas)) {
         const formulaBody = document.getElementById('formula-body');
-        if (formulaBody) formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${translateReadings(sim, f)}</div>`).join('');
+        if (formulaBody) formulaBody.innerHTML = result.formulas.map(f => `<div class="formula-line">${dataLabEsc(translateReadings(sim, f))}</div>`).join('');
     }
 
     if (typeof refreshChallenge === 'function') refreshChallenge(sim, result.metrics);
