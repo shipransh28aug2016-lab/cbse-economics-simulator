@@ -45,6 +45,7 @@ const FILES = [
     'js/datalab-engine.js',
     'js/explorer-engine.js',
     'js/graph-lab-engine.js',
+    'js/story-mode.js',
     'js/simulations.js',
     'js/simulations_extended.js',
     'js/simulations_class11_micro.js',
@@ -132,6 +133,7 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const storyContexts = vm.runInContext('storyContexts', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -661,6 +663,52 @@ function extractNodePos(html, label) {
         });
     });
     ok(paths > 0, 'Graph Lab glide: at least one scenario glide path was exercised');
+})();
+
+// ── Story Mode (js/story-mode.js) ──────────────────────────────────
+// The honesty contract: a story may only CLAIM what its lab's model()
+// actually produces. Each step restates its claim as check(); this runs
+// every one against the real model, plus the answer key and narration.
+(function testStoriesMatchTheirModels() {
+    const hasDeva = s => /[\u0900-\u097F]/.test(s);
+    let stories = 0;
+    SIMS.filter(sim => sim.graphLab && sim.graphLab.stories).forEach(sim => {
+        sim.graphLab.stories.forEach(story => {
+            stories++;
+            const tag = `${sim.id} story "${story.id}"`;
+            ok(story.title && story.title.en && hasDeva(story.title.hi || ''), `${tag}: bilingual title`);
+            ok(story.intro && hasDeva(story.intro.hi || '') && story.outro && hasDeva(story.outro.hi || ''), `${tag}: bilingual intro + outro`);
+            ok(Array.isArray(story.steps) && story.steps.length >= 2, `${tag}: has at least two steps`);
+            ok(!story.steps[0].ask, `${tag}: step 1 sets the scene before asking anything`);
+            story.steps.forEach(step => Object.keys(step.set || {}).forEach(k => {
+                const v = sim.graphLab.vars.find(x => x.id === k);
+                ok(!!v && step.set[k] >= v.min && step.set[k] <= v.max, `${tag}: set.${k} is a real var inside its range`);
+            }));
+            let ctxs;
+            try { ctxs = storyContexts(sim, story); } catch (e) { ok(false, `${tag}: storyContexts threw — ${e.message}`); return; }
+            ctxs.forEach((c, i) => {
+                const step = story.steps[i];
+                let claim = false;
+                try { claim = step.check(c); } catch (e) { ok(false, `${tag} step ${i + 1}: check() threw — ${e.message}`); }
+                ok(claim === true, `${tag} step ${i + 1}: its economic claim holds in the real model`);
+                ['en', 'hi'].forEach(lang => {
+                    const text = step.say(c, lang === 'hi');
+                    ok(typeof text === 'string' && text.length > 30 && !/NaN|undefined|Infinity|—\s*cr/.test(text), `${tag} step ${i + 1}: clean ${lang} narration`);
+                    if (lang === 'hi') ok(hasDeva(text), `${tag} step ${i + 1}: Hindi narration is actually Hindi`);
+                });
+                if (step.ask) {
+                    const opts = typeof step.ask.options === 'function' ? step.ask.options(c) : step.ask.options;
+                    ok(Array.isArray(opts) && opts.length >= 2, `${tag} step ${i + 1}: offers at least two choices`);
+                    ok(opts.every(o => o.en && hasDeva(o.hi || '') && !/NaN|undefined/.test(o.en)), `${tag} step ${i + 1}: every choice is bilingual and clean`);
+                    ok(new Set(opts.map(o => o.en)).size === opts.length, `${tag} step ${i + 1}: no two choices read the same`);
+                    const right = step.ask.correct(c);
+                    ok(Number.isInteger(right) && right >= 0 && right < opts.length, `${tag} step ${i + 1}: answer key points at a real choice`);
+                    ok(step.ask.q && step.ask.q.en && hasDeva(step.ask.q.hi || ''), `${tag} step ${i + 1}: bilingual question`);
+                }
+            });
+        });
+    });
+    ok(stories >= 3, `Story Mode: at least three stories exist (found ${stories})`);
 })();
 
 // ── AI Tutor (js/ai-tutor.js) config on macro-multiplier ──────────

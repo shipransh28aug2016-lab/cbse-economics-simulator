@@ -41,6 +41,79 @@ SIMS.push({
             { label: 'Excess demand', note: 'Inflationary gap', set: { auto: 280, mpc: 0.6, yf: 500 } },
             { label: 'Higher MPC', note: 'Bigger multiplier, steeper AD', set: { mpc: 0.8 } }
         ],
+        // Story Mode (js/story-mode.js) — see js/simulations_graphlab.js's
+        // tea-stall story for the honesty contract every step follows.
+        stories: [{
+            id: 'recession-recovery',
+            title: { en: 'A recession — and the way out', hi: 'एक मंदी — और उससे निकलने का रास्ता' },
+            intro: {
+                en: 'An economy at full employment loses business confidence. Watch income fall by MORE than the spending cut — and see exactly how much the government must spend to undo it.',
+                hi: 'पूर्ण रोज़गार वाली एक अर्थव्यवस्था में व्यापार का भरोसा टूट जाता है। देखिए कि आय ख़र्च में हुई कटौती से भी ज़्यादा कैसे गिरती है — और सरकार को इसे ठीक करने के लिए ठीक कितना ख़र्च करना होगा।'
+            },
+            outro: {
+                en: 'A spending change moves income by k times itself (k = 1/(1−MPC)). So policy must fill the deflationary GAP, measured vertically at Y_F — not the whole fall in income.',
+                hi: 'ख़र्च में बदलाव आय को अपने k गुना बदलता है (k = 1/(1−MPC))। इसलिए नीति को अवस्फीतिक अंतराल भरना होता है, जो Y_F पर ऊर्ध्वाधर मापा जाता है — आय में पूरी गिरावट नहीं।'
+            },
+            steps: [
+                {
+                    set: { auto: 200 },
+                    say: (c, hi) => hi
+                        ? `AD, 45° रेखा को Y* = ₹${fmt(c.m.metrics.yStar, 0)} cr पर काटती है — ठीक Y<sub>F</sub> पर। काम चाहने वाले हर व्यक्ति को काम मिला हुआ है: <b>पूर्ण रोज़गार, कोई अंतराल नहीं</b>।`
+                        : `AD cuts the 45° line at Y* = ₹${fmt(c.m.metrics.yStar, 0)} cr — exactly at Y<sub>F</sub>. Everyone who wants work has it: <b>full employment, no gap</b>.`,
+                    check: c => c.m.verdict.kind === 'none' && Math.abs(c.m.metrics.yStar - c.v.yf) < 1
+                },
+                {
+                    set: { auto: 150 },
+                    ask: {
+                        q: { en: 'Business confidence collapses: firms cut investment by ₹50 cr. Where does equilibrium income go?', hi: 'व्यापार का भरोसा टूट जाता है: फ़र्में निवेश ₹50 cr घटा देती हैं। संतुलन आय कहाँ जाएगी?' },
+                        options: [
+                            { en: 'Below Y_F — a deflationary gap', hi: 'Y_F से नीचे — अवस्फीतिक अंतराल' },
+                            { en: 'Above Y_F — an inflationary gap', hi: 'Y_F से ऊपर — स्फीतिक अंतराल' },
+                            { en: 'It stays at Y_F', hi: 'यह Y_F पर ही रहेगी' }
+                        ],
+                        correct: c => c.m.metrics.gap < -1 ? 0 : (c.m.metrics.gap > 1 ? 1 : 2)
+                    },
+                    say: (c, hi) => {
+                        const cut = c.prev.v.auto - c.v.auto, fall = c.prev.m.metrics.yStar - c.m.metrics.yStar;
+                        return hi
+                            ? `AD नीचे खिसकी। संतुलन Y* = ₹${fmt(c.m.metrics.yStar, 0)} cr पर आ गया, Y<sub>F</sub> से नीचे। ख़र्च में कटौती केवल ₹${fmt(cut, 0)} cr थी, पर आय ₹${fmt(fall, 0)} cr गिरी — यह गुणक k = ${fmt(c.m.metrics.k, 2)} का असर है। Y<sub>F</sub> पर ऊर्ध्वाधर कमी = <b>अवस्फीतिक अंतराल ₹${fmt(-c.m.metrics.gap, 0)} cr</b> → अनैच्छिक बेरोज़गारी।`
+                            : `AD shifts down. Equilibrium falls to Y* = ₹${fmt(c.m.metrics.yStar, 0)} cr, below Y<sub>F</sub>. Spending fell by only ₹${fmt(cut, 0)} cr, yet income fell by ₹${fmt(fall, 0)} cr — that is the multiplier k = ${fmt(c.m.metrics.k, 2)} at work. The vertical shortfall at Y<sub>F</sub> is the <b>deflationary gap of ₹${fmt(-c.m.metrics.gap, 0)} cr</b> → involuntary unemployment.`;
+                    },
+                    check: c => c.m.metrics.gap < -1 && c.m.metrics.yStar < c.v.yf &&
+                        Math.abs((c.prev.m.metrics.yStar - c.m.metrics.yStar) - (c.prev.v.auto - c.v.auto) * c.m.metrics.k) < 0.5
+                },
+                {
+                    set: { auto: 200 },
+                    ask: {
+                        q: { en: 'The government wants full employment back. How much EXTRA spending does it need?', hi: 'सरकार पूर्ण रोज़गार वापस चाहती है। उसे कितना अतिरिक्त ख़र्च करना होगा?' },
+                        // Built from the PREVIOUS step's model, i.e. the
+                        // economy the student is looking at when asked.
+                        options: c => {
+                            const gap = -c.prev.m.metrics.gap, k = c.prev.m.metrics.k;
+                            return [
+                                { en: `₹${fmt(gap, 0)} cr — the size of the gap`, hi: `₹${fmt(gap, 0)} cr — अंतराल जितना` },
+                                { en: `₹${fmt(gap * k, 0)} cr — the whole fall in income`, hi: `₹${fmt(gap * k, 0)} cr — आय में पूरी गिरावट जितना` },
+                                { en: `₹${fmt(gap / k, 0)} cr — the gap divided by k`, hi: `₹${fmt(gap / k, 0)} cr — अंतराल को k से भाग देकर` }
+                            ];
+                        },
+                        correct: c => {
+                            const added = c.v.auto - c.prev.v.auto, gap = -c.prev.m.metrics.gap, k = c.prev.m.metrics.k;
+                            const opts = [gap, gap * k, gap / k];
+                            return opts.reduce((best, x, i) => Math.abs(x - added) < Math.abs(opts[best] - added) ? i : best, 0);
+                        }
+                    },
+                    say: (c, hi) => {
+                        const added = c.v.auto - c.prev.v.auto, rise = c.m.metrics.yStar - c.prev.m.metrics.yStar;
+                        return hi
+                            ? `सरकार ₹${fmt(added, 0)} cr अतिरिक्त ख़र्च करती है (जैसे राजमार्ग परियोजनाएँ)। गुणक ${fmt(c.m.metrics.k, 2)} के कारण आय ₹${fmt(rise, 0)} cr बढ़ती है — ठीक वापस Y<sub>F</sub> = ₹${fmt(c.v.yf, 0)} cr पर। इसीलिए नीति को <b>अंतराल</b> भरना होता है, आय की पूरी गिरावट नहीं।`
+                            : `The government spends ₹${fmt(added, 0)} cr more (say, highway projects). Through the multiplier of ${fmt(c.m.metrics.k, 2)}, income rises by ₹${fmt(rise, 0)} cr — exactly back to Y<sub>F</sub> = ₹${fmt(c.v.yf, 0)} cr. That is why policy fills the <b>gap</b>, not the whole fall in income.`;
+                    },
+                    check: c => Math.abs(c.m.metrics.gap) < 1 &&
+                        Math.abs((c.v.auto - c.prev.v.auto) - (-c.prev.m.metrics.gap)) < 0.5 &&
+                        Math.abs((c.m.metrics.yStar - c.prev.m.metrics.yStar) - (c.v.auto - c.prev.v.auto) * c.m.metrics.k) < 0.5
+                }
+            ]
+        }],
         model(v) {
             const adAt = y => v.auto + v.mpc * y;
             const yStar = v.auto / (1 - v.mpc);

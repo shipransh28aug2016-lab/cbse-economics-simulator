@@ -634,6 +634,8 @@ function renderGraphLab(sim) {
         else panel.classList.add('hidden');
     }
     glRender(sim, true);
+    // After the shell exists: the story card mounts inside it.
+    if (typeof storyRenderLauncher === 'function') storyRenderLauncher(sim, panel);
 }
 
 // One-tap "show me the exam question" presets. Each sets several variables

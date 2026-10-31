@@ -35,6 +35,33 @@ const GL_TERMS = {
 // Builds the verdict block shared by the demand and supply labs.
 //   priceΔ  — change in OWN price (drives a MOVEMENT along the curve)
 //   shiftΔ  — net non-price determinant effect (drives a SHIFT of the curve)
+// ── Story Mode answer keys (js/story-mode.js) ─────────────────────
+// Graded from the model's own verdict/metrics at the step's state — never
+// an authored answer that could disagree with the diagram.
+const GL_DEMAND_STORY_OPTIONS = [
+    { en: 'Movement along DD (expansion / contraction)', hi: 'DD के साथ movement (विस्तार / संकुचन)' },
+    { en: 'DD shifts right (increase in demand)', hi: 'DD दाईं ओर खिसकता है (माँग में वृद्धि)' },
+    { en: 'DD shifts left (decrease in demand)', hi: 'DD बाईं ओर खिसकता है (माँग में कमी)' },
+    { en: 'Both: a shift AND a movement', hi: 'दोनों: shift भी और movement भी' }
+];
+function glDemandStoryAnswer(m) {
+    const k = m.verdict && m.verdict.kind;
+    if (k === 'movement') return 0;
+    if (k === 'both') return 3;
+    return m.metrics.shift > 0 ? 1 : 2;
+}
+const GL_MARKET_STORY_OPTIONS = [
+    { en: 'DD shifts right', hi: 'DD दाईं ओर खिसकता है' },
+    { en: 'DD shifts left', hi: 'DD बाईं ओर खिसकता है' },
+    { en: 'SS shifts right', hi: 'SS दाईं ओर खिसकता है' },
+    { en: 'SS shifts left', hi: 'SS बाईं ओर खिसकता है' }
+];
+function glMarketStoryAnswer(m) {
+    const d = m.metrics.dShift, s = m.metrics.sShift;
+    if (Math.abs(s) > Math.abs(d)) return s > 0 ? 2 : 3;
+    return d > 0 ? 0 : 1;
+}
+
 function glMoveShiftVerdict(kindKey, priceD, shiftD) {
     const T = GL_TERMS[kindKey];
     const moved = Math.abs(priceD) > 0.001;
@@ -143,6 +170,66 @@ SIMS.push({
             { label: 'Complement becomes cheaper', note: 'Increase in Demand', set: { pComp: -15 } },
             { label: 'Price ↓ AND income ↑', note: 'Both at once', set: { price: 32, income: 14 } }
         ],
+        // Story Mode (js/story-mode.js). Every number is read from the
+        // model's own output; every claim is restated as check(), which
+        // tools/test-curriculum.js runs against this model.
+        stories: [{
+            id: 'tea-stall',
+            title: { en: "Ramu's Tea Stall — movement or shift?", hi: 'रामू की चाय की दुकान — movement या shift?' },
+            intro: {
+                en: 'Ramu sells tea outside a college. Four things will happen to his business. Before each one, predict what it does to the demand curve — then watch.',
+                hi: 'रामू एक college के बाहर चाय बेचता है। उसके धंधे में चार चीज़ें होंगी। हर बार पहले अनुमान लगाइए कि demand curve पर क्या असर होगा — फिर देखिए।'
+            },
+            outro: {
+                en: 'The whole chapter in one line: the good\'s OWN price moves you ALONG the curve (expansion/contraction); ANY other determinant moves the WHOLE curve (increase/decrease).',
+                hi: 'पूरा अध्याय एक पंक्ति में: वस्तु की अपनी कीमत आपको curve के साथ-साथ चलाती है (विस्तार/संकुचन); कोई भी अन्य निर्धारक पूरे curve को खिसकाता है (वृद्धि/कमी)।'
+            },
+            steps: [
+                {
+                    set: {},
+                    say: (c, hi) => hi
+                        ? `₹${fmt(c.v.price, 0)} प्रति कप पर ग्राहक रोज़ ${fmt(c.m.metrics.q, 0)} कप खरीदते हैं — यह demand curve DD पर बिंदु A है।`
+                        : `At ₹${fmt(c.v.price, 0)} a cup, customers buy ${fmt(c.m.metrics.q, 0)} cups a day — that is point A on the demand curve DD.`,
+                    check: c => c.m.verdict.kind === 'none'
+                },
+                {
+                    set: { price: 30 },
+                    ask: {
+                        q: { en: 'Ramu cuts the price of tea from ₹50 to ₹30. What happens on the diagram?', hi: 'रामू चाय की कीमत ₹50 से घटाकर ₹30 कर देता है। Diagram पर क्या होगा?' },
+                        options: GL_DEMAND_STORY_OPTIONS,
+                        correct: c => glDemandStoryAnswer(c.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `केवल चाय की <b>अपनी कीमत</b> बदली, इसलिए हम उसी DD पर नीचे खिसकते हैं — A से B तक। मात्रा ${fmt(c.prev.m.metrics.q, 0)} से बढ़कर ${fmt(c.m.metrics.q, 0)} कप हो गई। परीक्षा का शब्द: <b>माँग का विस्तार</b> — "माँग में वृद्धि" नहीं।`
+                        : `Only the tea's <b>own price</b> changed, so we slide DOWN the same DD — from A to B. Quantity rises from ${fmt(c.prev.m.metrics.q, 0)} to ${fmt(c.m.metrics.q, 0)} cups. Exam word: <b>Expansion of Demand</b> — never "increase in demand".`,
+                    check: c => c.m.verdict.kind === 'movement' && c.m.metrics.q > c.prev.m.metrics.q
+                },
+                {
+                    set: { buyers: 15 },
+                    ask: {
+                        q: { en: 'Price goes back to ₹50. Then a big new office opens next door — many more buyers. What happens?', hi: 'कीमत फिर ₹50 हो जाती है। फिर बगल में एक बड़ा नया दफ़्तर खुलता है — बहुत अधिक खरीदार। क्या होगा?' },
+                        options: GL_DEMAND_STORY_OPTIONS,
+                        correct: c => glDemandStoryAnswer(c.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `एक <b>गैर-कीमत निर्धारक</b> (खरीदारों की संख्या) बदला, इसलिए पूरा curve <b>दाईं ओर</b> D₁D₁ पर खिसक गया। उसी ₹50 पर भी अब माँग ${fmt(c.m.metrics.q, 0)} कप है। परीक्षा का शब्द: <b>माँग में वृद्धि</b>।`
+                        : `A <b>non-price determinant</b> (number of buyers) changed, so the whole curve shifts <b>RIGHT</b> to D₁D₁. Even at the same ₹50, demand is now ${fmt(c.m.metrics.q, 0)} cups. Exam word: <b>Increase in Demand</b>.`,
+                    check: c => c.m.verdict.kind === 'shift' && c.m.metrics.shift > 0 && c.v.price === c.first.v.price && c.m.metrics.q > c.first.m.metrics.q
+                },
+                {
+                    set: { buyers: 15, price: 40 },
+                    ask: {
+                        q: { en: 'The office stays — and now Ramu also cuts his price to ₹40. What happened compared with the very start?', hi: 'दफ़्तर बना रहता है — और अब रामू कीमत भी ₹40 कर देता है। शुरुआत की तुलना में क्या हुआ?' },
+                        options: GL_DEMAND_STORY_OPTIONS,
+                        correct: c => glDemandStoryAnswer(c.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `<b>दो</b> अलग घटनाएँ: (1) curve दाईं ओर खिसका — <b>माँग में वृद्धि</b>; (2) फिर नए D₁D₁ पर नीचे चले — <b>माँग का विस्तार</b>। अब ₹${fmt(c.v.price, 0)} पर ${fmt(c.m.metrics.q, 0)} कप। परीक्षा में दोनों का नाम अलग-अलग लिखिए।`
+                        : `<b>Two</b> separate events: (1) the curve shifted right — <b>Increase in Demand</b>; (2) then we moved down the new D₁D₁ — <b>Expansion of Demand</b>. Now ${fmt(c.m.metrics.q, 0)} cups at ₹${fmt(c.v.price, 0)}. The exam wants both named, separately.`,
+                    check: c => c.m.verdict.kind === 'both' && c.m.metrics.shift > 0 && c.m.metrics.priceD < 0
+                }
+            ]
+        }],
         model(v) {
             const b = 0.8, a0 = 90;
             const shift = v.income + v.pSub - v.pComp + v.tastes + v.buyers;
@@ -438,6 +525,71 @@ SIMS.push({
             { label: 'Decrease in supply', note: 'P↑ and Q↓', set: { sShift: -18 } },
             { label: 'Both increase equally', note: 'Q↑, P indeterminate', set: { dShift: 18, sShift: 18 } }
         ],
+        stories: [{
+            id: 'onion-prices',
+            title: { en: 'Why did onion prices shoot up?', hi: 'प्याज़ की कीमतें अचानक क्यों बढ़ीं?' },
+            intro: {
+                en: 'A headline every Indian has read. Follow the onion market through a bad monsoon and then a festival season — predicting each move before the market makes it.',
+                hi: 'एक ऐसी ख़बर जो हर भारतीय ने पढ़ी है। ख़राब मानसून और फिर त्योहारों के मौसम में प्याज़ बाज़ार के साथ चलिए — बाज़ार के हर कदम से पहले उसका अनुमान लगाइए।'
+            },
+            outro: {
+                en: 'Decrease in supply ⇒ P↑ Q↓. Shortage at the old price is what pushes the price up. When both curves shift, one of P or Q becomes indeterminate — and "indeterminate" is a full exam answer.',
+                hi: 'आपूर्ति में कमी ⇒ P↑ Q↓। पुरानी कीमत पर कमी (shortage) ही कीमत को ऊपर धकेलती है। जब दोनों curve खिसकते हैं, तो P या Q में से एक अनिर्धारित हो जाता है — और "अनिर्धारित" परीक्षा में पूरा उत्तर है।'
+            },
+            steps: [
+                {
+                    set: { mktPrice: 50 },
+                    say: (c, hi) => hi
+                        ? `बाज़ार संतुलन में है: DD और SS बिंदु E पर कटते हैं — कीमत OP = ₹${fmt(c.m.metrics.eqP, 0)}, मात्रा OQ = ${fmt(c.m.metrics.eqQ, 0)} टन। जितना खरीदार चाहते हैं, उतना ही किसान लाते हैं।`
+                        : `The market is in equilibrium: DD cuts SS at E — price OP = ₹${fmt(c.m.metrics.eqP, 0)}, quantity OQ = ${fmt(c.m.metrics.eqQ, 0)} tonnes. Buyers want exactly what farmers bring.`,
+                    check: c => c.m.verdict.kind === 'none' && Math.abs(c.m.metrics.gap) < 0.6
+                },
+                {
+                    set: { mktPrice: 50, sShift: -15 },
+                    ask: {
+                        q: { en: 'Heavy rain destroys part of the onion crop. Which curve moves, and which way?', hi: 'भारी बारिश प्याज़ की फ़सल का कुछ हिस्सा नष्ट कर देती है। कौन-सा curve खिसकेगा, और किस ओर?' },
+                        options: GL_MARKET_STORY_OPTIONS,
+                        correct: c => glMarketStoryAnswer(c.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `आपूर्ति घटी: SS <b>बाईं ओर</b> खिसका। पुरानी कीमत ₹${fmt(c.v.mktPrice, 0)} पर अब खरीदार ज़्यादा चाहते हैं जितना किसान ला पाते हैं — <b>अधिमाँग (shortage)</b> ${fmt(c.m.metrics.gap, 0)} टन की। बाज़ार अब संतुलन में नहीं है।`
+                        : `Supply falls: SS shifts <b>LEFT</b>. At the old price ₹${fmt(c.v.mktPrice, 0)}, buyers now want more than farmers can bring — an <b>excess demand (shortage)</b> of ${fmt(c.m.metrics.gap, 0)} tonnes. The market no longer clears.`,
+                    check: c => c.m.metrics.sShift < 0 && c.m.metrics.dShift === 0 && c.m.metrics.gap > 0
+                },
+                {
+                    set: { mktPrice: 56, sShift: -15 },
+                    ask: {
+                        q: { en: 'With that shortage, what happens to the price of onions?', hi: 'इस कमी के साथ प्याज़ की कीमत का क्या होगा?' },
+                        options: [
+                            { en: 'It rises until the shortage disappears', hi: 'यह तब तक बढ़ेगी जब तक कमी ख़त्म न हो जाए' },
+                            { en: 'It falls', hi: 'यह घटेगी' },
+                            { en: 'It stays at ₹50', hi: 'यह ₹50 पर ही रहेगी' }
+                        ],
+                        correct: c => c.m.metrics.eqP > c.first.m.metrics.eqP + 0.5 ? 0 : (c.m.metrics.eqP < c.first.m.metrics.eqP - 0.5 ? 1 : 2)
+                    },
+                    say: (c, hi) => hi
+                        ? `कम प्याज़ के लिए खरीदार होड़ करते हैं और कीमत बढ़ाते जाते हैं। यह ₹${fmt(c.m.metrics.eqP, 0)} पर रुकती है, जहाँ कमी ख़त्म हो जाती है: नया संतुलन E₁ — कीमत <b>ऊपर</b> (₹${fmt(c.first.m.metrics.eqP, 0)} → ₹${fmt(c.m.metrics.eqP, 0)}), मात्रा <b>नीचे</b> (${fmt(c.first.m.metrics.eqQ, 1)} → ${fmt(c.m.metrics.eqQ, 1)} टन)।`
+                        : `Buyers compete for scarce onions and bid the price up. It stops at ₹${fmt(c.m.metrics.eqP, 0)}, where the shortage disappears: new equilibrium E₁ — price <b>UP</b> (₹${fmt(c.first.m.metrics.eqP, 0)} → ₹${fmt(c.m.metrics.eqP, 0)}), quantity <b>DOWN</b> (${fmt(c.first.m.metrics.eqQ, 1)} → ${fmt(c.m.metrics.eqQ, 1)} tonnes).`,
+                    check: c => Math.abs(c.m.metrics.gap) < 0.6 && c.m.metrics.eqP > c.first.m.metrics.eqP && c.m.metrics.eqQ < c.first.m.metrics.eqQ
+                },
+                {
+                    set: { mktPrice: 50, dShift: 15, sShift: 15 },
+                    ask: {
+                        q: { en: 'Next year: a bumper crop raises supply, and festival demand rises by the same amount. What happens to the price?', hi: 'अगले साल: बंपर फ़सल से आपूर्ति बढ़ती है, और त्योहारों की माँग भी उतनी ही बढ़ती है। कीमत का क्या होगा?' },
+                        options: [
+                            { en: 'It definitely rises', hi: 'यह निश्चित रूप से बढ़ेगी' },
+                            { en: 'It definitely falls', hi: 'यह निश्चित रूप से घटेगी' },
+                            { en: 'Indeterminate — it depends on which shift is bigger', hi: 'अनिर्धारित — यह इस पर निर्भर है कि कौन-सा खिसकाव बड़ा है' }
+                        ],
+                        correct: c => Math.abs(c.m.metrics.eqP - c.first.m.metrics.eqP) < 1.2 ? 2 : (c.m.metrics.eqP > c.first.m.metrics.eqP ? 0 : 1)
+                    },
+                    say: (c, hi) => hi
+                        ? `दोनों curve बराबर दाईं ओर खिसके: मात्रा निश्चित रूप से बढ़ी (${fmt(c.first.m.metrics.eqQ, 0)} → ${fmt(c.m.metrics.eqQ, 0)} टन), पर कीमत ₹${fmt(c.m.metrics.eqP, 0)} पर रही — कीमत पर असर <b>अनिर्धारित</b> है; किसी एक curve को ज़्यादा खिसकाइए और कीमत उसी ओर टूट जाएगी।`
+                        : `Both curves shifted right by the same amount: quantity definitely rises (${fmt(c.first.m.metrics.eqQ, 0)} → ${fmt(c.m.metrics.eqQ, 0)} tonnes), but price ends at ₹${fmt(c.m.metrics.eqP, 0)} — the price effect is <b>indeterminate</b>; drag one curve further than the other and the price breaks that way.`,
+                    check: c => c.m.metrics.dShift > 0 && c.m.metrics.sShift > 0 && c.m.metrics.eqQ > c.first.m.metrics.eqQ && Math.abs(c.m.metrics.eqP - c.first.m.metrics.eqP) < 1.2
+                }
+            ]
+        }],
         model(v) {
             const b = 0.8, dS = 0.8;
             const a = 90 + v.dShift * b;
