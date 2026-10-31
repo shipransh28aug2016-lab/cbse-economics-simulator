@@ -163,6 +163,23 @@ Three points that are load-bearing rather than stylistic:
    mean — every other lab must say what *its* two groups of variables really are, or the
    headings become confidently wrong.
 
+### Holo Mode (`js/holo-mode.js`) — the immersive skin over every Graph Lab
+
+A presentation-only layer, ON by default, toggled per viewer (`🛸 Holo`, persisted in
+`localStorage` as `econsim-holo`): dark holographic theme, touch ripples, a pointer-following
+3D parallax tilt, a live HUD strip above the diagram, and a fullscreen stage. Hooked in by two
+calls in `glRender()` (`holoAttach` once per shell, `holoUpdate` per render); all CSS is scoped
+under `.gl-holo`. It contains **no economics**: the HUD shows the model's own `verdict` and
+`readings`. One rule is load-bearing: the tilt is **flattened in a capture-phase `pointerdown`
+before any handle's drag begins**, because `glPointerToData()` maps pointer → data through
+`svg.getScreenCTM()`, a 2D matrix that would mis-map a drag on a 3D-tilted surface. Any change
+to the tilt must keep that ordering.
+
+The app is also an installable PWA: `manifest.webmanifest` + `sw.js`, registered only over
+http(s). The service worker is deliberately **network-first** (cache is only an offline
+fallback) so the `?v=N` cache-busting in `index.html` keeps working — bump `?v=` on any
+changed CSS/JS as before.
+
 ## The transition layer (`js/transition-layer.js`) — cause → effect
 
 `renderSimChart()` used to retain only the previous **control** state and discard the

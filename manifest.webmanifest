@@ -1,0 +1,14 @@
+{
+  "name": "EconSim Pro — CBSE Economics Lab",
+  "short_name": "EconSim Pro",
+  "description": "Interactive CBSE Class XI–XII Economics (030) simulations, Graph Labs and data labs.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050b1a",
+  "theme_color": "#0b2545",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

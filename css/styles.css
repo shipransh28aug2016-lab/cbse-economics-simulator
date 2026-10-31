@@ -2460,3 +2460,155 @@ header, .sim-topbar {
   .ai-tutor-log { max-height: 130px; }
   .ai-tutor-quiz-opts { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   HOLO MODE (js/holo-mode.js) — immersive holographic skin for every
+   Graph Lab. Everything is scoped under .gl-holo so the classic
+   textbook look stays one click away (🛸 Holo: OFF).
+   ══════════════════════════════════════════════════════════════ */
+.gl-holo-btn {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.gl-holo-btn:hover { transform: translateY(-1px); }
+.gl-holo-btn--on { color: #0891b2; border-color: #22d3ee; }
+.gl-strip-actions { flex-wrap: wrap; }
+
+.gl-canvas-wrap { position: relative; }
+.gl-holo-hud { display: none; }
+
+.gl-holo {
+  --holo-cyan: #22d3ee;
+  --holo-ink: #e0f2fe;
+  --holo-dim: #7dd3fc;
+  background: radial-gradient(ellipse at 50% 0%, #0b2545 0%, #050b1a 70%);
+  border-radius: 16px;
+  padding: 10px;
+  color: var(--holo-ink);
+}
+.gl-holo .gl-canvas-wrap {
+  background:
+    linear-gradient(rgba(34, 211, 238, 0.07) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, rgba(34, 211, 238, 0.07) 1px, transparent 1px) 0 0 / 28px 28px,
+    radial-gradient(ellipse at 50% 40%, rgba(14, 116, 144, 0.35), rgba(2, 6, 23, 0.95) 75%);
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12) inset, 0 0 28px rgba(34, 211, 238, 0.18), 0 18px 40px rgba(2, 6, 23, 0.6);
+  transition: transform 0.25s var(--ease-out);
+  transform-style: preserve-3d;
+  overflow: hidden;
+}
+/* HUD corner brackets */
+.gl-holo .gl-canvas-wrap::before,
+.gl-holo .gl-canvas-wrap::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--holo-cyan);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.gl-holo .gl-canvas-wrap::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+.gl-holo .gl-canvas-wrap::after { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+
+/* scanline sweep */
+.gl-holo .gl-svg {
+  background: linear-gradient(180deg, transparent 0%, rgba(34, 211, 238, 0.06) 50%, transparent 100%) 0 -100% / 100% 40% no-repeat;
+  animation: holo-scan 5.5s linear infinite;
+}
+@keyframes holo-scan { to { background-position: 0 260%; } }
+
+.gl-holo .gl-plot-bg { fill: rgba(2, 6, 23, 0.25); }
+.gl-holo .gl-axis { stroke: var(--holo-cyan); filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.8)); }
+.gl-holo .gl-axis-title,
+.gl-holo .gl-origin { fill: var(--holo-dim); }
+.gl-holo [fill="#1e1b3a"] { fill: var(--holo-ink); }
+.gl-holo [stroke="#1e1b3a"] { stroke: var(--holo-ink); }
+.gl-holo .gl-curve { filter: brightness(1.45) saturate(1.25) drop-shadow(0 0 5px rgba(125, 211, 252, 0.75)); }
+.gl-holo .gl-curve-label,
+.gl-holo .gl-point-label,
+.gl-holo .gl-point-sub,
+.gl-holo .gl-tick,
+.gl-holo .gl-arrow-text { filter: brightness(1.7) saturate(1.2); paint-order: stroke; stroke: rgba(2, 6, 23, 0.85); stroke-width: 3px; }
+.gl-holo .gl-drop { filter: brightness(1.6); }
+.gl-holo .gl-point { filter: brightness(1.5) drop-shadow(0 0 6px rgba(255, 255, 255, 0.7)); animation: holo-point 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes holo-point { 50% { transform: scale(1.25); } }
+.gl-holo .gl-arrowline { filter: brightness(1.6) drop-shadow(0 0 4px rgba(255, 255, 255, 0.45)); }
+.gl-holo .gl-arrow-chip { fill: rgba(2, 6, 23, 0.85); filter: brightness(1.6); }
+.gl-holo .gl-handle-dot { filter: brightness(1.4) drop-shadow(0 0 8px rgba(34, 211, 238, 0.95)); stroke: var(--holo-ink); }
+.gl-holo .gl-handle-halo { filter: brightness(1.6); }
+
+/* touch ripple */
+.gl-holo-ripple {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid var(--holo-cyan, #22d3ee);
+  box-shadow: 0 0 12px var(--holo-cyan, #22d3ee);
+  pointer-events: none;
+  animation: holo-ripple 0.7s var(--ease-out) forwards;
+}
+@keyframes holo-ripple { to { transform: scale(6); opacity: 0; } }
+
+/* live HUD strip above the diagram — the lab's own verdict + readings */
+.gl-holo .gl-holo-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.72);
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.2);
+  font: 600 11.5px 'JetBrains Mono', monospace;
+  color: var(--holo-ink);
+}
+.gl-holo .gl-holo-hud--empty { display: none; }
+.gl-holo-hud-title { color: var(--holo-cyan); font-weight: 800; letter-spacing: 0.3px; flex-basis: 100%; }
+.gl-holo-hud[data-kind="movement"] .gl-holo-hud-title { color: #60a5fa; }
+.gl-holo-hud[data-kind="shift"] .gl-holo-hud-title { color: #f87171; }
+.gl-holo-hud[data-kind="both"] .gl-holo-hud-title { color: #c084fc; }
+.gl-holo-hud-row { display: flex; gap: 8px; }
+.gl-holo-hud-row span { color: var(--holo-dim); }
+.gl-holo-hud-row b { color: #a7f3d0; }
+
+/* verdict, chips and footer re-skinned to match */
+.gl-holo .gl-verdict { background: rgba(2, 6, 23, 0.7); color: var(--holo-ink); box-shadow: 0 0 18px rgba(34, 211, 238, 0.12); }
+.gl-holo .gl-verdict-title,
+.gl-holo .gl-verdict-detail b { color: var(--holo-ink); }
+.gl-holo .gl-verdict-detail { color: #cbd5e1; }
+.gl-holo .gl-var-group { background: rgba(8, 20, 45, 0.75); border-color: rgba(34, 211, 238, 0.3); }
+.gl-holo .gl-var-group-label,
+.gl-holo .gl-chip-label { color: var(--holo-dim); }
+.gl-holo .gl-chip-val { color: #a7f3d0; }
+.gl-holo .gl-strip-hint { color: #94a3b8; }
+.gl-holo .gl-ghost-btn,
+.gl-holo .gl-reset-btn,
+.gl-holo .gl-holo-btn { background: rgba(8, 20, 45, 0.85); border-color: rgba(34, 211, 238, 0.35); color: var(--holo-ink); }
+.gl-holo .gl-holo-btn--on { color: var(--holo-cyan); border-color: var(--holo-cyan); box-shadow: 0 0 10px rgba(34, 211, 238, 0.4); }
+
+/* fullscreen stage */
+.gl-shell:fullscreen { padding: 18px 24px; overflow-y: auto; background: radial-gradient(ellipse at 50% 0%, #0b2545 0%, #050b1a 70%); }
+.gl-shell:fullscreen:not(.gl-holo) { background: var(--bg); }
+.gl-shell:fullscreen .gl-canvas-wrap { max-height: 72vh; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gl-holo .gl-svg,
+  .gl-holo .gl-point { animation: none; }
+  .gl-holo .gl-canvas-wrap { transition: none; }
+}
+@media (max-width: 720px) {
+  .gl-holo { padding: 6px; }
+  .gl-holo .gl-holo-hud { display: none; }  /* the verdict banner below already says the same on a phone */
+}

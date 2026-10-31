@@ -7,7 +7,10 @@
   <meta name="description" content="Live gamified economics simulations for CBSE Class XI and XII students. Understand Supply & Demand, GDP, Multiplier, Correlation, and more through interactive labs." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=4" />
+  <link rel="stylesheet" href="css/styles.css?v=5" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#0b2545" />
   <script>
     window.addEventListener('error', function(e) {
       const errorDiv = document.createElement('div');
@@ -383,7 +386,8 @@
 <script src="js/sim-engine.js?v=3"></script>
 <script src="js/datalab-engine.js?v=1"></script>
 <script src="js/explorer-engine.js?v=1"></script>
-<script src="js/graph-lab-engine.js?v=1"></script>
+<script src="js/graph-lab-engine.js?v=2"></script>
+<script src="js/holo-mode.js?v=1"></script>
 <script src="js/simulations.js?v=4"></script>
 <script src="js/simulations_extended.js?v=8"></script>
 <script src="js/simulations_class11_micro.js?v=1"></script>
@@ -413,5 +417,12 @@
 <script src="js/mima-ui.js?v=1"></script>
 <script src="js/ai-tutor.js?v=1"></script>
 <script src="js/app.js?v=6"></script>
+<script>
+  // Installable, offline-capable web app (see sw.js). Service workers only
+  // run over http(s), never file://, so opening index.html directly still works.
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+</script>
 </body>
 </html>
