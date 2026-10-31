@@ -7,19 +7,20 @@ if (typeof SIMS !== 'undefined') {
         // ── MICROECONOMICS (Class XI, Part B) ──────────────────────
         {
             id: 'micro-consumer-equilibrium',
+            metricLabels: { Qstar: 'Equilibrium Q* (MU = Price)', muPerRupee: 'MU per Rupee', bestQx: 'Equi-marginal Qx', bestQy: 'Equi-marginal Qy' },
             module: 'micro',
             title: 'Consumer Equilibrium (Marginal Utility)',
-            desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium — single-good (MU=0) and the two-good Law of Equi-Marginal Utility (MUx/Px = MUy/Py).',
+            desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium — single-good (MU = Price) and the two-good Law of Equi-Marginal Utility (MUx/Px = MUy/Py).',
             class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topicLabel: 'Marginal Utility Analysis',
             syllabusIds: ['XI-B-U5-UTILITY'],
             mode: 'simulator',
-            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. With only <b>one good</b> and free disposal, a rational consumer keeps consuming until <b>MU = 0</b> — the <b>Single Good</b> view below.</p><p>But a real consumer splits a <b>fixed money income</b> across <b>two (or more) goods</b>. The actual equilibrium condition — the <b>Law of Equi-Marginal Utility</b> — is reached when the last rupee spent on every good buys the same Marginal Utility: <b>MUx/Px = MUy/Py</b>. If MUx/Px is higher, the consumer is better off shifting a rupee from Y to X (and vice versa) — switch to the <b>Two Goods (Equi-Marginal)</b> view to move your budget between X and Y and watch the two MU/Rupee curves cross exactly at that equilibrium.</p>',
-            formulas: ['Single good: MU = ΔTU / ΔQ; TU = Σ MU; consumer stops at MU = 0',
+            concept: '<p>The Law of Diminishing Marginal Utility states that as a consumer consumes more units of a good, the additional (marginal) utility from each extra unit falls. With only <b>one good</b>, the consumer compares what each extra unit is worth to her (its MU, in rupees) with what it costs (its price): she buys more while <b>MU &gt; Price</b> and stops where <b>MU = Price</b> (MUx/Px = MU of money) — the <b>Single Good</b> view below. She would carry on until MU = 0, where total utility peaks, only if the good were free.</p><p>But a real consumer splits a <b>fixed money income</b> across <b>two (or more) goods</b>. The actual equilibrium condition — the <b>Law of Equi-Marginal Utility</b> — is reached when the last rupee spent on every good buys the same Marginal Utility: <b>MUx/Px = MUy/Py</b>. If MUx/Px is higher, the consumer is better off shifting a rupee from Y to X (and vice versa) — switch to the <b>Two Goods (Equi-Marginal)</b> view to move your budget between X and Y and watch the two MU/Rupee curves cross exactly at that equilibrium.</p>',
+            formulas: ['Single good: MU = ΔTU / ΔQ; equilibrium where MUx = Px (utility in ₹, so MUx/Px = MU of money); TU peaks at MU = 0',
                 'Two goods: Budget constraint Px·Qx + Py·Qy = M',
                 'Equi-Marginal condition: MUx / Px = MUy / Py'],
             controls: [
                 { id: 'view', label: 'View', type: 'select', options: [
-                    { value: 'single', label: 'Single Good (MU = 0)' },
+                    { value: 'single', label: 'Single Good (MU = Price)' },
                     { value: 'twogood', label: 'Two Goods (Equi-Marginal)' }
                 ], value: 'single' },
                 { id: 'q', label: 'Units Consumed (Q)', min: 0, max: 20, step: 1, value: 5, unit: '', showWhen: { id: 'view', equals: 'single' } },
@@ -81,29 +82,46 @@ if (typeof SIMS !== 'undefined') {
                                    <div class="reading-row insight-row">💡 ${verdict}. Both goods together always spend the full ₹${M} income (Px·Qx + Py·Qy = M) — the question is only how to SPLIT it. The consumer maximizes total satisfaction exactly where the two MU-per-Rupee curves cross, because moving even ₹1 away from that split takes a rupee from the good giving MORE utility per rupee and gives it to the one giving less.</div>`
                     };
                 }
+                // Single good, utility measured in rupees (so the MU of money is 1):
+                // equilibrium where MUx = Px, i.e. MUx/Px = MU of money. Buy more
+                // while MU > P, less once MU < P. It used to say the consumer
+                // goes on until MU = 0 — true only for a FREE good; MU = 0 is where
+                // TOTAL utility peaks, and the price slider changed nothing.
                 const Q = v.q, P = v.price;
                 const qs = range(21);
                 const mus = qs.map(q => a - b * q);
                 const MU = a - b * Q;
                 const TU = a * Q - (b * Q * Q) / 2;
                 const muPerRupee = MU / P;
+                const Qstar = Math.max(0, (a - P) / b);
+                const gap = MU - P;
+                const verdict = Math.abs(gap) < 0.5
+                    ? `MU (₹${fmt(MU, 0)}) = Price (₹${P}) — this IS the consumer's equilibrium: the last unit is worth exactly what it costs.`
+                    : gap > 0
+                        ? `MU (₹${fmt(MU, 0)}) > Price (₹${P}) — this unit is worth more than it costs, so the consumer buys MORE, up to Q* = ${fmt(Qstar, 0)}.`
+                        : `MU (₹${fmt(MU, 0)}) < Price (₹${P}) — this unit is worth less than it costs, so the consumer buys LESS, back to Q* = ${fmt(Qstar, 0)}.`;
                 return {
                     traces: [
-                        { x: qs, y: mus, mode: 'lines', name: 'Marginal Utility', line: { color: '#2563eb', width: 3 } },
+                        { x: qs, y: mus, mode: 'lines', name: 'Marginal Utility (in ₹)', line: { color: '#2563eb', width: 3 } },
+                        { x: [0, 20], y: [P, P], mode: 'lines', name: `Price = ₹${P}`, line: { color: '#dc2626', width: 2.5, dash: 'dash' } },
+                        { x: [Qstar], y: [P], mode: 'markers', name: 'Equilibrium (MU = Price)', marker: { color: '#16a34a', size: 13, symbol: 'star' } },
+                        { x: [20], y: [0], mode: 'markers', name: 'MU = 0 (TU at its maximum — the stop only if the good were free)', marker: { color: '#94a3b8', size: 9 } },
                         { x: [Q], y: [MU], mode: 'markers', name: 'Current MU', marker: { color: '#ef4444', size: 10 } },
-                        { x: qs, y: qs.map(() => 0), mode: 'lines', name: 'Zero Utility', line: { color: '#9ca3af', dash: 'dot' } }
+                        { x: qs, y: qs.map(() => 0), mode: 'lines', name: 'Zero Utility', line: { color: '#9ca3af', dash: 'dot' }, showlegend: false }
                     ],
-                    layout: { xaxis: { title: 'Units Consumed (Q)' }, yaxis: { title: 'Utility (Utils)', range: [-5, 22] } },
-                    metrics: { MU, muPerRupee, TU },
-                    readings: `<div class="reading-row"><span>Marginal Utility at Q</span><b>${fmt(MU)}</b></div>
+                    layout: { xaxis: { title: 'Units Consumed (Q)' }, yaxis: { title: 'Marginal Utility (₹ worth)', range: [-5, 22] } },
+                    metrics: { MU, muPerRupee, TU, Qstar },
+                    readings: `<div class="reading-row"><span>Marginal Utility at Q</span><b>₹${fmt(MU)}</b></div>
+                               <div class="reading-row"><span>Price</span><b>₹${fmt(P)}</b></div>
+                               <div class="reading-row"><span>Equilibrium Q* (where MU = Price)</span><b>${fmt(Qstar, 0)} units</b></div>
                                <div class="reading-row"><span>MU per Rupee (MU/P)</span><b>${fmt(muPerRupee)}</b></div>
                                <div class="reading-row"><span>Total Utility</span><b>${fmt(TU)}</b></div>
-                               <div class="reading-row insight-row">💡 ${MU > 0 ? 'MU is still positive — one more unit would add to Total Utility, so a rational consumer keeps consuming.' : MU < 0 ? 'MU has turned negative — the consumer has over-consumed past the point of maximum satisfaction.' : 'MU = 0 — this is the single-good equilibrium (maximum Total Utility).'} With multiple goods, the consumer instead compares MU/P across goods and buys more of whichever gives more satisfaction per rupee — at ₹${P}/unit, this good currently gives ${fmt(muPerRupee)} utils per rupee. Switch to the "Two Goods" view above to see that comparison directly.</div>`
+                               <div class="reading-row insight-row">💡 ${verdict} Total utility keeps rising until MU = 0 (Q = 20), but that is only where a consumer would stop if the good were free.</div>`
                 };
             },
             practice: [
-                { prompt: 'Increase Q from 0 to 20. At what point does MU hit zero?', hint: 'MU = 20 − Q, so MU = 0 exactly at Q = 20 — the single-good satiation point.' },
-                { prompt: 'Keep Q = 10. Raise the price from ₹2 to ₹20 — what happens to MU per Rupee?', hint: 'MU stays fixed at Q=10 (MU=10), but MU/P = 10/P falls as price rises — the same satisfaction costs more per rupee.' },
+                { prompt: 'At a price of ₹5, how many units does the consumer buy? Move Q to check.', hint: 'MU = 20 − Q (in ₹). She buys while MU > ₹5 and stops where MU = ₹5, so Q* = 15. MU = 0 at Q = 20 is where total utility peaks — she would only go that far if the good were free.' },
+                { prompt: 'Raise the price from ₹2 to ₹20. What happens to the equilibrium quantity Q*?', hint: 'Q* = 20 − P falls as the price rises — a higher price means MU reaches it after fewer units. That is the law of demand, derived from diminishing marginal utility.' },
                 { prompt: 'Switch to Two Goods. Set Px = Py, then move the Budget slider. At what share is the consumer in equilibrium?', hint: 'Exactly 50% — with identical prices and identical MU curves, the two goods are symmetric, so an equal split is the only point where MUx/Px = MUy/Py.' },
                 { prompt: 'Now make Y more expensive than X (raise Py). Does the equilibrium share of budget on X rise or fall?', hint: 'It rises — a dearer Y means Y\'s Marginal Utility per Rupee is lower at any given physical split, so the consumer rationally shifts more of the budget toward the now-relatively-cheaper X.' }
             ],
@@ -117,14 +135,14 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'micro-producer-costs',
-            metricLabels: { qStar: 'Minimum-AC Output (Q*)', acStar: 'AC at its Minimum' },
+            metricLabels: { qStar: 'Minimum-AC Output (Q*)', acStar: 'AC at its Minimum', phase: 'Phase (returns to a factor)' },
             module: 'micro',
             title: 'Producer Behaviour: Product & Cost Curves',
             desc: 'Explore Total/Average/Marginal Product (Returns to a Factor) and Average/Marginal Cost curves.',
             class: 'XI', part: 'B', unit: 6, unitTitle: 'Producer Behaviour and Supply', topicLabel: 'Returns to a Factor & Cost Curves',
             syllabusIds: ['XI-B-U6-PRODUCTION', 'XI-B-U6-COST'],
             mode: 'simulator',
-            concept: '<p>Switch between two related views. <b>Product</b> shows the Law of Variable Proportions: as one variable factor (labour) increases with other factors fixed, Marginal Product rises (Stage I), then falls while still positive (Stage II), then turns negative (Stage III). <b>Cost</b> shows the mirror-image relationship: Average Cost (AC) falls then rises, and Marginal Cost (MC) cuts AC exactly at its minimum.</p>',
+            concept: '<p>Switch between two related views. <b>Product</b> shows the Law of Variable Proportions: as one variable factor (labour) increases with other factors fixed, Marginal Product rises (Phase I — increasing returns to a factor), then falls while still positive (Phase II — diminishing returns), then turns negative (Phase III — negative returns). <b>Cost</b> shows the mirror-image relationship: Average Cost (AC) falls then rises, and Marginal Cost (MC) cuts AC exactly at its minimum.</p>',
             formulas: ['TC = FC + VC', 'AC = TC / Q', 'MC = ΔTC / ΔQ'],
             controls: [
                 {
@@ -146,28 +164,32 @@ if (typeof SIMS !== 'undefined') {
                     const ap = l => 30 * l - l * l;
                     const mp = l => 60 * l - 3 * l * l;
                     const TP = tp(L), AP = ap(L), MP = mp(L);
-                    const stage = MP > AP ? 'Stage I: Increasing Returns' : MP >= 0 ? 'Stage II: Diminishing Returns' : 'Stage III: Negative Returns';
-                    const stageNote = MP > AP
-                        ? 'Each extra worker adds more than the average — MP is still pulling AP up.'
-                        : MP >= 0
-                            ? 'Each extra worker adds less than before (and less than the average) — this is the normal, rational stage of production.'
-                            : 'Too much labour is now crowded onto fixed factors — an extra worker actually reduces Total Product.';
-                    // Stage boundaries are exact algebraic roots of THIS production
-                    // function (30l² − l³), not eyeballed off the chart: AP is
-                    // maximised, and MP crosses it, at L=15 (solving MP=AP); MP
-                    // itself hits zero — the Stage II/III boundary — at L=20
-                    // (solving MP=0). Marking both is what makes "three stages"
-                    // an actual, visible fact on the diagram instead of a claim
-                    // only the readings-panel text makes.
-                    const lStar1 = 15, lStar2 = 20;
+                    // CBSE "Returns to a Factor" phases (Sandeep Garg): Phase I while
+                    // MP is RISING (TP grows at an increasing rate), ending at MP's
+                    // maximum — TP's point of inflexion, L = 10 here (dMP/dL = 60 − 6L).
+                    // It used the classical "MP > AP" stage rule instead, so for
+                    // L = 11–15 it said "Increasing Returns" while MP was already
+                    // falling — contradicting its own "MP rises, then falls" formula.
+                    const lMaxMP = 10, lStar1 = 15, lStar2 = 20;
+                    const phase = L <= lMaxMP ? 1 : MP >= 0 ? 2 : 3;
+                    const stage = phase === 1 ? 'Phase I: Increasing Returns to a Factor' : phase === 2 ? 'Phase II: Diminishing Returns to a Factor' : 'Phase III: Negative Returns to a Factor';
+                    const stageNote = phase === 1
+                        ? 'MP is rising — each extra worker adds more than the one before, because the fixed factor was under-used. TP rises at an increasing rate.'
+                        : phase === 2
+                            ? 'MP is falling but still positive — TP still rises, at a diminishing rate. AP peaks inside this phase, exactly where MP crosses it (L = 15).'
+                            : 'Too much labour is now crowded onto fixed factors — MP is negative, so an extra worker actually reduces Total Product.';
+                    // Boundaries are exact roots of THIS production function
+                    // (30l² − l³): MP peaks at L = 10 (Phase I/II), MP = AP at AP's
+                    // maximum at L = 15 (a property, inside Phase II), MP = 0 at
+                    // L = 20 (Phase II/III, TP at its maximum).
                     const apAtStar1 = ap(lStar1);
                     return {
                         traces: [
                             { x: Ls, y: Ls.map(ap), mode: 'lines', name: 'Average Product (AP)', line: { color: '#2563eb', width: 3 } },
                             { x: Ls, y: Ls.map(mp), mode: 'lines', name: 'Marginal Product (MP)', line: { color: '#f59e0b', width: 3 } },
                             { x: Ls, y: Ls.map(() => 0), mode: 'lines', name: 'Zero', line: { color: '#9ca3af', dash: 'dot' } },
-                            { x: [lStar1, lStar1], y: [-60, 260], mode: 'lines', name: 'Stage I / II boundary (MP = AP, AP max)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
-                            { x: [lStar2, lStar2], y: [-60, 260], mode: 'lines', name: 'Stage II / III boundary (MP = 0)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
+                            { x: [lMaxMP, lMaxMP], y: [-60, 260], mode: 'lines', name: 'Phase I / II boundary (MP at its maximum)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
+                            { x: [lStar2, lStar2], y: [-60, 260], mode: 'lines', name: 'Phase II / III boundary (MP = 0, TP max)', line: { color: '#94a3b8', width: 1, dash: 'dash' } },
                             { x: [lStar1], y: [apAtStar1], mode: 'markers', name: 'MP = AP (AP at its maximum)', marker: { color: '#10b981', size: 12, symbol: 'star' } },
                             { x: [L], y: [AP], mode: 'markers', name: 'AP at L', marker: { color: '#2563eb', size: 9 } },
                             { x: [L], y: [MP], mode: 'markers', name: 'MP at L', marker: { color: '#f59e0b', size: 9 } }
@@ -175,16 +197,16 @@ if (typeof SIMS !== 'undefined') {
                         layout: {
                             xaxis: { title: 'Labour Units (L)' }, yaxis: { title: 'Product (units)', range: [-60, 260] },
                             annotations: [
-                                { x: lStar1, y: 245, showarrow: false, text: 'Stage I | Stage II', font: { color: '#64748b', size: 11 } },
-                                { x: lStar2, y: 245, showarrow: false, text: 'Stage II | Stage III', font: { color: '#64748b', size: 11 } }
+                                { x: lMaxMP, y: 245, showarrow: false, text: 'Phase I | Phase II', font: { color: '#64748b', size: 11 } },
+                                { x: lStar2, y: 245, showarrow: false, text: 'Phase II | Phase III', font: { color: '#64748b', size: 11 } }
                             ]
                         },
                         formulas: ['TP = f(L), other factors fixed', 'AP = TP / L', 'MP = ΔTP / ΔL', 'Law of Variable Proportions: MP rises, then falls, then turns negative', 'MP crosses AP exactly at AP\'s maximum — never before, never after'],
-                        metrics: { TP, AP, MP, view: 'product' },
+                        metrics: { TP, AP, MP, phase, view: 'product' },
                         readings: `<div class="reading-row"><span>Total Product (TP)</span><b>${fmt(TP, 0)}</b></div>
                                    <div class="reading-row"><span>Average Product (AP)</span><b>${fmt(AP)}</b></div>
                                    <div class="reading-row"><span>Marginal Product (MP)</span><b>${fmt(MP)}</b></div>
-                                   <div class="reading-row"><span>Stage</span><b>${stage}</b></div>
+                                   <div class="reading-row"><span>Phase</span><b>${stage}</b></div>
                                    <div class="reading-row insight-row">💡 ${stageNote}</div>`
                     };
                 }
@@ -223,8 +245,8 @@ if (typeof SIMS !== 'undefined') {
                 { prompt: 'Switch to Cost view and raise Fixed Cost. Does Marginal Cost change?', hint: 'No — MC = b + 2cQ has no FC term. Only AC (which divides FC by Q) shifts up.' }
             ],
             challenge: {
-                prompt: 'In the Product view, find a Labour value in Stage II (MP positive but below AP).',
-                check(state, metrics) { return metrics && metrics.view === 'product' && metrics.MP > 0 && metrics.MP < metrics.AP; }
+                prompt: 'In the Product view, find a Labour value in Phase II (MP falling but still positive).',
+                check(state, metrics) { return metrics && metrics.view === 'product' && metrics.phase === 2 && metrics.MP > 0; }
             }
         },
         {
@@ -299,13 +321,13 @@ if (typeof SIMS !== 'undefined') {
             metricLabels: { P: 'Market Price', Q: 'Market Quantity', N: 'Number of Firms' },
             module: 'micro',
             title: 'Forms of Market: Monopoly → Oligopoly → Perfect Competition',
-            desc: 'Slide the Number of Firms to move continuously across every named market structure.',
+            desc: 'Slide the Number of Firms from monopoly, through oligopoly, toward perfect competition — and watch price converge to marginal cost.',
             class: 'XI', part: 'B', unit: 7, unitTitle: 'Perfect Competition — Price Determination and Simple Applications', topicLabel: 'Forms of Market (extension)',
             syllabusIds: [],
             mode: 'simulator',
             enrichment: true,
             enrichmentNote: 'The supplied 2026–27 taxonomy explicitly scopes Class XI Unit 7 to "Perfect Competition — Price Determination and Simple Applications" with a stated "Short-run analysis only" limitation, and does not list Monopoly, Oligopoly or Monopolistic Competition as Class XI Microeconomics topics. This lab is retained as enrichment — it still illuminates the Perfect Competition endpoint (N→∞, P→MC) that IS in scope — but is not counted toward core Unit 7 coverage.',
-            concept: '<p>This lab goes beyond the syllabus\'s Perfect-Competition-only scope to show <i>why</i> perfect competition is the benchmark it is: it uses the standard Cournot model — symmetric firms each choosing output, taking rivals\' output as given — so moving the Number of Firms slider sweeps from Monopoly (1 firm) toward Perfect Competition as more firms enter and price converges to marginal cost (P = MC).</p>',
+            concept: '<p>This lab goes beyond the syllabus\'s Perfect-Competition-only scope to show <i>why</i> perfect competition is the benchmark it is: it uses the standard Cournot model — symmetric firms each choosing output, taking rivals\' output as given — so moving the Number of Firms slider sweeps from Monopoly (1 firm) toward Perfect Competition as more firms enter and price converges to marginal cost (P = MC).</p><p><b>Not on this slider:</b> monopolistic competition. It is defined by <i>differentiated</i> products (each firm sells a slightly different brand), not by a number of firms — and every firm here sells an identical product at one market price.</p>',
             formulas: ['Cournot price with N firms: P = (100 + N×MC) / (N + 1)', 'N = 1 → Monopoly', 'N large → Perfect Competition (P → MC)'],
             controls: [
                 { id: 'mc', label: 'Marginal Cost (₹)', min: 10, max: 60, step: 5, value: 20, unit: '' },
@@ -317,7 +339,13 @@ if (typeof SIMS !== 'undefined') {
                 const P = priceAt(N);
                 const Q = 100 - P;
                 const Pc = mc, Qc = 100 - mc; // perfect-competition benchmark (P = MC)
-                const structure = N === 1 ? 'Monopoly' : N <= 4 ? 'Oligopoly' : N <= 15 ? 'Monopolistic Competition' : 'Near-Perfect Competition';
+                // Labels follow what this model actually is: identical
+                // (homogeneous) products, so the only dimension is the number
+                // of sellers. It used to call N = 5–15 "Monopolistic
+                // Competition" — but that form is defined by DIFFERENTIATED
+                // products, which a Cournot model with one market price does
+                // not have; the label taught "monopolistic = 5–15 firms".
+                const structure = N === 1 ? 'Monopoly' : N <= 10 ? 'Oligopoly (a few sellers)' : 'Many sellers — approaching perfect competition';
                 // The two isolated "current vs benchmark" bars used to leave the
                 // ACTUAL convergence — price falling continuously as N rises —
                 // something the student had to imagine. Drawing P(N) as a real
@@ -430,7 +458,13 @@ if (typeof SIMS !== 'undefined') {
                 { id: 'interest', label: 'Interest Payments (₹B)', min: 0, max: 80, step: 5, value: 30, unit: '' }
             ],
             compute(v) {
-                const revenueReceipts = v.rr, capitalReceipts = 60, revenueExp = v.re, capitalExp = 90, interest = v.interest;
+                // capitalReceipts are NON-DEBT capital receipts only (disinvestment,
+                // loan recoveries): fiscal deficit excludes borrowing from receipts —
+                // borrowing IS what the deficit measures. Interest payments are part
+                // of revenue expenditure, so they can never exceed it.
+                const revenueReceipts = v.rr, capitalReceipts = 60, revenueExp = v.re, capitalExp = 90;
+                const interest = Math.min(v.interest, revenueExp);
+                const interestCapped = v.interest > revenueExp;
                 const totalReceipts = revenueReceipts + capitalReceipts, totalExp = revenueExp + capitalExp;
                 const revenueDeficit = revenueExp - revenueReceipts;
                 const fiscalDeficit = totalExp - totalReceipts;
@@ -439,7 +473,7 @@ if (typeof SIMS !== 'undefined') {
                 return {
                     traces: [
                         {
-                            x: ['Revenue Receipts', 'Capital Receipts', 'Revenue Exp.', 'Capital Exp.', 'Total Receipts', 'Total Expenditure'],
+                            x: ['Revenue Receipts', 'Non-debt Capital Receipts', 'Revenue Exp.', 'Capital Exp.', 'Total Receipts (excl. borrowing)', 'Total Expenditure'],
                             y: [revenueReceipts, capitalReceipts, revenueExp, capitalExp, totalReceipts, totalExp],
                             type: 'bar',
                             marker: { color: ['#10b981', '#34d399', '#f87171', '#f97316', '#059669', '#dc2626'] }
@@ -453,22 +487,31 @@ if (typeof SIMS !== 'undefined') {
                         // "make the gap a length, not an inferred subtraction"
                         // pattern used on the Price Ceiling/Floor lab.
                         shapes: fiscalDeficit > 0.5 ? [{
-                            type: 'line', x0: 'Total Receipts', x1: 'Total Expenditure',
+                            type: 'line', x0: 'Total Receipts (excl. borrowing)', x1: 'Total Expenditure',
                             y0: deficitTop * 1.1, y1: deficitTop * 1.1,
                             line: { color: '#7c3aed', width: 5 }
                         }] : [],
                         annotations: fiscalDeficit > 0.5 ? [{
-                            x: 'Total Receipts', xshift: 60, y: deficitTop * 1.1, yshift: 14, showarrow: false,
+                            x: 'Total Receipts (excl. borrowing)', xshift: 60, y: deficitTop * 1.1, yshift: 14, showarrow: false,
                             text: `Fiscal Deficit: ₹${fmt(fiscalDeficit, 0)}B`, font: { color: '#7c3aed', size: 13 }
                         }] : []
                     },
                     metrics: { revenueDeficit, fiscalDeficit, primaryDeficit },
-                    readings: `<div class="reading-row"><span>Total Receipts</span><b>₹${fmt(totalReceipts, 0)}B</b></div>
+                    readings: (() => {
+                        const money = (x, posWord, negWord) => x > 0.5 ? `₹${fmt(x, 0)}B` : x < -0.5 ? `${negWord} ₹${fmt(-x, 0)}B` : `₹0B`;
+                        const insight = fiscalDeficit <= 0.5
+                            ? 'There is no fiscal deficit — receipts excluding borrowing already cover all expenditure, so the government needs no fresh borrowing this year.'
+                            : primaryDeficit <= 0.5
+                                ? 'Primary deficit is zero or negative — this year\'s fiscal deficit is entirely (or more than) explained by interest owed on past borrowing, not fresh overspending.'
+                                : 'A positive primary deficit means the government is borrowing for more than just interest on old debt — it reflects this year\'s own spending decisions.';
+                        return `<div class="reading-row"><span>Total Receipts (excl. borrowing)</span><b>₹${fmt(totalReceipts, 0)}B</b></div>
                                <div class="reading-row"><span>Total Expenditure</span><b>₹${fmt(totalExp, 0)}B</b></div>
-                               <div class="reading-row"><span>Revenue Deficit</span><b>₹${fmt(Math.max(revenueDeficit, 0), 0)}B</b></div>
-                               <div class="reading-row"><span>Fiscal Deficit (illustrative)</span><b>₹${fmt(Math.max(fiscalDeficit, 0), 0)}B</b></div>
-                               <div class="reading-row"><span>Primary Deficit</span><b>₹${fmt(Math.max(primaryDeficit, 0), 0)}B</b></div>
-                               <div class="reading-row insight-row">💡 ${primaryDeficit <= 0 ? 'Primary deficit is zero or negative — this year\'s fiscal deficit is entirely (or more than) explained by interest owed on past borrowing, not fresh overspending.' : 'A positive primary deficit means the government is borrowing for more than just interest on old debt — it reflects this year\'s own spending decisions.'}</div>`
+                               <div class="reading-row"><span>Revenue Deficit</span><b>${money(revenueDeficit, '', 'Surplus')}</b></div>
+                               <div class="reading-row"><span>Fiscal Deficit (= borrowing needed)</span><b>${money(fiscalDeficit, '', 'Surplus')}</b></div>
+                               <div class="reading-row"><span>Primary Deficit</span><b>${money(primaryDeficit, '', 'Surplus')}</b></div>
+                               ${interestCapped ? `<div class="reading-row"><span>Interest payments</span><b>capped at ₹${fmt(interest, 0)}B — interest is part of revenue expenditure, so it cannot exceed it</b></div>` : ''}
+                               <div class="reading-row insight-row">💡 ${insight}</div>`;
+                    })()
                 };
             },
             practice: [
@@ -499,7 +542,7 @@ if (typeof SIMS !== 'undefined') {
             compute(v) {
                 const demandShift = v.imports + v.capOut;
                 const supplyShift = -(v.exports + v.capIn);
-                const a = 90 + demandShift, b = 0.5, c = Math.max(10, 40 + supplyShift), d = 0.5;
+                const a = 90 + demandShift, b = 0.5, c = 40 + supplyShift, d = 0.5; // no clamp — it froze the rate once exports + capital inflow passed 30
                 const { Q, P } = lineIntersect(a, b, c, d);
                 const qs = range(101);
                 const netShift = demandShift + (-supplyShift); // positive = net pressure toward depreciation
@@ -533,14 +576,15 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'macro-inflation-gap',
+            metricLabels: { gapSize: 'Gap size (vertical, at Yfe)', adAtYfe: 'AD at full employment', output: 'Output', Ystar: 'Equilibrium income (AD = AS)' },
             module: 'macro',
             title: 'Inflationary & Deflationary Gap',
             desc: 'Each component of Aggregate Demand (C, I, G, X−M) as its own control, driving the output gap.',
             class: 'XII', part: 'A', unit: 3, unitTitle: 'Determination of Income and Employment', topicLabel: 'Excess & Deficient Demand',
             syllabusIds: ['XII-A-U3-AD', 'XII-A-U3-GAPS', 'XII-A-U3-EMPLOYMENT'],
             mode: 'simulator',
-            concept: '<p><b>Yfe</b> on this chart is the <b>full employment</b> level of income — where every willing worker at the going wage has a job. When equilibrium national income exceeds Yfe, the economy faces an <b>inflationary gap</b> — excess demand pushes prices up even though output can\'t rise further. When equilibrium income falls short of Yfe, a <b>deflationary gap</b> exists: demand is too low to employ everyone willing to work, which is exactly what NCERT calls <b>involuntary unemployment</b> — workers who want a job at the prevailing wage but can\'t find one, not by choice. Aggregate Demand is the sum of four named components — Autonomous Consumption, Investment, Government Spending, and Net Exports — each modeled here as its own control so you can see which one is driving the gap.</p>',
-            formulas: ['AD = C + I + G + (X − M)', 'Inflationary Gap: Equilibrium Y > Yfe', 'Deflationary Gap: Equilibrium Y < Yfe'],
+            concept: '<p>This is the 45° diagram. <b>Aggregate Supply</b> is the 45° line (every point on it has AD = output), and <b>Aggregate Demand</b> = C + I + G + (X − M), with each of the four components as its own control. <b>Yfe</b> is full-employment income — the most the economy can produce.</p><p>The gap is always measured <b>vertically, at Yfe</b>: compare AD at Yfe with Yfe itself. If AD is <b>more</b> than Yfe, there is <b>excess demand</b> — an <b>inflationary gap</b>; output cannot rise past Yfe, so prices rise instead. If AD is <b>less</b> than Yfe, there is <b>deficient demand</b> — a <b>deflationary gap</b>; equilibrium settles below Yfe, leaving <b>involuntary unemployment</b> (workers who want a job at the going wage but cannot find one).</p>',
+            formulas: ['AD = C + I + G + (X − M), with C = C̄ + bY (b = MPC = 0.6)', 'Equilibrium: AD = AS (the 45° line); Y* = Ā / (1 − b)', 'Inflationary gap = AD at Yfe − Yfe (excess demand, measured vertically at Yfe)', 'Deflationary gap = Yfe − AD at Yfe (deficient demand, measured vertically at Yfe)'],
             controls: [
                 { id: 'dc', label: 'Autonomous Consumption (ΔC)', min: -10, max: 10, step: 1, value: 0, unit: '' },
                 { id: 'di', label: 'Investment (ΔI)', min: -10, max: 10, step: 1, value: 0, unit: '' },
@@ -548,62 +592,72 @@ if (typeof SIMS !== 'undefined') {
                 { id: 'dnx', label: 'Net Exports (ΔX−M)', min: -10, max: 10, step: 1, value: 0, unit: '' }
             ],
             compute(v) {
-                const Yfe = 200;
-                const asA = 10, asB = 0.3;
+                // The CBSE 45° (Keynesian-cross) diagram. AD = Ā + b·Y, AS is the
+                // 45° line (AS = Y). The gap is measured VERTICALLY at full
+                // employment: AD at Y_F minus Y_F. This model used to be a
+                // price-level AD–AS diagram that let equilibrium output run past
+                // Y_F and measured the gap HORIZONTALLY (Y* − Y_F) — the exact
+                // diagram error the AD–AS Graph Lab warns against, and output
+                // beyond Y_F that the sim's own concept text said cannot happen.
+                const Yfe = 200, b = 0.6, k = 1 / (1 - b);
+                const base = { c: 40, i: 20, g: 15, nx: 5 }; // Ā = 80 ⇒ Y* = Y_F at the defaults
                 const adShift = v.dc + v.di + v.dg + v.dnx;
-                const adA = 190 + adShift, adB = 0.4;
-                const Ystar = (adA - asA) / (adB + asB);
-                const Pstar = adA - adB * Ystar;
-                const ys = range(81).map(i => i * 5);
-                const gapType = Ystar > Yfe + 1 ? 'Inflationary Gap' : Ystar < Yfe - 1 ? 'Deflationary Gap' : 'No Gap';
+                const A = base.c + base.i + base.g + base.nx + adShift;
+                const adAt = y => A + b * y;
+                const Ystar = A / (1 - b);
+                const adAtYfe = adAt(Yfe);
+                const gap = adAtYfe - Yfe; // > 0 inflationary (excess demand), < 0 deflationary (deficient demand)
+                const gapType = gap > 0.5 ? 'Inflationary Gap' : gap < -0.5 ? 'Deflationary Gap' : 'No Gap';
+                const output = Math.min(Ystar, Yfe); // output cannot exceed full employment
                 const parts = [
                     { label: 'Consumption (C)', d: v.dc }, { label: 'Investment (I)', d: v.di },
                     { label: 'Govt. Spending (G)', d: v.dg }, { label: 'Net Exports (X−M)', d: v.dnx }
                 ].filter(p => p.d !== 0);
                 const biggest = parts.length ? parts.reduce((m, p) => Math.abs(p.d) > Math.abs(m.d) ? p : m) : null;
-                const gapLo = Math.min(Ystar, Yfe), gapHi = Math.max(Ystar, Yfe);
-                const gapBracketY = 140;
+                const ys = range(61).map(i => i * 5);
+                const need = Yfe * (1 - b); // autonomous spending that would put equilibrium exactly at Y_F
                 return {
                     traces: [
-                        { x: ys, y: ys.map(y => adA - adB * y), mode: 'lines', name: 'Aggregate Demand', line: { color: '#2563eb', width: 3 } },
-                        { x: ys, y: ys.map(y => asA + asB * y), mode: 'lines', name: 'Aggregate Supply', line: { color: '#f59e0b', width: 3 } },
-                        { x: [Yfe, Yfe], y: [0, 150], mode: 'lines', name: 'Full Employment (Yfe)', line: { color: '#10b981', dash: 'dash' } },
-                        { x: [Ystar, Ystar], y: [0, Pstar], mode: 'lines', name: 'Equilibrium Y (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
-                        { x: [0, Ystar], y: [Pstar, Pstar], mode: 'lines', name: 'Equilibrium P (dotted)', line: { color: '#9ca3af', width: 1, dash: 'dot' }, showlegend: false },
-                        { x: [Ystar], y: [Pstar], mode: 'markers', name: 'Equilibrium', marker: { color: '#ef4444', size: 9 } },
-                        // The inflationary/deflationary GAP is the syllabus's own
-                        // named headline quantity (Y* vs Yfe) — draw it as a visible
-                        // bracket the same way the shortage/surplus bracket now
-                        // works on the Price Ceiling/Floor lab, instead of leaving
-                        // it inferable only from two vertical lines' separation.
+                        { x: [0, 300], y: [0, 300], mode: 'lines', name: 'Aggregate Supply (45° line, AS = Y)', line: { color: '#f59e0b', width: 3 } },
+                        ...(gapType !== 'No Gap' ? [{ x: ys, y: ys.map(y => need + b * y), mode: 'lines', name: 'AD needed for full employment', line: { color: '#94a3b8', width: 2, dash: 'dash' } }] : []),
+                        { x: ys, y: ys.map(adAt), mode: 'lines', name: 'Aggregate Demand (AD = C + I + G + X − M)', line: { color: '#2563eb', width: 3 } },
+                        { x: [Yfe, Yfe], y: [0, 300], mode: 'lines', name: 'Full Employment (Yfe)', line: { color: '#10b981', dash: 'dash' } },
                         ...(gapType !== 'No Gap' ? [{
-                            x: [gapLo, gapHi], y: [gapBracketY, gapBracketY], mode: 'lines+markers',
-                            name: gapType, line: { color: '#7c3aed', width: 7 },
-                            marker: { color: '#7c3aed', size: 9, symbol: 'line-ns-open' }
-                        }] : [])
+                            x: [Yfe, Yfe], y: [Yfe, adAtYfe], mode: 'lines+markers',
+                            name: `${gapType} (vertical, at Yfe)`, line: { color: '#7c3aed', width: 7 },
+                            marker: { color: '#7c3aed', size: 9, symbol: 'line-ew-open' }
+                        }] : []),
+                        gapType === 'Inflationary Gap'
+                            ? { x: [Ystar], y: [Ystar], mode: 'markers', name: 'Where AD would meet AS — beyond full employment, unattainable', marker: { color: '#ef4444', size: 10, symbol: 'circle-open', line: { width: 2 } } }
+                            : { x: [Ystar], y: [Ystar], mode: 'markers', name: 'Equilibrium (AD = AS)', marker: { color: '#ef4444', size: 10 } }
                     ],
                     layout: {
-                        xaxis: { title: 'National Income (Y)', range: [0, 400] }, yaxis: { title: 'Price Level', range: [0, 150] },
+                        xaxis: { title: 'National Income / Output (Y, ₹ crore)', range: [0, 300] },
+                        yaxis: { title: 'Aggregate Demand / Supply (₹ crore)', range: [0, 300] },
                         annotations: gapType !== 'No Gap' ? [{
-                            x: (gapLo + gapHi) / 2, y: gapBracketY, yshift: 14, showarrow: false,
-                            text: `${gapType}: ${fmt(Math.abs(Ystar - Yfe), 0)} units`, font: { color: '#7c3aed', size: 13 }
+                            x: Yfe, y: (Yfe + adAtYfe) / 2, xshift: 70, showarrow: false,
+                            text: `${gapType}: ₹${fmt(Math.abs(gap), 0)} cr`, font: { color: '#7c3aed', size: 13 }
                         }] : []
                     },
-                    metrics: { Ystar, Yfe, gapType, gapSize: Math.abs(Ystar - Yfe) },
-                    readings: `<div class="reading-row"><span>Net AD Shift (ΔC+ΔI+ΔG+ΔNX)</span><b>${adShift >= 0 ? '+' : ''}${adShift}</b></div>
-                               <div class="reading-row"><span>Equilibrium Income</span><b>${fmt(Ystar)}</b></div>
-                               <div class="reading-row"><span>Full Employment Income (Yfe)</span><b>${Yfe}</b></div>
+                    metrics: { Ystar, Yfe, gapType, gapSize: Math.abs(gap), adAtYfe, output },
+                    readings: `<div class="reading-row"><span>Net change in autonomous spending (ΔC+ΔI+ΔG+ΔNX)</span><b>${adShift >= 0 ? '+' : '−'}₹${Math.abs(adShift)} cr</b></div>
+                               <div class="reading-row"><span>AD at full employment (Yfe = ₹${Yfe} cr)</span><b>₹${fmt(adAtYfe, 0)} cr</b></div>
                                <div class="reading-row"><span>Gap Type</span><b>${gapType}</b></div>
-                               <div class="reading-row"><span>Gap Size</span><b>${fmt(Math.abs(Ystar - Yfe))}</b></div>
-                               <div class="reading-row insight-row">💡 ${biggest ? `<b>${biggest.label}</b> is driving this the most (Δ${biggest.d >= 0 ? '+' : ''}${biggest.d}). ` : ''}${gapType === 'Inflationary Gap' ? 'Excess demand at full employment pushes prices up — contractionary policy (raise taxes, cut G, or raise interest rates) can help close the gap.' : gapType === 'Deflationary Gap' ? 'Demand falls short of what\'s needed for full employment, leaving resources idle — expansionary policy (raise G, cut taxes) can help close the gap.' : 'The economy is at (or very near) full-employment equilibrium.'}</div>`
+                               <div class="reading-row"><span>Gap Size (vertical, at Yfe)</span><b>₹${fmt(Math.abs(gap), 0)} cr</b></div>
+                               <div class="reading-row"><span>Equilibrium Income (AD = AS)</span><b>${gapType === 'Inflationary Gap' ? `beyond Yfe — output stays at ₹${Yfe} cr` : `₹${fmt(Ystar, 0)} cr`}</b></div>
+                               <div class="reading-row insight-row">💡 ${biggest ? `<b>${biggest.label}</b> is driving this the most (Δ${biggest.d >= 0 ? '+' : ''}${biggest.d}). ` : ''}${gapType === 'Inflationary Gap'
+                                   ? `Excess demand: at full employment, AD is ₹${fmt(adAtYfe, 0)} cr but the economy can only produce ₹${Yfe} cr. Output cannot rise further, so prices rise instead. Contractionary policy must cut autonomous spending by ₹${fmt(gap, 0)} cr to close the gap.`
+                                   : gapType === 'Deflationary Gap'
+                                       ? `Deficient demand: AD at full employment falls ₹${fmt(-gap, 0)} cr short, so equilibrium settles at ₹${fmt(Ystar, 0)} cr — below Yfe, with involuntary unemployment. Raising autonomous spending by ₹${fmt(-gap, 0)} cr raises income by ₹${fmt(-gap * k, 0)} cr through the multiplier (k = ${fmt(k, 1)}), back to Yfe.`
+                                       : 'AD meets the 45° line exactly at full employment — no excess or deficient demand.'}</div>`
                 };
             },
             practice: [
-                { prompt: 'Push all four ΔC/ΔI/ΔG/ΔNX sliders to +10. What kind of gap appears?', hint: 'A large positive AD shift pushes equilibrium income above Yfe — an Inflationary Gap.' },
-                { prompt: 'Push them all to −10 instead.', hint: 'A large negative AD shift pushes equilibrium income below Yfe — a Deflationary Gap.' }
+                { prompt: 'Push all four ΔC/ΔI/ΔG/ΔNX sliders to +10. What kind of gap appears, and where on the diagram is it measured?', hint: 'AD at Yfe now exceeds Yfe by ₹40 cr — an Inflationary Gap, measured VERTICALLY at Yfe. Output cannot go past Yfe, so the excess demand only pushes prices up.' },
+                { prompt: 'Push them all to −10 instead. How far does income fall?', hint: 'AD at Yfe is now ₹40 cr short — a Deflationary Gap of ₹40 cr. Through the multiplier (k = 2.5) equilibrium income falls by 40 × 2.5 = ₹100 cr, to ₹100 cr.' }
             ],
             challenge: {
-                prompt: 'Find a combination that produces "No Gap" (equilibrium income within 1 of Yfe) without setting every slider to exactly 0.',
+                prompt: 'Find a combination that produces "No Gap" (AD at Yfe equal to Yfe) without setting every slider to exactly 0.',
                 check(state, metrics) { return metrics && metrics.gapType === 'No Gap' && (state.dc !== 0 || state.di !== 0 || state.dg !== 0 || state.dnx !== 0); }
             }
         },
@@ -620,7 +674,7 @@ if (typeof SIMS !== 'undefined') {
             enrichment: true,
             enrichmentNote: "Measures of Dispersion is standard NCERT statistical-tools content, but the supplied 2026–27 taxonomy's Unit 3 lists only Measures of Central Tendency, Correlation and Index Numbers as topics — Dispersion is not itemized separately in that document. Retained as enrichment (it directly complements the Central Tendency Data Lab, which shares the same dataset shape), not counted toward core Unit 3 coverage.",
             concept: '<p>While the mean summarizes the "centre" of a dataset, dispersion measures describe how spread out the values are around that centre. This lab covers the simple <b>Range</b> and <b>Quartile Deviation</b> (based on position), and the more powerful <b>Standard Deviation</b> and <b>Coefficient of Variation</b> (based on every value). Two datasets can share the same mean yet look very different once you compare their spread.</p>',
-            formulas: ['Range = Maximum − Minimum', 'Coefficient of Range = [(Max−Min)/(Max+Min)] × 100', 'Quartile Deviation (QD) = (Q3 − Q1) / 2', 'Mean (x̄) = Σx / n', 'SD (σ) = √[Σ(x−x̄)² / n]', 'Coefficient of Variation = (σ / x̄) × 100'],
+            formulas: ['Range = Maximum − Minimum', 'Coefficient of Range = [(Max−Min)/(Max+Min)] × 100', 'Quartile Deviation (QD) = (Q3 − Q1) / 2', 'Q1 = size of the (N+1)/4 th item; Q3 = size of the 3(N+1)/4 th item', 'Mean (x̄) = Σx / n', 'SD (σ) = √[Σ(x−x̄)² / n]', 'Coefficient of Variation = (σ / x̄) × 100'],
             controls: [
                 { id: 'spread', label: 'Spread Factor', min: 1, max: 10, step: 1, value: 4, unit: '' }
             ],
@@ -634,10 +688,16 @@ if (typeof SIMS !== 'undefined') {
                 const cv = (sd / mean) * 100;
                 const sorted = [...data].sort((a, b) => a - b);
                 const range_ = sorted[sorted.length - 1] - sorted[0];
+                // CBSE / NCERT method: Q1 = size of the ((N+1)/4)th item and
+                // Q3 = size of the (3(N+1)/4)th item, interpolating between
+                // neighbouring items for a fractional position. (It used the
+                // spreadsheet p·(N−1) rule, so QD never matched a hand-worked
+                // answer: for N = 7, Q1 is the 2nd item, not the 2.5th.)
                 const quartile = (p) => {
-                    const pos = p * (sorted.length - 1);
-                    const lo = Math.floor(pos), hi = Math.ceil(pos);
-                    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+                    const pos = Math.min(Math.max(p * (sorted.length + 1), 1), sorted.length); // 1-indexed
+                    const lo = Math.floor(pos), frac = pos - lo;
+                    const a = sorted[lo - 1], b = sorted[Math.min(lo, sorted.length - 1)];
+                    return a + (b - a) * frac;
                 };
                 const q1 = quartile(0.25), q3 = quartile(0.75);
                 const qd = (q3 - q1) / 2;
@@ -776,7 +836,11 @@ if (typeof SIMS !== 'undefined') {
                 { id: 'health', label: 'Health Spending (% of GDP)', min: 1, max: 6, step: 0.5, value: 2, unit: '%' }
             ],
             compute(v) {
-                const years = ['2000', '2005', '2010', '2015', '2020', '2025'];
+                // An illustrative projection, not India's data: it used to label
+                // the axis 2000–2025, so at today's real health spending (~2% of
+                // GDP) it read as "India's life expectancy in 2025 is 63" (the
+                // real figure is ~70+). Years are counted from the start instead.
+                const years = ['Year 0', 'Year 5', 'Year 10', 'Year 15', 'Year 20', 'Year 25'];
                 const eduRate = v.edu / 8, healthRate = v.health / 6;
                 const lit = [60], life = [55];
                 for (let i = 1; i < years.length; i++) {
@@ -789,13 +853,14 @@ if (typeof SIMS !== 'undefined') {
                         { x: years, y: life, mode: 'lines+markers', name: 'Life Expectancy (yrs)', line: { color: '#8b5cf6', width: 3 }, yaxis: 'y2' }
                     ],
                     layout: {
-                        xaxis: { title: 'Year' },
+                        xaxis: { title: 'Years from the start (illustrative projection — not official data)' },
                         yaxis: { title: 'Literacy Rate (%)', range: [50, 100] },
                         yaxis2: { title: 'Life Expectancy (yrs)', overlaying: 'y', side: 'right', range: [50, 85] }
                     },
                     metrics: { literacy: lit[lit.length - 1], lifeExpectancy: life[life.length - 1] },
-                    readings: `<div class="reading-row"><span>Projected Literacy (latest)</span><b>${fmt(lit[lit.length - 1])}%</b></div>
-                               <div class="reading-row"><span>Projected Life Expectancy (latest)</span><b>${fmt(life[life.length - 1])} yrs</b></div>
+                    readings: `<div class="reading-row"><span>Projected Literacy after 25 years</span><b>${fmt(lit[lit.length - 1])}%</b></div>
+                               <div class="reading-row"><span>Projected Life Expectancy after 25 years</span><b>${fmt(life[life.length - 1])} yrs</b></div>
+                               <div class="reading-row"><span>Note</span><b>An illustrative model starting from a 60% literacy rate and a 55-year life expectancy — not India's official figures</b></div>
                                <div class="reading-row insight-row">💡 Education and health spending compound independently over time — a country can be strong in one and weak in the other, which is exactly why NCERT treats them as two separate (not interchangeable) sources of human capital.</div>`
                 };
             },

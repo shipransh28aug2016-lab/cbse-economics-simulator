@@ -36,6 +36,13 @@ most common student confusion, and the one the sim's `tlm.commonMistakes` leads 
   explicitly in the sim's own formula text ("X and Y are substitutes") — do not read the
   "Relationship: Substitutes" reading row as if the sim can also show complements.
 
+- **Choke price.** Quantity demanded is zero at `P = 50/bEff` (₹62.5 with 5 substitutes),
+  below the slider's ₹95 maximum. At or above it the sim now reports `Q = 0` and Ed as *not
+  defined* (|Ed| → ∞ as Q → 0) — it used to clamp Q to 0.01 and print values like −7600.
+- **Slope vs elasticity.** More substitutes ⇒ larger `bEff` ⇒ quantity reacts more ⇒ with
+  price on the vertical axis the curve is **flatter**. The formula text used to say
+  "steeper", which taught the slope–elasticity link backwards.
+
 ## Variables
 
 `price`, `substitutes` (price mode) · `income` (income mode) · `pricey` (cross mode) —

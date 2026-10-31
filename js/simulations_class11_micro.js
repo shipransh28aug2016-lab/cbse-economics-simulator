@@ -46,17 +46,27 @@ if (typeof SIMS !== 'undefined') {
             ],
             compute(v) {
                 const C = v.resources;
-                const X = Math.min(v.x, C);
+                // The most X the economy can make is C (all resources in X).
+                const xCapped = v.x > C;
+                const X0 = Math.min(v.x, C);
                 const xsAxis = range(Math.round(C) + 1);
                 const frontierY = xsAxis.map(x => Math.max(0, C - (x * x) / C));
-                const Yfrontier = Math.max(0, C - (X * X) / C);
-                let Y, label, note;
+                const Yfrontier = Math.max(0, C - (X0 * X0) / C);
+                // Inside/outside points are the frontier point (X0, Y) scaled
+                // TOWARD / AWAY FROM the origin. Scaling Y alone (the old way)
+                // put both of them exactly ON the frontier at X = C, where the
+                // frontier's Y is 0 — and labelled that point "inefficient" or
+                // "unattainable". Radial scaling is inside/outside at every X,
+                // because the frontier is concave to the origin.
+                let X = X0, Y, label, note;
                 if (v.pointType === 'inefficient') {
-                    Y = Yfrontier * 0.7;
+                    X = X0 * 0.75;
+                    Y = Yfrontier * 0.75;
                     label = 'Inside the PPF — Inefficient';
                     note = 'Resources are unemployed or badly allocated — the economy could produce more of BOTH goods by moving out to the frontier, without sacrificing anything.';
                 } else if (v.pointType === 'unattainable') {
-                    Y = Yfrontier * 1.3;
+                    X = X0 * 1.2;
+                    Y = Yfrontier * 1.2;
                     label = 'Outside the PPF — Unattainable';
                     note = 'This combination needs more resources or better technology than the economy currently has — it cannot be produced right now.';
                 } else {
@@ -64,7 +74,11 @@ if (typeof SIMS !== 'undefined') {
                     label = 'On the PPF — Productively Efficient';
                     note = 'Every point on the curve already uses all resources fully — the only way to get more X is to give up some Y. That trade-off IS opportunity cost.';
                 }
-                const mrt = (2 * X) / C; // slope magnitude of the PPF at X — opportunity cost of X in terms of Y
+                const mrt = (2 * X0) / C; // slope magnitude of the PPF at X0 — opportunity cost of X in terms of Y ON the frontier
+                // Opportunity cost depends on WHERE the economy is: on the frontier
+                // it is the MRT; inside, more X needs no sacrifice of Y at all
+                // (idle resources); outside, the point cannot be produced.
+                const oppCost = v.pointType === 'on' ? mrt : v.pointType === 'inefficient' ? 0 : null;
                 return {
                     traces: [
                         // Shading the ATTAINABLE region (on or inside the frontier)
@@ -74,12 +88,13 @@ if (typeof SIMS !== 'undefined') {
                         { x: xsAxis, y: frontierY, mode: 'lines', name: 'PPF (Efficient Frontier)', line: { color: '#2563eb', width: 3 }, fill: 'tozeroy', fillcolor: 'rgba(37, 99, 235, 0.08)' },
                         { x: [X], y: [Y], mode: 'markers', name: 'Chosen Point', marker: { color: v.pointType === 'unattainable' ? '#ef4444' : v.pointType === 'inefficient' ? '#f59e0b' : '#10b981', size: 12 } }
                     ],
-                    layout: { xaxis: { title: 'Good X (units)', range: [0, 32] }, yaxis: { title: 'Good Y (units)', range: [0, 32] } },
-                    metrics: { pointType: v.pointType, mrt, Y, Yfrontier },
+                    layout: { xaxis: { title: 'Good X (units)', range: [0, 38] }, yaxis: { title: 'Good Y (units)', range: [0, 38] } },
+                    metrics: { pointType: v.pointType, mrt, oppCost, X, Y, Yfrontier },
                     readings: `<div class="reading-row"><span>Point Status</span><b>${label}</b></div>
-                               <div class="reading-row"><span>Good Y at this point</span><b>${fmt(Y)}</b></div>
-                               <div class="reading-row"><span>Opportunity Cost of 1 more X (in Y)</span><b>${fmt(mrt)}</b></div>
-                               <div class="reading-row insight-row">💡 ${note} At X=${X}, giving up ${fmt(mrt)} units of Y buys one more unit of X — and that cost keeps rising as X increases, because resources are progressively less suited to producing X.</div>`
+                               <div class="reading-row"><span>Point (X, Y)</span><b>(${fmt(X, 1)}, ${fmt(Y, 1)})</b></div>
+                               <div class="reading-row"><span>Opportunity Cost of 1 more X (in Y)</span><b>${v.pointType === 'on' ? fmt(mrt) : v.pointType === 'inefficient' ? '0 — idle resources: more X costs no Y' : 'not defined — this point cannot be produced'}</b></div>
+                               ${xCapped ? `<div class="reading-row"><span>Note</span><b>X = ${v.x} is more than this economy can make — with all resources in X it makes at most ${C}, so X is taken as ${C}.</b></div>` : ''}
+                               <div class="reading-row insight-row">💡 ${note} ON the frontier at X=${X0}, giving up ${fmt(mrt)} units of Y buys one more unit of X — and that cost keeps rising as X increases, because resources are progressively less suited to producing X.</div>`
                 };
             },
             tlm: {
@@ -233,7 +248,6 @@ if (typeof SIMS !== 'undefined') {
                 { id: 'fc', label: 'Fixed Cost', min: 0, max: 100, step: 10, value: 20, unit: '₹' }
             ],
             compute(v) {
-                const qs = range(31);
                 const mcBase = v.mcBase, mcSlope = v.mcSlope, fc = v.fc;
                 const mcOf = q => mcBase + mcSlope * q;
                 let arOf, mrOf, Qstar;
@@ -246,7 +260,12 @@ if (typeof SIMS !== 'undefined') {
                     arOf = q => Math.max(0, a - b * q); mrOf = q => a - 2 * b * q;
                     Qstar = Math.max(0, (a - mcBase) / (2 * b + mcSlope));
                 }
-                Qstar = Math.min(30, Qstar);
+                // No cap: Q* used to be clamped to 30 to fit the chart, so at
+                // P = ₹90, MC = 2 + 0.5Q the marker claimed "MR = MC" at Q = 30
+                // where MR = ₹90 and MC = ₹17 (true Q* = 176). The chart widens.
+                const shutdown = Qstar === 0;
+                const xMax = Math.max(30, Math.ceil(Qstar * 1.15));
+                const qs = range(xMax + 1);
                 const MRatQstar = mrOf(Qstar);
                 const MCatQstar = mcOf(Qstar);
                 const AR = arOf(Qstar);
@@ -259,16 +278,16 @@ if (typeof SIMS !== 'undefined') {
                         { x: qs, y: qs.map(arOf), mode: 'lines', name: 'AR (= Demand/Price)', line: { color: '#2563eb', width: 3 } },
                         { x: qs, y: qs.map(mrOf), mode: 'lines', name: 'MR', line: { color: '#10b981', width: 3 } },
                         { x: qs, y: qs.map(mcOf), mode: 'lines', name: 'MC', line: { color: '#f59e0b', width: 3 } },
-                        { x: [Qstar], y: [MRatQstar], mode: 'markers', name: 'Producer Equilibrium (MR=MC)', marker: { color: '#ef4444', size: 12 } }
+                        { x: [Qstar], y: [MRatQstar], mode: 'markers', name: shutdown ? 'No output (MC > MR from the first unit)' : 'Producer Equilibrium (MR=MC)', marker: { color: '#ef4444', size: 12 } }
                     ],
-                    layout: { xaxis: { title: 'Output (Q)', range: [0, 30] }, yaxis: { title: '₹ per unit', range: [0, 110] } },
-                    metrics: { Qstar, MRatQstar, MCatQstar, profit, TR, TC },
+                    layout: { xaxis: { title: 'Output (Q)', range: [0, xMax] }, yaxis: { title: '₹ per unit', range: [0, 110] } },
+                    metrics: { Qstar, MRatQstar, MCatQstar, profit, TR, TC, shutdown },
                     readings: `<div class="reading-row"><span>Producer's Equilibrium Output (Q*)</span><b>${fmt(Qstar)}</b></div>
                                <div class="reading-row"><span>MR at Q*</span><b>₹${fmt(MRatQstar)}</b></div>
                                <div class="reading-row"><span>MC at Q*</span><b>₹${fmt(MCatQstar)}</b></div>
                                <div class="reading-row"><span>Total Revenue at Q*</span><b>₹${fmt(TR)}</b></div>
                                <div class="reading-row"><span>Profit (TR − TC)</span><b>₹${fmt(profit)}</b></div>
-                               <div class="reading-row insight-row">💡 The red point marks where MR = MC — the profit-maximising output. ${v.marketType === 'perfect' ? 'Because this firm is a price-taker, AR and MR sit on the same flat line at the market price.' : 'With a downward-sloping demand curve, MR falls twice as fast as AR/Price — a standard contrast case, shown here to make the perfect-competition AR=MR result easier to recognise.'}</div>`
+                               <div class="reading-row insight-row">💡 ${shutdown ? `Even the very first unit costs more (MC ₹${fmt(mcBase)}) than it earns (MR ₹${fmt(MRatQstar)}), so MR never rises to meet MC — the firm produces nothing (Q* = 0). There is no MR = MC point here. ` : 'The red point marks where MR = MC — the profit-maximising output. '}${v.marketType === 'perfect' ? 'Because this firm is a price-taker, AR and MR sit on the same flat line at the market price.' : 'With a downward-sloping demand curve, MR falls twice as fast as AR/Price — a standard contrast case, shown here to make the perfect-competition AR=MR result easier to recognise.'}</div>`
                 };
             },
             practice: [
@@ -289,7 +308,7 @@ if (typeof SIMS !== 'undefined') {
             syllabusIds: ['XI-B-U6-SUPPLY'],
             mode: 'simulator',
             concept: '<p><b>Price elasticity of supply (Es)</b> measures how much quantity supplied responds to a price change. Its biggest determinant is the <b>time period</b> a producer has to adjust: in the very short <b>market period</b> output is nearly fixed (supply is highly inelastic — think of a fish market where today\'s catch is already fixed); in the <b>short run</b> firms can vary some inputs (moderately elastic); in the <b>long run</b> firms can build new capacity entirely (highly elastic).</p>',
-            formulas: ['Es = (%ΔQs) / (%ΔP)', 'Point elasticity: Es = (dQ/dP) × (P/Q)', 'Supply: Q = 5 + d·P, where d depends on the time period'],
+            formulas: ['Es = (%ΔQs) / (%ΔP)', 'Point elasticity: Es = (dQ/dP) × (P/Q)', 'Supply: Q = c + d·P — market period Q = 20 + 0.05P, short run Q = 5 + 0.5P, long run Q = −8 + 2P', 'A straight supply line cutting the quantity axis ⇒ Es < 1; through the origin ⇒ Es = 1; cutting the price axis ⇒ Es > 1'],
             controls: [
                 {
                     id: 'period', label: 'Time Period', type: 'select', value: 'short',
@@ -303,12 +322,20 @@ if (typeof SIMS !== 'undefined') {
             ],
             compute(v) {
                 const slopes = { market: 0.05, short: 0.5, long: 2 };
+                // Each period has its own intercept, because WHERE a straight
+                // supply line meets the axes decides its elasticity: cutting the
+                // quantity axis ⇒ Es < 1, through the origin ⇒ Es = 1, cutting the
+                // price axis ⇒ Es > 1. All three used to cut the quantity axis
+                // (Q = 5 + d·P), so Es stayed below 1 everywhere — the long run
+                // was labelled "Inelastic" at every price, while the insight text
+                // on the same screen said "Es is well above 1".
+                const intercepts = { market: 20, short: 5, long: -8 };
                 const labels = { market: 'Market Period', short: 'Short Run', long: 'Long Run' };
                 const colors = { market: '#dc2626', short: '#f59e0b', long: '#16a34a' };
                 const d = slopes[v.period];
-                const c = 5;
+                const c = intercepts[v.period];
                 const P = v.price;
-                const Q = Math.max(0.01, c + d * P);
+                const Q = c + d * P; // > 0 for every price on the slider (P ≥ ₹5)
                 const Es = d * (P / Q);
                 const ps = range(20).map(i => i * 5);
                 const label = Es > 1 ? 'Elastic' : Es < 1 ? 'Inelastic' : 'Unit Elastic';
@@ -321,9 +348,9 @@ if (typeof SIMS !== 'undefined') {
                 // elasticity) is something the student can see directly rather
                 // than remember from a previous selector state.
                 const traces = ['market', 'short', 'long'].map(period => {
-                    const dp = slopes[period];
+                    const dp = slopes[period], cp = intercepts[period];
                     const isActive = period === v.period;
-                    return { x: ps.map(p => c + dp * p), y: ps, mode: 'lines', name: `${labels[period]} Supply`,
+                    return { x: ps.map(p => cp + dp * p), y: ps, mode: 'lines', name: `${labels[period]} Supply`,
                         line: { color: colors[period], width: isActive ? 3.5 : 1.5, dash: isActive ? 'solid' : 'dot' } };
                 });
                 traces.push({ x: [Q], y: [P], mode: 'markers', name: 'Current Point', marker: { color: colors[v.period], size: 11 } });
