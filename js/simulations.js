@@ -412,7 +412,7 @@ const SIMS = [
             if (has3) {
                 flows.push(
                     { id: 'flow-tax', from: hh, to: gov, bend: 16, labelOffset: 11, value: taxes, color: gov.color, kind: 'money', label: 'Taxes (T) — Leakage' },
-                    { id: 'flow-gspend', from: gov, to: hh, bend: 16, labelOffset: 11, value: g, color: gov.color, kind: 'money', label: 'Govt Spending (G) — Injection' }
+                    { id: 'flow-gspend', from: gov, to: firm, bend: 16, labelOffset: 11, value: g, color: gov.color, kind: 'money', label: 'Govt Purchases (G) — Injection' }
                 );
             }
             if (has4) {
@@ -468,14 +468,20 @@ const SIMS = [
                 </g>`;
 
             const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');
-            container.innerHTML = `
-                <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                     aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
-                    ${flowsSVG}
-                    ${nodesSVG}
-                    ${labelsSVG}
-                    ${legendSVG}
-                </svg>`;
+
+            // Delegate 3D Isometric rendering to circular_flow_3d module if available
+            if (typeof window.render3DCircularFlow === 'function') {
+                window.render3DCircularFlow(container, v);
+            } else {
+                container.innerHTML = `
+                    <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
+                         aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
+                        ${flowsSVG}
+                        ${nodesSVG}
+                        ${labelsSVG}
+                        ${legendSVG}
+                    </svg>`;
+            }
 
             // Injections vs Leakages — the actual CBSE-taught rule for
             // whether National Income is rising, falling, or in

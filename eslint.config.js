@@ -60,8 +60,20 @@ module.exports = [
         ignores: ['js/plotly.min.js']
     },
     {
+        files: ['js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'module',
+            globals: {
+                window: 'readonly', document: 'readonly', console: 'readonly',
+                setTimeout: 'readonly', performance: 'readonly', requestAnimationFrame: 'readonly',
+                Float32Array: 'readonly'
+            }
+        }
+    },
+    {
         files: ['js/**/*.js'],
-        ignores: ['js/plotly.min.js'],
+        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',
