@@ -35,6 +35,14 @@ client-side from `file://` or any static file server.
    - A sim is not done when `npm run verify` is green. It is done when it is ALSO
      economically correct and pedagogically honest about what it teaches (see
      `docs/economics/validation/README.md`).
+   - The worked example of doing this properly is the November 2026 audit
+     (`docs/economics/validation/audit-2026-11.md`). It stated each model's rule in one
+     sentence, tested it numerically, and ran a dead-zone scan for controls that move while
+     outputs stay frozen. It found 14 errors that a green `verify` had hidden: gaps measured
+     horizontally, single-good equilibrium taught as MU = 0, long-run supply always shown
+     inelastic, and others. Each has a test (`testAuditRegressions`) that states the rule,
+     not the current number. A clamp added "to keep a curve on the chart" is the most common
+     source of silent errors here, so remove clamps or say what they do.
 3. **Definition of done** for any sim change: economic correctness + syllabus fidelity
    (`enrichment`/`enrichmentNote` used honestly, see Working Convention 3) + the model
    actually drives the visual (never a `customRender`/`graphLab` picture that implies a

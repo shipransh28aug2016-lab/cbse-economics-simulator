@@ -19,15 +19,18 @@ if (typeof QUIZ_BANK !== 'undefined') {
             },
             {
                 level: 'understand',
-                question: { en: 'With a single good, a rational consumer stops consuming when…', hi: 'एक वस्तु के साथ, एक तर्कसंगत उपभोक्ता उपभोग कब बंद करता है…' },
+                question: { en: 'With a single good, a rational consumer is in equilibrium when…', hi: 'एक वस्तु के साथ, एक तर्कसंगत उपभोक्ता संतुलन में कब होता है…' },
                 options: [
+                    { en: 'MU of the good (in ₹) equals its price — MUx = Px', hi: 'वस्तु की MU (₹ में) उसकी कीमत के बराबर हो — MUx = Px' },
                     { en: 'MU = 0 (Total Utility is at its maximum)', hi: 'MU = 0 (कुल उपयोगिता अपने अधिकतम पर है)' },
                     { en: 'MU is at its highest', hi: 'MU अपने उच्चतम पर है' },
-                    { en: 'Price = 0', hi: 'कीमत = 0' },
                     { en: 'They have consumed exactly 1 unit', hi: 'उन्होंने ठीक 1 इकाई का उपभोग किया है' }
                 ],
                 correctIndex: 0,
-                explain: { en: 'Beyond MU=0, extra units would actually reduce Total Utility, so a rational consumer stops exactly there.', hi: 'MU=0 के बाद, अतिरिक्त इकाइयाँ वास्तव में कुल उपयोगिता को घटा देंगी, इसलिए एक तर्कसंगत उपभोक्ता वहीं रुक जाता है।' },
+                misconceptions: {
+                    1: { en: 'MU = 0 is where TOTAL utility peaks — a consumer goes that far only if the good is free. When it has a price, she stops earlier, where MU (in ₹) has fallen to the price.', hi: 'MU = 0 वहाँ है जहाँ कुल उपयोगिता अधिकतम होती है — उपभोक्ता वहाँ तक केवल तब जाती है जब वस्तु मुफ़्त हो। कीमत होने पर वह पहले रुकती है, जहाँ MU (₹ में) घटकर कीमत के बराबर हो जाए।' }
+                },
+                explain: { en: 'While MU > Px, each extra unit is worth more than it costs, so she buys more; once MU < Px, she buys less. Equilibrium is MUx = Px (MUx/Px = MU of money).', hi: 'जब तक MU > Px, हर अतिरिक्त इकाई अपनी कीमत से अधिक मूल्यवान है, इसलिए वह और खरीदती है; MU < Px होने पर कम खरीदती है। संतुलन MUx = Px है (MUx/Px = मुद्रा की MU)।' },
                 syllabusId: 'XI-B-U5-UTILITY'
             },
             {
@@ -379,14 +382,16 @@ if (typeof QUIZ_BANK !== 'undefined') {
             {
                 level: 'apply',
                 build(state, metrics) {
-                    if (!metrics || typeof metrics.fiscalDeficit !== 'number') return null;
-                    const correct = Math.round(Math.max(metrics.fiscalDeficit, 0));
+                    // A surplus (≤ 0) used to be clamped to ₹0, so the explanation
+                    // printed false arithmetic like "(50+90) − (300+60) = ₹0B".
+                    if (!metrics || typeof metrics.fiscalDeficit !== 'number' || metrics.fiscalDeficit <= 0) return null;
+                    const correct = Math.round(metrics.fiscalDeficit);
                     const options = quizNumericOptions(correct, [15, -15, 30], { round: 0, prefix: '₹', suffix: 'B' });
                     return {
-                        question: { en: `With Revenue Receipts=₹${state.rr}B and Revenue Expenditure=₹${state.re}B (Capital Receipts fixed at ₹60B, Capital Expenditure at ₹90B), what is the Fiscal Deficit?`, hi: `राजस्व प्राप्तियाँ=₹${state.rr}B और राजस्व व्यय=₹${state.re}B के साथ (पूँजीगत प्राप्तियाँ ₹60B और पूँजीगत व्यय ₹90B पर स्थिर), राजकोषीय घाटा क्या है?` },
+                        question: { en: `With Revenue Receipts=₹${state.rr}B and Revenue Expenditure=₹${state.re}B (Non-debt Capital Receipts fixed at ₹60B, Capital Expenditure at ₹90B), what is the Fiscal Deficit?`, hi: `राजस्व प्राप्तियाँ=₹${state.rr}B और राजस्व व्यय=₹${state.re}B के साथ (ऋण-रहित पूँजीगत प्राप्तियाँ ₹60B और पूँजीगत व्यय ₹90B पर स्थिर), राजकोषीय घाटा क्या है?` },
                         options,
                         correctIndex: 0,
-                        explain: { en: `Fiscal Deficit = (Revenue Exp. + Capital Exp.) − (Revenue Receipts + Capital Receipts) = (${state.re}+90) − (${state.rr}+60) = ₹${correct}B.`, hi: `राजकोषीय घाटा = (राजस्व व्यय + पूँजीगत व्यय) − (राजस्व प्राप्तियाँ + पूँजीगत प्राप्तियाँ) = (${state.re}+90) − (${state.rr}+60) = ₹${correct}B.` }
+                        explain: { en: `Fiscal Deficit = (Revenue Exp. + Capital Exp.) − (Revenue Receipts + Non-debt Capital Receipts) = (${state.re}+90) − (${state.rr}+60) = ₹${correct}B.`, hi: `राजकोषीय घाटा = (राजस्व व्यय + पूँजीगत व्यय) − (राजस्व प्राप्तियाँ + ऋण-रहित पूँजीगत प्राप्तियाँ) = (${state.re}+90) − (${state.rr}+60) = ₹${correct}B.` }
                     };
                 }
             }
@@ -459,13 +464,16 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 level: 'remember',
                 question: { en: 'An Inflationary Gap occurs when…', hi: 'मुद्रास्फीतिकारी अंतराल (Inflationary Gap) तब होता है जब…' },
                 options: [
-                    { en: 'Equilibrium income exceeds the full-employment level', hi: 'संतुलन आय पूर्ण-रोजगार स्तर से अधिक हो जाती है' },
-                    { en: 'Equilibrium income equals zero', hi: 'संतुलन आय शून्य के बराबर होती है' },
+                    { en: 'Aggregate demand at full employment exceeds full-employment output (excess demand)', hi: 'पूर्ण रोज़गार पर समग्र माँग पूर्ण-रोज़गार उत्पादन से अधिक होती है (अधिमाँग)' },
+                    { en: 'Output rises above the full-employment level', hi: 'उत्पादन पूर्ण-रोज़गार स्तर से ऊपर चला जाता है' },
                     { en: 'Prices never change', hi: 'कीमतें कभी नहीं बदलतीं' },
                     { en: 'The government has a balanced budget', hi: 'सरकार का बजट संतुलित होता है' }
                 ],
                 correctIndex: 0,
-                explain: { en: 'When equilibrium Y > Yfe, excess demand exists at full employment — output can\'t rise further, so prices rise instead: an inflationary gap.', hi: 'जब संतुलन Y > Yfe, पूर्ण रोजगार पर अतिरिक्त माँग होती है — उत्पादन आगे नहीं बढ़ सकता, इसलिए कीमतें बढ़ती हैं: एक मुद्रास्फीतिकारी अंतराल।' },
+                misconceptions: {
+                    1: { en: 'Output cannot rise above full employment — there are no idle resources left. Excess demand only pushes prices up; that is why the gap is measured vertically at Yfe, not as extra output.', hi: 'उत्पादन पूर्ण रोज़गार से ऊपर नहीं जा सकता — कोई बेकार संसाधन बचे नहीं। अधिमाँग केवल कीमतें बढ़ाती है; इसीलिए अंतराल Yfe पर ऊर्ध्वाधर मापा जाता है, अतिरिक्त उत्पादन के रूप में नहीं।' }
+                },
+                explain: { en: 'An inflationary gap is the amount by which AD at full employment exceeds the AD needed for full employment. Output cannot rise further, so the excess demand pushes prices up.', hi: 'स्फीतिक अंतराल वह राशि है जितनी पूर्ण रोज़गार पर समग्र माँग, पूर्ण रोज़गार के लिए आवश्यक माँग से अधिक होती है। उत्पादन और नहीं बढ़ सकता, इसलिए अधिमाँग कीमतें बढ़ाती है।' },
                 syllabusId: 'XII-A-U3-GAPS'
             },
             {
@@ -507,7 +515,7 @@ if (typeof QUIZ_BANK !== 'undefined') {
                         question: { en: `With ΔC=${state.dc}, ΔI=${state.di}, ΔG=${state.dg}, ΔX−M=${state.dnx}, which gap type results?`, hi: `ΔC=${state.dc}, ΔI=${state.di}, ΔG=${state.dg}, ΔX−M=${state.dnx} के साथ, कौन-सा अंतराल प्रकार बनता है?` },
                         options: [correctOpt, ...all.filter(o => o !== correctOpt)],
                         correctIndex: 0,
-                        explain: { en: `Comparing the new Equilibrium Income against the Full Employment Income (Yfe=200) gives: ${metrics.gapType}.`, hi: `नई संतुलन आय की पूर्ण रोजगार आय (Yfe=200) से तुलना करने पर मिलता है: ${metrics.gapType}.` }
+                        explain: { en: `Measure vertically at full employment: AD at Yfe = ₹${Math.round(metrics.adAtYfe)} cr against Yfe = ₹200 cr — ${metrics.gapType}.`, hi: `पूर्ण रोज़गार पर ऊर्ध्वाधर मापिए: Yfe पर AD = ₹${Math.round(metrics.adAtYfe)} cr, जबकि Yfe = ₹200 cr — ${metrics.gapType === 'Inflationary Gap' ? 'स्फीतिक अंतराल' : metrics.gapType === 'Deflationary Gap' ? 'अवस्फीतिक अंतराल' : 'कोई अंतराल नहीं'}।` }
                     };
                 }
             }

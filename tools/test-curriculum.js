@@ -712,6 +712,134 @@ function extractNodePos(html, label) {
     ok(configs > 20, 'Cost curves: minimum checked across many cost conditions');
 })();
 
+// ── Economic-correctness audit regressions ──────────────────────────
+// Each block states the economic RULE (not the current number) behind one
+// of the 14 audit findings, so the error cannot quietly come back. See
+// docs/economics/validation/audit-2026-11.md for the finding behind each.
+(function testAuditRegressions() {
+    const sweep = (c) => { const out = []; for (let x = c.min; x <= c.max + 1e-9; x += c.step) out.push(+x.toFixed(6)); return out; };
+    const ctl = (sim, id) => sim.controls.find(c => c.id === id);
+
+    // 1. Inflation/deflationary gap: measured VERTICALLY at Yfe; output never exceeds Yfe.
+    const gapSim = findSim('macro-inflation-gap');
+    const g0 = { dc: 0, di: 0, dg: 0, dnx: 0 };
+    const up = gapSim.compute(Object.assign({}, g0, { dc: 10 })).metrics;
+    ok(up.gapType === 'Inflationary Gap' && Math.abs(up.gapSize - 10) < 1e-9, 'Gap: +₹10 cr autonomous spending at full employment = an inflationary gap of exactly ₹10 cr, measured at Yfe');
+    ok(Math.abs(up.gapSize - (up.adAtYfe - up.Yfe)) < 1e-9, 'Gap: size = AD at Yfe − Yfe (vertical), not Y* − Yfe (horizontal)');
+    const down = gapSim.compute({ dc: -10, di: -10, dg: -10, dnx: -10 }).metrics;
+    ok(down.gapType === 'Deflationary Gap' && Math.abs((down.Yfe - down.Ystar) - down.gapSize * 2.5) < 1e-6, 'Gap: deflationary — income falls by gap × multiplier (k = 2.5)');
+    let outputOk = true;
+    [-10, -5, 0, 5, 10].forEach(a => [-10, 0, 10].forEach(b => { const m = gapSim.compute({ dc: a, di: b, dg: a, dnx: b }).metrics; if (m.output > m.Yfe + 1e-9) outputOk = false; }));
+    ok(outputOk, 'Gap: output never exceeds full-employment income');
+
+    // 2. Single-good consumer equilibrium: MUx = Px, so Q* = 20 − P, and price matters.
+    const ce = findSim('micro-consumer-equilibrium');
+    sweep(ctl(ce, 'price')).forEach(P => {
+        const m = ce.compute({ view: 'single', q: 5, price: P }).metrics;
+        ok(Math.abs(m.Qstar - (20 - P)) < 1e-9, `Consumer eq (single good) at P = ₹${P}: Q* = 20 − P`);
+        ok(Math.abs(ce.compute({ view: 'single', q: m.Qstar, price: P }).metrics.MU - P) < 1e-9, `Consumer eq at P = ₹${P}: at Q*, MU equals the price`);
+    });
+    ok(!/consumer stops at MU = 0/.test(ce.formulas.join(' ')), 'Consumer eq: no formula claims the consumer stops at MU = 0');
+
+    // 3. Elasticity of supply: market < short < long at every price; long run elastic, short run inelastic.
+    const es = findSim('micro-elasticity-supply');
+    sweep(ctl(es, 'price')).forEach(P => {
+        const [m, sh, lg] = ['market', 'short', 'long'].map(per => es.compute({ period: per, price: P }).metrics.Es);
+        ok(m < sh && sh < lg, `Es at ₹${P}: market (${m.toFixed(2)}) < short (${sh.toFixed(2)}) < long (${lg.toFixed(2)})`);
+        ok(lg > 1 && sh < 1, `Es at ₹${P}: long run elastic (>1), short run inelastic (<1)`);
+    });
+
+    // 4. Returns to a factor: Phase I exactly while MP is rising.
+    const pc = findSim('micro-producer-costs');
+    for (let L = 2; L <= 24; L++) {
+        const m = pc.compute({ view: 'product', labor: L }).metrics;
+        const prevMP = pc.compute({ view: 'product', labor: L - 1 }).metrics.MP;
+        const nextMP = pc.compute({ view: 'product', labor: Math.min(24, L + 1) }).metrics.MP;
+        const rising = nextMP > m.MP && m.MP > prevMP;
+        if (rising) ok(m.phase === 1, `LVP at L = ${L}: MP rising ⇒ Phase I`);
+        if (m.MP < prevMP && m.MP >= 0) ok(m.phase === 2, `LVP at L = ${L}: MP falling but positive ⇒ Phase II`);
+        if (m.MP < 0) ok(m.phase === 3, `LVP at L = ${L}: MP negative ⇒ Phase III`);
+    }
+
+    // 5. Market structures: a homogeneous-product model never claims monopolistic competition.
+    const ms = findSim('micro-market-structures');
+    let mono = false;
+    sweep(ctl(ms, 'n')).forEach(n => { if (/Monopolistic/.test(ms.compute({ mc: 20, n }).metrics.structure)) mono = true; });
+    ok(!mono, 'Market structures: no number of firms is labelled "monopolistic competition"');
+
+    // 6. Producer equilibrium (simulator): MR = MC exactly at Q*, wherever Q* is — no chart cap.
+    const rp = findSim('micro-revenue-producer-equilibrium');
+    let rpOk = true, rpCount = 0;
+    ['perfect', 'downward'].forEach(mt => sweep(ctl(rp, 'price')).forEach(price => [2, 10, 40].forEach(mcBase => [0.5, 2, 5].forEach(mcSlope => {
+        const m = rp.compute({ marketType: mt, price, mcBase, mcSlope, fc: 20 }).metrics;
+        if (m.Qstar > 0) { rpCount++; if (Math.abs(m.MRatQstar - m.MCatQstar) > 1e-6) rpOk = false; }
+        else if (m.shutdown !== true) rpOk = false;
+    }))));
+    ok(rpOk && rpCount > 50, `Producer eq (simulator): MR = MC at every positive Q* (${rpCount} cases), and Q* = 0 is flagged as no MR = MC point`);
+
+    // 7. Budget: interest ≤ revenue expenditure; no "deficit explained by interest" text when there is no deficit.
+    const gb = findSim('macro-govt-budget');
+    let gbOk = true;
+    [[300, 50, 80], [150, 180, 30], [150, 180, 80], [50, 300, 0]].forEach(([rr, re, interest]) => {
+        const r = gb.compute({ rr, re, interest });
+        const fd = (re + 90) - (rr + 60);
+        if (Math.abs(r.metrics.fiscalDeficit - fd) > 1e-9) gbOk = false;
+        if (fd <= 0 && /fiscal deficit is entirely/.test(r.readings)) gbOk = false;
+        if (Math.abs(r.metrics.primaryDeficit - (fd - Math.min(interest, re))) > 1e-9) gbOk = false;
+    });
+    ok(gbOk, 'Budget: FD = TE − (RR + non-debt CR); PD uses interest capped at revenue expenditure; surplus text is honest');
+
+    // 8. PPF: inside points strictly inside, outside points strictly outside — at EVERY X, including X = C.
+    const ppf = findSim('micro-ppf');
+    let ppfOk = true;
+    sweep(ctl(ppf, 'resources')).forEach(C => sweep(ctl(ppf, 'x')).forEach(x => {
+        const fr = X => (X > C ? -Infinity : C - (X * X) / C);
+        const inn = ppf.compute({ resources: C, x, pointType: 'inefficient' }).metrics;
+        const out = ppf.compute({ resources: C, x, pointType: 'unattainable' }).metrics;
+        if (!(inn.Y < fr(inn.X) - 1e-9 || (inn.X === 0 && inn.Y < C))) ppfOk = false;
+        if (!(out.X > C || out.Y > fr(out.X) + 1e-9)) ppfOk = false;
+        if (inn.oppCost !== 0) ppfOk = false;
+    }));
+    ok(ppfOk, 'PPF: "inside" is always strictly inside and "outside" strictly outside the frontier; opportunity cost at an inside point is 0');
+
+    // 9. Elasticity of demand: never a giant fake number above the choke price.
+    const el = findSim('micro-elasticity');
+    let elOk = true;
+    sweep(ctl(el, 'price')).forEach(price => sweep(ctl(el, 'substitutes')).forEach(substitutes => {
+        const m = el.compute({ type: 'price', price, substitutes, income: 40, pricey: 40 }).metrics;
+        if (m.Ed !== null && (Math.abs(m.Ed) > 1000 || !isFinite(m.Ed))) elOk = false;
+    }));
+    ok(elOk, 'Elasticity: Ed is a real value or honestly "not defined" (Q = 0) — never a clamped −7600');
+
+    // 10. Dispersion: quartiles by the CBSE (N+1)/4 method.
+    const dsp = findSim('stats-dispersion');
+    const sorted = [45, 52, 48, 60, 55, 50, 58].sort((a, b) => a - b);
+    approx(dsp.compute({ spread: 4 }).metrics.qd, (sorted[5] - sorted[1]) / 2, 1e-9, 'Dispersion: QD from the 2nd and 6th items of 7 (CBSE (N+1)/4 method)');
+
+    // 11–12. No supply dead zones: every step of a supply-raising control moves the price.
+    const sd = findSim('micro-supply-demand');
+    let sdOk = true, prevP = Infinity;
+    sweep(ctl(sd, 'tech')).forEach(tech => { const P = sd.compute({ income: 0, priceSub: 0, priceComp: 0, tastes: 0, inputCost: -10, tech, govt: -10 }).metrics.equilibriumPrice; if (!(P < prevP)) sdOk = false; prevP = P; });
+    ok(sdOk, 'Supply & demand: with cheap inputs and a subsidy, every technology step still lowers the price (no dead zone)');
+    const fx = findSim('macro-forex');
+    let fxOk = true, prevR = Infinity;
+    sweep(ctl(fx, 'exports')).forEach(exports => { const P = fx.compute({ imports: 0, exports, capOut: 0, capIn: 20 }).metrics.P; if (!(P < prevR)) fxOk = false; prevR = P; });
+    ok(fxOk, 'Forex: with strong capital inflow, every rise in exports still appreciates the rupee (no dead zone)');
+
+    // 13. Human capital: an illustrative projection must not wear real calendar years.
+    const hc = findSim('india-human-capital');
+    ok(!/20[0-2]\d/.test(JSON.stringify(hc.compute({ edu: 4, health: 2 }).traces.map(t => t.x))), 'Human capital: no calendar years on an illustrative projection');
+
+    // 14. Quiz templates never print false arithmetic for clamped/edge states.
+    const tpl = id => (QUIZ_BANK[id].applyTemplates || [])[0];
+    ok(tpl('macro-govt-budget').build({ rr: 300, re: 50, interest: 30 }, gb.compute({ rr: 300, re: 50, interest: 30 }).metrics) === null, 'Quiz (budget): no fiscal-deficit question when there is a surplus');
+    ok(tpl('micro-ppf').build({ resources: 20, x: 25, pointType: 'on' }, ppf.compute({ resources: 20, x: 25, pointType: 'on' }).metrics) === null, 'Quiz (PPF): no "2×x/C" question when x exceeds C');
+    const shut = { marketType: 'perfect', price: 10, mcBase: 20, mcSlope: 2, fc: 20 };
+    ok(tpl('micro-revenue-producer-equilibrium').build(shut, rp.compute(shut).metrics) === null, 'Quiz (producer): no "where MR = MC" question when Q* = 0');
+    const pq = { marketType: 'perfect', price: 50, mcBase: 10, mcSlope: 2, fc: 20 };
+    ok(/market price of ₹50/.test(tpl('micro-revenue-producer-equilibrium').build(pq, rp.compute(pq).metrics).question.en), 'Quiz (producer): the perfect-competition question states the market price it depends on');
+})();
+
 // ── Story Mode (js/story-mode.js) ──────────────────────────────────
 // The honesty contract: a story may only CLAIM what its lab's model()
 // actually produces. Each step restates its claim as check(); this runs

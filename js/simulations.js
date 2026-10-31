@@ -56,8 +56,12 @@ const SIMS = [
         compute(v) {
             const demandShift = v.income + v.priceSub - v.priceComp + v.tastes;
             const supplyShift = v.inputCost - v.tech + v.govt;
-            const a = Math.max(20, 100 + demandShift), b = 1.2;
-            const c = Math.max(5, 20 + supplyShift), d = 0.8;
+            // No clamps: they used to freeze supply once net shift passed −15
+            // (half the subsidy/technology range did nothing). A negative
+            // price-intercept is still a valid supply line — it simply cuts
+            // the quantity axis instead of the price axis.
+            const a = 100 + demandShift, b = 1.2;
+            const c = 20 + supplyShift, d = 0.8;
             const { Q, P } = lineIntersect(a, b, c, d);
             const qs = range(81);
             const demand = qs.map(q => a - b * q);
@@ -99,7 +103,7 @@ const SIMS = [
                 layout: { xaxis: { title: 'Quantity', range: [0, 80] }, yaxis: { title: 'Price (₹)', range: [0, 160] } },
                 metrics: { equilibriumPrice: P, equilibriumQuantity: Q, demandShift, supplyShift },
                 readings: `<div class="reading-row"><span>Net Demand Shift</span><b>${demandShift >= 0 ? '+' : ''}${demandShift}</b></div>
-                           <div class="reading-row"><span>Net Supply Shift</span><b>${supplyShift >= 0 ? '+' : ''}${supplyShift}</b></div>
+                           <div class="reading-row"><span>Net Supply Shift</span><b>${-supplyShift >= 0 ? '+' : ''}${-supplyShift} (${supplyShift < 0 ? 'increase' : supplyShift > 0 ? 'decrease' : 'none'})</b></div>
                            <div class="reading-row"><span>Equilibrium Price</span><b>₹${fmt(P)}</b></div>
                            <div class="reading-row"><span>Equilibrium Quantity</span><b>${fmt(Q)} units</b></div>
                            <div class="reading-row insight-row">💡 ${biggest
@@ -203,12 +207,19 @@ const SIMS = [
             // price elasticity: more substitutes → more elastic demand.
             // Modeled by scaling the demand slope directly with it.
             const bEff = 0.3 + 0.1 * subs;
-            const Q = Math.max(0.01, 50 - bEff * P);
-            const Ed = -bEff * (P / Q);
+            // At or above the choke price nobody buys (Q = 0) and point Ed is
+            // undefined (|Ed| → ∞ as Q → 0). It used to clamp Q to 0.01 and
+            // print figures like Ed = −7600 — say what is true instead.
+            const choke = 50 / bEff;
+            const aboveChoke = P >= choke;
+            const Q = aboveChoke ? 0 : 50 - bEff * P;
+            const Ed = aboveChoke ? null : -bEff * (P / Q);
             const ps = range(20).map(i => i * 5);
             const qs = ps.map(p => 50 - bEff * p);
-            const label = Math.abs(Ed) > 1 ? 'Elastic' : Math.abs(Ed) < 1 ? 'Inelastic' : 'Unit Elastic';
-            const insight = Math.abs(Ed) > 1
+            const label = aboveChoke ? 'Not defined (Q = 0)' : Math.abs(Ed) > 1 ? 'Elastic' : Math.abs(Ed) < 1 ? 'Inelastic' : 'Unit Elastic';
+            const insight = aboveChoke
+                ? `At ₹${P} the price is at or above the choke price (₹${fmt(choke, 1)}), so quantity demanded is zero and point elasticity is not defined — |Ed| grows without limit as the point approaches the price axis. Lower the price, or remove substitutes, to bring buyers back.`
+                : Math.abs(Ed) > 1
                 ? 'Demand is elastic here — a price change causes a proportionally larger change in quantity demanded, so total revenue moves opposite to price.'
                 : Math.abs(Ed) < 1
                     ? 'Demand is inelastic here — quantity barely responds to the price change, so total revenue moves with price.'
@@ -219,10 +230,10 @@ const SIMS = [
                     { x: [Q], y: [P], mode: 'markers', name: 'Current Point', marker: { color: '#ef4444', size: 10 } }
                 ],
                 layout: { xaxis: { title: 'Quantity', range: [0, 55] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
-                formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', `Demand: Q = 50 − ${fmt(bEff, 1)}P (steeper slope with more substitutes)`, 'Determinants of Ed: substitutes, necessity vs luxury, share of income, time period'],
+                formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', `Demand: Q = 50 − ${fmt(bEff, 1)}P (more substitutes ⇒ quantity reacts more ⇒ a FLATTER curve with price on the vertical axis)`, 'Determinants of Ed: substitutes, necessity vs luxury, share of income, time period'],
                 metrics: { Ed, mode: 'price', substitutes: subs },
                 readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
-                           <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${fmt(Ed)}</b></div>
+                           <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${aboveChoke ? 'not defined (|Ed| → ∞)' : fmt(Ed)}</b></div>
                            <div class="reading-row"><span>Classification</span><b>${label}</b></div>
                            <div class="reading-row insight-row">💡 ${insight}</div>`
             };

@@ -24,10 +24,14 @@ proves, not just states.
   sim's own `formulas` array) — chosen because it is symmetric, has simple endpoints
   `(0, C)` and `(C, 0)`, and gives a clean, linear-in-`X` marginal rate of transformation
   — not because real production possibility frontiers are literally quadratic.
-- "Inside" and "outside" points are modelled as a fixed proportion of the frontier value
-  at the same `X` (`0.7×` and `1.3×` respectively) rather than an independently
-  positioned point — a UI simplification for a one-slider "point type" demo, not a claim
-  that all inefficient points sit at exactly 70% of the frontier.
+- "Inside" and "outside" points are the frontier point `(X, Y)` scaled **radially** from
+  the origin (`0.75×` and `1.2×`). (Until the Nov 2026 audit they scaled `Y` only, at the
+  same `X`, which put both points exactly ON the frontier at `X = C`, where the frontier's
+  `Y` is 0, and labelled that point "inefficient" or "unattainable".) Radial scaling is
+  strictly inside/outside at every `X`, because the frontier is concave to the origin.
+- Opportunity cost depends on the point: on the frontier it is the MRT; at an inside point
+  it is **0** (idle resources: more X needs no sacrifice of Y); an outside point cannot be
+  produced. `x` above `C` is capped at `C`, and the readings now say so.
 
 ## Variables
 
