@@ -425,8 +425,83 @@ function glWireHandles(svg, handles, s) {
     });
 }
 
+function glSvgBody(m, s, cfg) {
+    return [
+        glDefs(),
+        `<rect class="gl-plot-bg" x="${GL_PAD.l}" y="${GL_PAD.t}" width="${s.pw}" height="${s.ph}"></rect>`,
+        glAxes(cfg, s),
+        (m.curves || []).map(c => glCurve(c, s)).join(''),
+        (m.arrows || []).map(a => glArrow(a, s)).join(''),
+        (m.points || []).map(p => glPoint(p, s, cfg)).join(''),
+        (m.handles || []).map(h => glHandle(h, s)).join('')
+    ].join('');
+}
+
+// ── the glide: discrete jumps (scenario presets, Reset) animate ─────
+// Every frame is cfg.model() itself, run at variable values part-way
+// between the old state and the new one — never a geometric morph of two
+// pictures. So each in-between curve is a real position the model could
+// draw (a demand curve sliding right passes through every intermediate
+// demand curve), and the shift is SEEN happening instead of teleporting.
+// Live dragging and chip scrubbing never glide: the curve must stay
+// glued to the finger. Readings, verdict and Mima update instantly; only
+// the diagram travels.
+const GL_GLIDE_MS = 560;
+let glGlide = null; // { raf, svg, vars, finish, stop }
+
+function glMotionOK() {
+    return !(typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+// The vars currently ON SCREEN — mid-glide that's the in-between state,
+// so a second jump starts from where the curve visibly is, not from
+// where it was heading.
+function glDisplayedState() {
+    return glGlide ? Object.assign({}, glGlide.vars) : Object.assign({}, glPrevState);
+}
+
+function glStopGlide() {
+    if (glGlide) glGlide.stop();
+}
+
+function glGlideSvg(sim, svg, from, finalBody, handles, s) {
+    const cfg = sim.graphLab;
+    const to = Object.assign({}, glState);
+    const keys = (cfg.vars || []).map(v => v.id).filter(k =>
+        typeof from[k] === 'number' && typeof to[k] === 'number' &&
+        isFinite(from[k]) && isFinite(to[k]) && from[k] !== to[k]);
+    const settle = () => { svg.innerHTML = finalBody; glWireHandles(svg, handles, s); };
+    if (!keys.length || !glMotionOK() || typeof requestAnimationFrame !== 'function') { settle(); return; }
+
+    const t0 = performance.now();
+    const glide = { raf: 0, svg, vars: Object.assign({}, from) };
+    glide.stop = () => {
+        if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(glide.raf);
+        svg.classList.remove('gl-gliding');
+        if (glGlide === glide) glGlide = null;
+    };
+    glide.finish = () => { glide.stop(); settle(); };
+    const frame = now => {
+        const p = Math.min(1, (now - t0) / GL_GLIDE_MS);
+        if (p >= 1) { glide.finish(); return; }
+        const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
+        const v = Object.assign({}, to);
+        keys.forEach(k => { v[k] = from[k] + (to[k] - from[k]) * e; });
+        glide.vars = v;
+        let mm;
+        try { mm = cfg.model(Object.assign({}, v), { prev: glPrevState, base: glSnapshot }) || {}; }
+        catch (err) { glide.finish(); return; }
+        svg.innerHTML = glSvgBody(mm, s, cfg);
+        glide.raf = requestAnimationFrame(frame);
+    };
+    glGlide = glide;
+    svg.classList.add('gl-gliding');
+    frame(t0);
+}
+
 // ── main render ───────────────────────────────────────────────
-function glRender(sim, syncChips) {
+function glRender(sim, syncChips, opts) {
     const overlay = document.getElementById('sim-dom-overlay');
     if (!overlay) return;
     const cfg = sim.graphLab;
@@ -442,15 +517,7 @@ function glRender(sim, syncChips) {
         return;
     }
 
-    const svgBody = [
-        glDefs(),
-        `<rect class="gl-plot-bg" x="${GL_PAD.l}" y="${GL_PAD.t}" width="${s.pw}" height="${s.ph}"></rect>`,
-        glAxes(cfg, s),
-        (m.curves || []).map(c => glCurve(c, s)).join(''),
-        (m.arrows || []).map(a => glArrow(a, s)).join(''),
-        (m.points || []).map(p => glPoint(p, s, cfg)).join(''),
-        (m.handles || []).map(h => glHandle(h, s)).join('')
-    ].join('');
+    const svgBody = glSvgBody(m, s, cfg);
 
     let host = overlay.querySelector('.gl-shell');
     if (!host) {
@@ -469,18 +536,30 @@ function glRender(sim, syncChips) {
         host = overlay.querySelector('.gl-shell');
         glRenderVarStrip(sim, host.querySelector('#gl-var-strip'));
         host.querySelector('#gl-reset-btn').addEventListener('click', () => {
+            const from = glDisplayedState();
             (cfg.vars || []).forEach(v => { glState[v.id] = v.value; });
             glSnapshot = Object.assign({}, glState);
-            glRender(sim, true);
+            glRender(sim, true, { glideFrom: from });
         });
         const gb = host.querySelector('#gl-ghost-btn');
         gb.addEventListener('click', () => { glShowGhost = !glShowGhost; glRender(sim, false); });
         if (typeof holoAttach === 'function') holoAttach(host);
+        host.querySelector('.gl-svg').addEventListener('pointerdown', () => {
+            if (glGlide) glGlide.finish();
+        }, true);
     }
 
     const svg = host.querySelector('.gl-svg');
-    svg.innerHTML = svgBody;
-    glWireHandles(svg, m.handles || [], s);
+    // Any render supersedes a glide still in flight — otherwise its next
+    // frame would paint over this one.
+    const glideFrom = opts && opts.glideFrom;
+    glStopGlide();
+    if (glideFrom) {
+        glGlideSvg(sim, svg, glideFrom, svgBody, m.handles || [], s);
+    } else {
+        svg.innerHTML = svgBody;
+        glWireHandles(svg, m.handles || [], s);
+    }
 
     const gb = host.querySelector('#gl-ghost-btn');
     if (gb) {
@@ -537,6 +616,7 @@ function glRender(sim, syncChips) {
 
 // Entry point called by sim-engine.js's renderSim() for `mode: 'graphlab'`.
 function renderGraphLab(sim) {
+    glStopGlide();
     glSim = sim;
     glDrag = null;
     glShowGhost = true;
@@ -583,13 +663,14 @@ function glRenderScenarios(sim, panel) {
         const note = hiPath(sim, `graphLab.scenarios.${i}.note`) || sc.note || '';
         btn.innerHTML = `<span class="gl-scenario-label">${glEsc(label)}</span>${note ? `<span class="gl-scenario-note">${glEsc(note)}</span>` : ''}`;
         const applyScenario = () => {
+            const from = glDisplayedState();
             (sim.graphLab.vars || []).forEach(v => { glState[v.id] = v.value; });
             Object.keys(sc.set || {}).forEach(k => { glState[k] = sc.set[k]; });
             glSnapshot = Object.assign({}, glState);
             // A preset is a jump, not a drag — re-baseline "previous" so the
             // verdict describes the scenario itself, not the jump into it.
             glPrevState = Object.assign({}, glState);
-            glRender(sim, true);
+            glRender(sim, true, { glideFrom: from });
         };
         btn.addEventListener('click', () => {
             if (sim.graphLab.predict) glOpenPredictGate(sim, sc, applyScenario);

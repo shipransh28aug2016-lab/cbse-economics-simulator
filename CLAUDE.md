@@ -163,6 +163,19 @@ Three points that are load-bearing rather than stylistic:
    mean — every other lab must say what *its* two groups of variables really are, or the
    headings become confidently wrong.
 
+4. **Discrete jumps glide; continuous input never does.** A scenario preset or Reset
+   calls `glRender(sim, true, { glideFrom })`, and `glGlideSvg()` animates the diagram
+   over ~560 ms (ease-out) — but every frame is **`cfg.model()` itself, run at variable
+   values part-way between the old and new state**, never a geometric morph of two
+   pictures, so each in-between curve is a position the model could genuinely draw.
+   Handle drags and chip scrubs stay instant (the curve must stay under the finger);
+   readings, verdict and Mima update immediately and only the diagram travels. A new
+   jump mid-glide starts from the **displayed** state (`glDisplayedState()`), any other
+   render cancels a glide in flight, a press on the diagram lands it at once, and
+   `prefers-reduced-motion` skips it entirely. Because glide frames hit off-step values
+   with several variables moving at once, `testGraphLabGlidePathsStayFinite` walks the
+   exact glide path of every scenario of every Graph Lab.
+
 ### Holo Mode (`js/holo-mode.js`) — the immersive skin over every Graph Lab
 
 A presentation-only layer, ON by default, toggled per viewer (`🛸 Holo`, persisted in
