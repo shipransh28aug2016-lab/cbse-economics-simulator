@@ -34,6 +34,9 @@ const appGlobals = {
     renderGraphLab: 'readonly', glShowGhost: 'writable', glState: 'writable',
     glSetVar: 'readonly', glVar: 'readonly', glRender: 'readonly',
     glLineSeg: 'readonly', GL_TERMS: 'readonly', glMoveShiftVerdict: 'readonly',
+    glEsc: 'readonly', glSim: 'writable',
+    // js/holo-mode.js — the immersive presentation layer over Graph Labs.
+    holoAttach: 'readonly', holoUpdate: 'readonly',
     initPanelCollapse: 'readonly', initStaticPanelCollapse: 'readonly', wireCollapseAllToggle: 'readonly',
     loadPanelCollapsed: 'readonly', savePanelCollapsed: 'readonly', setPanelCollapsed: 'readonly',
     SIMS: 'writable',
@@ -57,7 +60,7 @@ module.exports = [
         ignores: ['js/plotly.min.js']
     },
     {
-        files: ['js/circular_flow_3d.js'],
+        files: ['js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
@@ -70,14 +73,14 @@ module.exports = [
     },
     {
         files: ['js/**/*.js'],
-        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js'],
+        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',
             globals: {
                 window: 'readonly', document: 'readonly', console: 'readonly',
                 localStorage: 'readonly', sessionStorage: 'readonly', fetch: 'readonly', setTimeout: 'readonly',
-                performance: 'readonly', requestAnimationFrame: 'readonly',
+                performance: 'readonly', requestAnimationFrame: 'readonly', DOMParser: 'readonly',
                 module: 'writable', require: 'readonly',
                 ...appGlobals
             }

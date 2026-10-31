@@ -475,6 +475,7 @@ function glRender(sim, syncChips) {
         });
         const gb = host.querySelector('#gl-ghost-btn');
         gb.addEventListener('click', () => { glShowGhost = !glShowGhost; glRender(sim, false); });
+        if (typeof holoAttach === 'function') holoAttach(host);
     }
 
     const svg = host.querySelector('.gl-svg');
@@ -491,6 +492,7 @@ function glRender(sim, syncChips) {
 
     const vh = host.querySelector('#gl-verdict-host');
     if (vh) vh.innerHTML = glVerdictHTML(m.verdict);
+    if (typeof holoUpdate === 'function') holoUpdate(host, m);
 
     if (syncChips !== false) (cfg.vars || []).forEach(v => glSyncChip(v));
 
