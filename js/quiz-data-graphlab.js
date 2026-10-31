@@ -592,13 +592,13 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 level: 'analyse',
                 question: { en: 'The two conditions for producer\'s equilibrium are…', hi: 'उत्पादक संतुलन की दो शर्तें हैं…' },
                 options: [
-                    { en: 'MR = MC, and MC must be rising (cutting MR from below)', hi: 'MR = MC, और MC बढ़ता हुआ हो (MR को नीचे से काटता)' },
+                    { en: 'MR = MC, and MC cuts MR from below (MC > MR beyond that output)', hi: 'MR = MC, और MC, MR को नीचे से काटे (उसके बाद MC > MR)' },
                     { en: 'MR = MC alone is sufficient', hi: 'केवल MR = MC पर्याप्त है' },
                     { en: 'AR = AC, and AC must be falling', hi: 'AR = AC, और AC घटती हुई हो' },
                     { en: 'TR must be at its maximum', hi: 'TR अधिकतम पर हो' }
                 ],
                 correctIndex: 0,
-                explain: { en: 'MR = MC can also occur on the FALLING branch of MC, where producing more still adds to profit. Only where MC is rising is profit actually maximised.', hi: 'MR = MC, MC की गिरती शाखा पर भी हो सकता है, जहाँ और उत्पादन अब भी लाभ बढ़ाता है। लाभ वास्तव में तभी अधिकतम है जब MC बढ़ता हो।' },
+                explain: { en: 'MR = MC can also occur where MC cuts MR from ABOVE, where producing more still adds to profit. Profit is maximised only where MC cuts MR from below (MC > MR beyond that output) — under perfect competition, that means where MC is rising.', hi: 'MR = MC वहाँ भी हो सकता है जहाँ MC, MR को ऊपर से काटता है, जहाँ और उत्पादन अब भी लाभ बढ़ाता है। लाभ तभी अधिकतम है जब MC, MR को नीचे से काटे (उसके बाद MC > MR) — पूर्ण प्रतियोगिता में इसका अर्थ है जहाँ MC बढ़ता हो।' },
                 syllabusId: 'XI-B-U6-PRODUCER-EQ'
             },
             {

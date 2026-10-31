@@ -44,11 +44,30 @@ const GL_DEMAND_STORY_OPTIONS = [
     { en: 'DD shifts left (decrease in demand)', hi: 'DD बाईं ओर खिसकता है (माँग में कमी)' },
     { en: 'Both: a shift AND a movement', hi: 'दोनों: shift भी और movement भी' }
 ];
-function glDemandStoryAnswer(m) {
+function glMoveShiftStoryAnswer(m) {
     const k = m.verdict && m.verdict.kind;
     if (k === 'movement') return 0;
     if (k === 'both') return 3;
     return m.metrics.shift > 0 ? 1 : 2;
+}
+const GL_SUPPLY_STORY_OPTIONS = [
+    { en: 'Movement along SS (expansion / contraction)', hi: 'SS के साथ movement (विस्तार / संकुचन)' },
+    { en: 'SS shifts right (increase in supply)', hi: 'SS दाईं ओर खिसकता है (आपूर्ति में वृद्धि)' },
+    { en: 'SS shifts left (decrease in supply)', hi: 'SS बाईं ओर खिसकता है (आपूर्ति में कमी)' },
+    { en: 'Both: a shift AND a movement', hi: 'दोनों: shift भी और movement भी' }
+];
+// Budget-line moves, classified from the model's own intercepts.
+const GL_BUDGET_STORY_OPTIONS = [
+    { en: 'Shifts outward, parallel (same slope)', hi: 'बाहर की ओर समानांतर खिसकती है (ढलान वही)' },
+    { en: 'Swivels outward along the X-axis (Y-intercept stays)', hi: 'X-अक्ष पर बाहर घूमती है (Y-अंतःखंड वही रहता है)' },
+    { en: 'Swivels outward along the Y-axis (X-intercept stays)', hi: 'Y-अक्ष पर बाहर घूमती है (X-अंतःखंड वही रहता है)' },
+    { en: 'Does not move', hi: 'नहीं हिलती' }
+];
+function glBudgetStoryAnswer(m, prevM) {
+    const dx = m.metrics.xInt - prevM.metrics.xInt, dy = m.metrics.yInt - prevM.metrics.yInt;
+    if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return 3;
+    if (Math.abs(m.metrics.ratio - prevM.metrics.ratio) < 1e-9) return 0;
+    return Math.abs(dy) < 1e-9 ? 1 : 2;
 }
 const GL_MARKET_STORY_OPTIONS = [
     { en: 'DD shifts right', hi: 'DD दाईं ओर खिसकता है' },
@@ -197,7 +216,7 @@ SIMS.push({
                     ask: {
                         q: { en: 'Ramu cuts the price of tea from ₹50 to ₹30. What happens on the diagram?', hi: 'रामू चाय की कीमत ₹50 से घटाकर ₹30 कर देता है। Diagram पर क्या होगा?' },
                         options: GL_DEMAND_STORY_OPTIONS,
-                        correct: c => glDemandStoryAnswer(c.m)
+                        correct: c => glMoveShiftStoryAnswer(c.m)
                     },
                     say: (c, hi) => hi
                         ? `केवल चाय की <b>अपनी कीमत</b> बदली, इसलिए हम उसी DD पर नीचे खिसकते हैं — A से B तक। मात्रा ${fmt(c.prev.m.metrics.q, 0)} से बढ़कर ${fmt(c.m.metrics.q, 0)} कप हो गई। परीक्षा का शब्द: <b>माँग का विस्तार</b> — "माँग में वृद्धि" नहीं।`
@@ -209,7 +228,7 @@ SIMS.push({
                     ask: {
                         q: { en: 'Price goes back to ₹50. Then a big new office opens next door — many more buyers. What happens?', hi: 'कीमत फिर ₹50 हो जाती है। फिर बगल में एक बड़ा नया दफ़्तर खुलता है — बहुत अधिक खरीदार। क्या होगा?' },
                         options: GL_DEMAND_STORY_OPTIONS,
-                        correct: c => glDemandStoryAnswer(c.m)
+                        correct: c => glMoveShiftStoryAnswer(c.m)
                     },
                     say: (c, hi) => hi
                         ? `एक <b>गैर-कीमत निर्धारक</b> (खरीदारों की संख्या) बदला, इसलिए पूरा curve <b>दाईं ओर</b> D₁D₁ पर खिसक गया। उसी ₹50 पर भी अब माँग ${fmt(c.m.metrics.q, 0)} कप है। परीक्षा का शब्द: <b>माँग में वृद्धि</b>।`
@@ -221,7 +240,7 @@ SIMS.push({
                     ask: {
                         q: { en: 'The office stays — and now Ramu also cuts his price to ₹40. What happened compared with the very start?', hi: 'दफ़्तर बना रहता है — और अब रामू कीमत भी ₹40 कर देता है। शुरुआत की तुलना में क्या हुआ?' },
                         options: GL_DEMAND_STORY_OPTIONS,
-                        correct: c => glDemandStoryAnswer(c.m)
+                        correct: c => glMoveShiftStoryAnswer(c.m)
                     },
                     say: (c, hi) => hi
                         ? `<b>दो</b> अलग घटनाएँ: (1) curve दाईं ओर खिसका — <b>माँग में वृद्धि</b>; (2) फिर नए D₁D₁ पर नीचे चले — <b>माँग का विस्तार</b>। अब ₹${fmt(c.v.price, 0)} पर ${fmt(c.m.metrics.q, 0)} कप। परीक्षा में दोनों का नाम अलग-अलग लिखिए।`
@@ -393,6 +412,63 @@ SIMS.push({
             { label: 'Government imposes a tax', note: 'Decrease in Supply', set: { tax: 15 } },
             { label: 'Input prices rise sharply', note: 'Decrease in Supply', set: { inputCost: 16 } }
         ],
+        stories: [{
+            id: 'tomato-farm',
+            title: { en: "Lakshmi's tomato farm — movement or shift?", hi: 'लक्ष्मी का टमाटर का खेत — movement या shift?' },
+            intro: {
+                en: 'Lakshmi grows tomatoes for the mandi. The price changes, then diesel gets costlier, then both happen together. Predict what each does to the supply curve.',
+                hi: 'लक्ष्मी मंडी के लिए टमाटर उगाती है। पहले कीमत बदलती है, फिर डीज़ल महँगा होता है, फिर दोनों एक साथ। अनुमान लगाइए कि हर बार supply curve पर क्या असर होगा।'
+            },
+            outro: {
+                en: 'Own price ⇒ movement along SS (expansion/contraction). Any other determinant — input cost, technology, tax, number of firms ⇒ the whole SS shifts (increase/decrease). Same quantity can be the result of two separate events.',
+                hi: 'अपनी कीमत ⇒ SS के साथ movement (विस्तार/संकुचन)। कोई अन्य निर्धारक — आगत लागत, तकनीक, कर, फ़र्मों की संख्या ⇒ पूरा SS खिसकता है (वृद्धि/कमी)। एक ही मात्रा दो अलग घटनाओं का परिणाम हो सकती है।'
+            },
+            steps: [
+                {
+                    set: {},
+                    say: (c, hi) => hi
+                        ? `₹${fmt(c.v.price, 0)} प्रति crate पर लक्ष्मी मंडी में ${fmt(c.m.metrics.q, 0)} crate लाती है — supply curve SS पर बिंदु A।`
+                        : `At ₹${fmt(c.v.price, 0)} a crate, Lakshmi brings ${fmt(c.m.metrics.q, 0)} crates to the mandi — point A on the supply curve SS.`,
+                    check: c => c.m.verdict.kind === 'none'
+                },
+                {
+                    set: { price: 70 },
+                    ask: {
+                        q: { en: 'The mandi price of tomatoes rises from ₹50 to ₹70. What happens on the diagram?', hi: 'टमाटर का मंडी भाव ₹50 से ₹70 हो जाता है। Diagram पर क्या होगा?' },
+                        options: GL_SUPPLY_STORY_OPTIONS,
+                        correct: c => glMoveShiftStoryAnswer(c.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `केवल टमाटर की <b>अपनी कीमत</b> बढ़ी, इसलिए हम उसी SS पर ऊपर चढ़ते हैं — A से B। मात्रा ${fmt(c.prev.m.metrics.q, 0)} से ${fmt(c.m.metrics.q, 0)} crate हुई। परीक्षा का शब्द: <b>आपूर्ति का विस्तार</b> — "आपूर्ति में वृद्धि" नहीं।`
+                        : `Only the tomatoes' <b>own price</b> rose, so we climb UP the same SS — from A to B. Quantity goes from ${fmt(c.prev.m.metrics.q, 0)} to ${fmt(c.m.metrics.q, 0)} crates. Exam word: <b>Expansion of Supply</b> — never "increase in supply".`,
+                    check: c => c.m.verdict.kind === 'movement' && c.m.metrics.q > c.prev.m.metrics.q
+                },
+                {
+                    set: { inputCost: 15 },
+                    ask: {
+                        q: { en: 'Price is back at ₹50. Then diesel for her pump and tractor gets much costlier. What happens?', hi: 'कीमत फिर ₹50 है। फिर उसके पंप और ट्रैक्टर का डीज़ल बहुत महँगा हो जाता है। क्या होगा?' },
+                        options: GL_SUPPLY_STORY_OPTIONS,
+                        correct: c => glMoveShiftStoryAnswer(c.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `एक <b>गैर-कीमत निर्धारक</b> (आगत लागत) बढ़ा: हर crate उगाना महँगा हुआ, इसलिए पूरा SS <b>बाईं ओर</b> S₁S₁ पर खिसका। उसी ₹50 पर अब केवल ${fmt(c.m.metrics.q, 0)} crate। परीक्षा का शब्द: <b>आपूर्ति में कमी</b>।`
+                        : `A <b>non-price determinant</b> (input cost) rose: every crate now costs more to grow, so the whole SS shifts <b>LEFT</b> to S₁S₁. At the same ₹50, only ${fmt(c.m.metrics.q, 0)} crates now. Exam word: <b>Decrease in Supply</b>.`,
+                    check: c => c.m.verdict.kind === 'shift' && c.m.metrics.shift < 0 && c.v.price === c.first.v.price && c.m.metrics.q < c.first.m.metrics.q
+                },
+                {
+                    set: { inputCost: 15, price: 62 },
+                    ask: {
+                        q: { en: 'Diesel stays costly — and the mandi price rises to ₹62. She is back to selling the same number of crates as at the start. Compared with the start, what happened?', hi: 'डीज़ल महँगा ही रहता है — और मंडी भाव ₹62 हो जाता है। वह फिर उतने ही crate बेच रही है जितने शुरुआत में। शुरुआत की तुलना में क्या हुआ?' },
+                        options: GL_SUPPLY_STORY_OPTIONS,
+                        correct: c => glMoveShiftStoryAnswer(c.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `मात्रा फिर ${fmt(c.m.metrics.q, 0)} crate — पर "कुछ नहीं हुआ" ग़लत उत्तर है। <b>दो</b> घटनाएँ हुईं: (1) SS बाईं ओर खिसका — <b>आपूर्ति में कमी</b>; (2) फिर नए S₁S₁ पर ऊपर चढ़े — <b>आपूर्ति का विस्तार</b>। दोनों ने एक-दूसरे को संयोग से बराबर कर दिया।`
+                        : `Quantity is ${fmt(c.m.metrics.q, 0)} crates again — but "nothing happened" is the wrong answer. <b>Two</b> events: (1) SS shifted left — <b>Decrease in Supply</b>; (2) then she climbed up the new S₁S₁ — <b>Expansion of Supply</b>. They just happen to cancel out.`,
+                    check: c => c.m.verdict.kind === 'both' && Math.abs(c.m.metrics.q - c.first.m.metrics.q) < 0.5
+                }
+            ]
+        }],
         model(v) {
             const d = 0.8, c0 = 10;
             const shift = -v.inputCost + v.tech - v.tax + v.firms;
@@ -730,6 +806,70 @@ SIMS.push({
             { label: 'Price of X falls', note: 'Swivel outward on X-axis', set: { Px: 3 } },
             { label: 'Price of X rises', note: 'Swivel inward on X-axis', set: { Px: 9 } }
         ],
+        stories: [{
+            id: 'pocket-money',
+            title: { en: "Priya's pocket money — books (X) and movies (Y)", hi: 'प्रिया का जेब ख़र्च — किताबें (X) और फ़िल्में (Y)' },
+            intro: {
+                en: 'Priya spends her monthly pocket money on books (X) and movie tickets (Y). Her income changes, then the price of books changes. Predict what each does to her budget line — the exam always asks.',
+                hi: 'प्रिया अपना मासिक जेब ख़र्च किताबों (X) और फ़िल्म टिकटों (Y) पर ख़र्च करती है। पहले उसकी आय बदलती है, फिर किताबों की कीमत। अनुमान लगाइए कि हर बार उसकी बजट रेखा पर क्या असर होगा — परीक्षा में यह हमेशा पूछा जाता है।'
+            },
+            outro: {
+                en: 'Income change ⇒ budget line shifts PARALLEL. Price change ⇒ it SWIVELS on the other axis. Equilibrium: the highest IC the line touches, where MRS = Px/Py. A fall in Px raising X demanded is the law of demand, derived from IC analysis.',
+                hi: 'आय में बदलाव ⇒ बजट रेखा समानांतर खिसकती है। कीमत में बदलाव ⇒ वह दूसरे अक्ष पर टिककर घूमती है। संतुलन: सबसे ऊँचा IC जिसे रेखा छूती है, जहाँ MRS = Px/Py। Px घटने पर X की माँग बढ़ना माँग का नियम है, जो IC विश्लेषण से निकलता है।'
+            },
+            steps: [
+                {
+                    set: {},
+                    say: (c, hi) => hi
+                        ? `₹${fmt(c.v.M, 0)} में, किताब ₹${fmt(c.v.Px, 0)} और टिकट ₹${fmt(c.v.Py, 0)}: सबसे अच्छा संयोजन E है — ${fmt(c.m.metrics.xStar, 0)} किताबें और ${fmt(c.m.metrics.yStar, 0)} टिकट, जहाँ बजट रेखा IC₂ को छूती है और MRS = Px/Py = ${fmt(c.m.metrics.ratio, 2)}।`
+                        : `With ₹${fmt(c.v.M, 0)}, books at ₹${fmt(c.v.Px, 0)} and tickets at ₹${fmt(c.v.Py, 0)}: her best bundle is E — ${fmt(c.m.metrics.xStar, 0)} books and ${fmt(c.m.metrics.yStar, 0)} tickets, where the budget line just touches IC₂ and MRS = Px/Py = ${fmt(c.m.metrics.ratio, 2)}.`,
+                    check: c => Math.abs(c.m.metrics.ratio - c.v.Px / c.v.Py) < 1e-9 && Math.abs(c.m.metrics.xStar * c.v.Px + c.m.metrics.yStar * c.v.Py - c.v.M) < 1e-6
+                },
+                {
+                    set: { M: 220 },
+                    ask: {
+                        q: { en: 'Her pocket money rises from ₹160 to ₹220. Prices stay the same. What happens to her budget line?', hi: 'उसका जेब ख़र्च ₹160 से ₹220 हो जाता है। कीमतें वही रहती हैं। उसकी बजट रेखा का क्या होगा?' },
+                        options: GL_BUDGET_STORY_OPTIONS,
+                        correct: c => glBudgetStoryAnswer(c.m, c.prev.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `दोनों अंतःखंड बढ़े (${fmt(c.prev.m.metrics.xInt, 0)} → ${fmt(c.m.metrics.xInt, 0)} किताबें, ${fmt(c.prev.m.metrics.yInt, 0)} → ${fmt(c.m.metrics.yInt, 0)} टिकट), पर ढलान Px/Py = ${fmt(c.m.metrics.ratio, 2)} वही रहा — रेखा <b>समानांतर</b> बाहर खिसकी। अब वह ऊँचे IC पर पहुँचती है: ${fmt(c.m.metrics.xStar, 0)} किताबें और ${fmt(c.m.metrics.yStar, 0)} टिकट।`
+                        : `Both intercepts grew (${fmt(c.prev.m.metrics.xInt, 0)} → ${fmt(c.m.metrics.xInt, 0)} books, ${fmt(c.prev.m.metrics.yInt, 0)} → ${fmt(c.m.metrics.yInt, 0)} tickets), but the slope Px/Py = ${fmt(c.m.metrics.ratio, 2)} did not change — the line shifted out <b>parallel</b>. She now reaches a higher IC: ${fmt(c.m.metrics.xStar, 0)} books and ${fmt(c.m.metrics.yStar, 0)} tickets.`,
+                    check: c => c.m.metrics.ratio === c.prev.m.metrics.ratio && c.m.metrics.xInt > c.prev.m.metrics.xInt && c.m.metrics.yInt > c.prev.m.metrics.yInt && c.m.metrics.xStar > c.prev.m.metrics.xStar
+                },
+                {
+                    set: { Px: 4 },
+                    ask: {
+                        q: { en: 'Pocket money goes back to ₹160 — but books get cheaper: ₹5 → ₹4. What happens to her budget line?', hi: 'जेब ख़र्च फिर ₹160 — पर किताबें सस्ती हो जाती हैं: ₹5 → ₹4। उसकी बजट रेखा का क्या होगा?' },
+                        options: GL_BUDGET_STORY_OPTIONS,
+                        correct: c => glBudgetStoryAnswer(c.m, c.first.m)
+                    },
+                    say: (c, hi) => hi
+                        ? `Y-अंतःखंड ${fmt(c.m.metrics.yInt, 0)} टिकट पर टिका रहा (सारा पैसा फ़िल्मों पर लगाने पर कुछ नहीं बदला), पर X-अंतःखंड ${fmt(c.first.m.metrics.xInt, 0)} से ${fmt(c.m.metrics.xInt, 0)} किताबें हो गया — रेखा X-अक्ष पर <b>बाहर घूमी</b>। वह अब ${fmt(c.first.m.metrics.xStar, 0)} की जगह ${fmt(c.m.metrics.xStar, 0)} किताबें खरीदती है: कीमत घटी, माँगी गई मात्रा बढ़ी — <b>माँग का नियम</b>, IC से निकला।`
+                        : `The Y-intercept stayed at ${fmt(c.m.metrics.yInt, 0)} tickets (spending everything on movies is unchanged), but the X-intercept went from ${fmt(c.first.m.metrics.xInt, 0)} to ${fmt(c.m.metrics.xInt, 0)} books — the line <b>swivelled outward</b> on the X-axis. She now buys ${fmt(c.m.metrics.xStar, 0)} books instead of ${fmt(c.first.m.metrics.xStar, 0)}: price down, quantity demanded up — the <b>law of demand</b>, derived from ICs.`,
+                    check: c => c.m.metrics.yInt === c.first.m.metrics.yInt && c.m.metrics.xInt > c.first.m.metrics.xInt && c.m.metrics.xStar > c.first.m.metrics.xStar
+                },
+                {
+                    set: { Px: 4 },
+                    ask: {
+                        q: { en: 'At her new equilibrium, what is her MRS (books for tickets)?', hi: 'उसके नए संतुलन पर उसकी MRS (टिकटों के बदले किताबें) क्या है?' },
+                        options: c => [
+                            { en: fmt(c.m.metrics.ratio, 2) + ' — the new Px/Py', hi: fmt(c.m.metrics.ratio, 2) + ' — नया Px/Py' },
+                            { en: fmt(c.first.m.metrics.ratio, 2) + ' — the old Px/Py', hi: fmt(c.first.m.metrics.ratio, 2) + ' — पुराना Px/Py' },
+                            { en: fmt(1 / c.m.metrics.ratio, 2) + ' — Py/Px, the ratio upside down', hi: fmt(1 / c.m.metrics.ratio, 2) + ' — Py/Px, उल्टा अनुपात' }
+                        ],
+                        correct: c => {
+                            const vals = [c.m.metrics.ratio, c.first.m.metrics.ratio, 1 / c.m.metrics.ratio];
+                            return vals.findIndex(x => Math.abs(x - c.v.Px / c.v.Py) < 1e-9);
+                        }
+                    },
+                    say: (c, hi) => hi
+                        ? `संतुलन पर हमेशा <b>MRS = Px/Py = ${fmt(c.m.metrics.ratio, 2)}</b> — बजट रेखा IC को ठीक स्पर्श करती है। जाँच: ₹${fmt(c.m.metrics.xStar * c.v.Px, 0)} किताबों पर + ₹${fmt(c.m.metrics.yStar * c.v.Py, 0)} फ़िल्मों पर = पूरे ₹${fmt(c.v.M, 0)}। दोनों शर्तें पूरी।`
+                        : `At equilibrium <b>MRS = Px/Py = ${fmt(c.m.metrics.ratio, 2)}</b>, always — the budget line is exactly tangent to the IC. Check: ₹${fmt(c.m.metrics.xStar * c.v.Px, 0)} on books + ₹${fmt(c.m.metrics.yStar * c.v.Py, 0)} on movies = the whole ₹${fmt(c.v.M, 0)}. Both conditions hold.`,
+                    check: c => Math.abs(c.m.metrics.ratio - c.v.Px / c.v.Py) < 1e-9 && Math.abs(c.m.metrics.xStar * c.v.Px + c.m.metrics.yStar * c.v.Py - c.v.M) < 1e-6
+                }
+            ]
+        }],
         model(v) {
             const xInt = v.M / v.Px, yInt = v.M / v.Py;
             const ratio = v.Px / v.Py;
@@ -783,7 +923,7 @@ SIMS.push({
                     title: `Equilibrium at E: <b>MRS = Px/Py = ${fmt(ratio, 2)}</b>, on the highest attainable IC₂`,
                     detail: `The consumer cannot reach IC₃ — it lies entirely beyond the budget line. Any point on IC₁ is affordable but gives less satisfaction than E. Only at E is the budget line <b>tangent</b>, so both conditions hold: MRS equals the price ratio, and MRS is diminishing (the IC is convex to the origin). Drag the <span style="color:#dc2626">red</span> handle to change income — notice the line stays <b>parallel</b>. Drag the <span style="color:#ea580c">orange</span> X-intercept to change Px — notice the line <b>swivels</b> instead. That difference is why a price change, not an income change, traces out the demand curve.`
                 },
-                metrics: { xStar, yStar, ratio, M: v.M }
+                metrics: { xStar, yStar, ratio, M: v.M, xInt, yInt }
             };
         }
     },
@@ -827,9 +967,98 @@ SIMS.push({
         scenarios: [
             { label: 'Higher fixed cost', note: 'AC and AFC rise, AVC & MC unchanged', set: { tfc: 140 } },
             { label: 'Lower fixed cost', note: 'AC falls, AVC & MC unchanged', set: { tfc: 30 } },
-            { label: 'Read cost at min AC', note: 'MC = AC here', set: { q: 11.5 } },
+            { label: 'Read cost at min AC', note: 'MC = AC here', set: { q: 12.5 } },
             { label: 'Efficiency improves', note: 'AVC and MC both fall', set: { eff: 4 } }
         ],
+        stories: [{
+            id: 'bakery',
+            title: { en: 'How many cakes should the bakery bake?', hi: 'बेकरी कितने केक बनाए?' },
+            intro: {
+                en: 'A small bakery pays fixed rent and buys flour, gas and labour for every cake. As it bakes more, watch the average cost — and catch the two traps examiners love.',
+                hi: 'एक छोटी बेकरी तय किराया देती है और हर केक के लिए आटा, गैस और मज़दूरी ख़रीदती है। जैसे-जैसे वह ज़्यादा केक बनाती है, औसत लागत देखिए — और उन दो फंदों को पकड़िए जो परीक्षक को बहुत पसंद हैं।'
+            },
+            outro: {
+                en: 'MC below AC pulls AC down; MC above AC pulls it up — so MC cuts AC at AC\'s minimum, from below. Whether MC itself is rising does not decide it. Fixed cost moves AC and AFC only; MC and AVC never notice it.',
+                hi: 'AC से नीचे MC, AC को नीचे खींचता है; AC से ऊपर MC उसे ऊपर खींचता है — इसलिए MC, AC को उसके न्यूनतम बिंदु पर नीचे से काटता है। MC ख़ुद बढ़ रहा है या नहीं, यह तय नहीं करता। स्थिर लागत केवल AC और AFC को हिलाती है; MC और AVC पर उसका कोई असर नहीं।'
+            },
+            steps: [
+                {
+                    set: { q: 4 },
+                    say: (c, hi) => hi
+                        ? `${fmt(c.v.q, 0)} केक पर: एक और केक की लागत (MC) ₹${fmt(c.m.metrics.mc, 1)} है, जबकि औसत लागत (AC) ₹${fmt(c.m.metrics.ac, 1)} — ज़्यादातर किराया, जो बहुत कम केकों में बँटा है। MC < AC, इसलिए AC गिर रहा है।`
+                        : `At ${fmt(c.v.q, 0)} cakes: one more cake costs (MC) ₹${fmt(c.m.metrics.mc, 1)}, while the average cost (AC) is ₹${fmt(c.m.metrics.ac, 1)} — mostly rent spread over very few cakes. MC < AC, so AC is falling.`,
+                    check: c => c.m.metrics.mc < c.m.metrics.ac
+                },
+                {
+                    set: { q: 8 },
+                    ask: {
+                        q: { en: 'The bakery goes to 8 cakes. MC has started RISING. Does AC start rising too?', hi: 'बेकरी 8 केक तक जाती है। MC बढ़ना शुरू हो गया है। क्या AC भी बढ़ने लगेगा?' },
+                        options: [
+                            { en: 'Yes — when MC rises, AC rises', hi: 'हाँ — जब MC बढ़ता है, AC भी बढ़ता है' },
+                            { en: 'No — AC keeps falling as long as MC is below AC', hi: 'नहीं — जब तक MC, AC से नीचे है, AC गिरता रहता है' },
+                            { en: 'AC stays exactly the same', hi: 'AC बिल्कुल वही रहता है' }
+                        ],
+                        correct: c => c.m.metrics.ac < c.prev.m.metrics.ac ? 1 : (c.m.metrics.ac > c.prev.m.metrics.ac ? 0 : 2)
+                    },
+                    say: (c, hi) => hi
+                        ? `फंदा नंबर 1: MC ₹${fmt(c.prev.m.metrics.mc, 1)} से ₹${fmt(c.m.metrics.mc, 1)} तक <b>बढ़ा</b>, फिर भी AC ₹${fmt(c.prev.m.metrics.ac, 1)} से ₹${fmt(c.m.metrics.ac, 1)} तक <b>गिरा</b>। क्यों? हर नया केक (₹${fmt(c.m.metrics.mc, 1)}) अब भी औसत (₹${fmt(c.m.metrics.ac, 1)}) से सस्ता है — इसलिए औसत नीचे खिंचता है। MC की <i>दिशा</i> नहीं, AC से उसकी <i>तुलना</i> मायने रखती है।`
+                        : `Trap #1: MC <b>rose</b> from ₹${fmt(c.prev.m.metrics.mc, 1)} to ₹${fmt(c.m.metrics.mc, 1)}, yet AC <b>fell</b> from ₹${fmt(c.prev.m.metrics.ac, 1)} to ₹${fmt(c.m.metrics.ac, 1)}. Why? Each new cake (₹${fmt(c.m.metrics.mc, 1)}) still costs less than the average (₹${fmt(c.m.metrics.ac, 1)}), so it drags the average down. What matters is MC <i>compared with</i> AC, not MC's direction.`,
+                    check: c => c.m.metrics.mc > c.prev.m.metrics.mc && c.m.metrics.ac < c.prev.m.metrics.ac && c.m.metrics.mc < c.m.metrics.ac
+                },
+                {
+                    set: { q: 12.5 },
+                    ask: {
+                        q: { en: 'Keep baking. Where will MC finally meet AC?', hi: 'बनाते रहिए। MC आख़िर AC से कहाँ मिलेगा?' },
+                        options: [
+                            { en: 'At the lowest point of AC', hi: 'AC के सबसे निचले बिंदु पर' },
+                            { en: 'At the highest point of AC', hi: 'AC के सबसे ऊँचे बिंदु पर' },
+                            { en: 'They never meet', hi: 'वे कभी नहीं मिलते' }
+                        ],
+                        correct: c => c.m.metrics.atMinAC ? 0 : 2
+                    },
+                    say: (c, hi) => hi
+                        ? `${fmt(c.v.q, 1)} केक पर MC (₹${fmt(c.m.metrics.mc, 2)}) और AC (₹${fmt(c.m.metrics.ac, 2)}) लगभग बराबर हैं — और यही AC का <b>सबसे निचला बिंदु</b> है। यह संयोग नहीं: इससे पहले MC, AC को नीचे खींच रहा था; इसके बाद ऊपर खींचेगा। MC, AC को उसके न्यूनतम पर <b>नीचे से</b> काटता है।`
+                        : `At ${fmt(c.v.q, 1)} cakes, MC (₹${fmt(c.m.metrics.mc, 2)}) and AC (₹${fmt(c.m.metrics.ac, 2)}) are nearly equal — and this is the <b>lowest point of AC</b>. Not a coincidence: before this, MC was pulling AC down; after it, MC pulls it up. MC cuts AC at its minimum, <b>from below</b>.`,
+                    check: c => c.m.metrics.atMinAC && c.m.metrics.ac < c.prev.m.metrics.ac && Math.abs(c.m.metrics.mc - c.m.metrics.ac) < 0.5
+                },
+                {
+                    set: { q: 15 },
+                    ask: {
+                        q: { en: 'Now 15 cakes: the oven is overcrowded and MC is well above AC. What happens to AC?', hi: 'अब 15 केक: ओवन भर गया है और MC, AC से काफ़ी ऊपर है। AC का क्या होगा?' },
+                        options: [
+                            { en: 'It rises — MC above AC pulls it up', hi: 'यह बढ़ेगा — AC से ऊपर MC उसे ऊपर खींचता है' },
+                            { en: 'It keeps falling', hi: 'यह गिरता रहेगा' },
+                            { en: 'It stays at its minimum', hi: 'यह न्यूनतम पर ही रहेगा' }
+                        ],
+                        correct: c => c.m.metrics.ac > c.prev.m.metrics.ac ? 0 : (c.m.metrics.ac < c.prev.m.metrics.ac ? 1 : 2)
+                    },
+                    say: (c, hi) => hi
+                        ? `हर नया केक (MC ₹${fmt(c.m.metrics.mc, 1)}) अब औसत (₹${fmt(c.m.metrics.ac, 1)}) से महँगा है, इसलिए AC ₹${fmt(c.prev.m.metrics.ac, 2)} से बढ़कर ₹${fmt(c.m.metrics.ac, 2)} हो गया। यही AC का U-आकार है।`
+                        : `Each new cake (MC ₹${fmt(c.m.metrics.mc, 1)}) now costs more than the average (₹${fmt(c.m.metrics.ac, 1)}), so AC rises from ₹${fmt(c.prev.m.metrics.ac, 2)} to ₹${fmt(c.m.metrics.ac, 2)}. That is the U-shape of AC.`,
+                    check: c => c.m.metrics.mc > c.m.metrics.ac && c.m.metrics.ac > c.prev.m.metrics.ac
+                },
+                {
+                    set: { q: 15, tfc: 140 },
+                    ask: {
+                        q: { en: 'The landlord raises the rent (TFC ₹80 → ₹140). Output stays at 15. Which curves move?', hi: 'मकान-मालिक किराया बढ़ा देता है (TFC ₹80 → ₹140)। उत्पादन 15 ही रहता है। कौन-से curve हिलेंगे?' },
+                        options: [
+                            { en: 'Only AC and AFC — MC and AVC do not move', hi: 'केवल AC और AFC — MC और AVC नहीं हिलते' },
+                            { en: 'All four curves move up', hi: 'चारों curve ऊपर जाते हैं' },
+                            { en: 'Only MC and AVC', hi: 'केवल MC और AVC' }
+                        ],
+                        correct: c => {
+                            const mcSame = c.m.metrics.mc === c.prev.m.metrics.mc, avcSame = c.m.metrics.avc === c.prev.m.metrics.avc;
+                            const acMoved = c.m.metrics.ac !== c.prev.m.metrics.ac;
+                            return mcSame && avcSame && acMoved ? 0 : (!mcSame && !avcSame && acMoved ? 1 : 2);
+                        }
+                    },
+                    say: (c, hi) => hi
+                        ? `फंदा नंबर 2: MC (₹${fmt(c.m.metrics.mc, 1)}) और AVC (₹${fmt(c.m.metrics.avc, 1)}) <b>बिल्कुल नहीं हिले</b> — किराया इस पर निर्भर नहीं कि कितने केक बने। केवल AC (₹${fmt(c.prev.m.metrics.ac, 1)} → ₹${fmt(c.m.metrics.ac, 1)}) और AFC ऊपर गए। और देखिए: सबसे सस्ता उत्पादन ${fmt(c.prev.m.metrics.minACq, 1)} से ${fmt(c.m.metrics.minACq, 1)} केक पर खिसक गया — बड़ा किराया ज़्यादा केकों में बाँटना सस्ता पड़ता है।`
+                        : `Trap #2: MC (₹${fmt(c.m.metrics.mc, 1)}) and AVC (₹${fmt(c.m.metrics.avc, 1)}) <b>did not move at all</b> — rent does not depend on how many cakes are baked. Only AC (₹${fmt(c.prev.m.metrics.ac, 1)} → ₹${fmt(c.m.metrics.ac, 1)}) and AFC went up. And notice: the lowest-cost output moved from ${fmt(c.prev.m.metrics.minACq, 1)} to ${fmt(c.m.metrics.minACq, 1)} cakes — a bigger rent is cheaper when spread over more cakes.`,
+                    check: c => c.m.metrics.mc === c.prev.m.metrics.mc && c.m.metrics.avc === c.prev.m.metrics.avc && c.m.metrics.ac > c.prev.m.metrics.ac && c.m.metrics.minACq > c.prev.m.metrics.minACq
+                }
+            ]
+        }],
         model(v) {
             // A cubic TVC gives the textbook's U-shaped AVC and the rising
             // MC that cuts it at its minimum — the whole point of the figure.
@@ -856,6 +1085,14 @@ SIMS.push({
                 return { q: best, v: bv };
             };
             const minAVC = argmin(avc), minAC = argmin(ac);
+            // The output slider moves in 0.5 steps, so MC and AC are almost
+            // never within a few paise of each other at a reachable Q — the
+            // old "|MC − AC| < 0.15" test showed the minimum-point verdict in
+            // 110 of ~14,000 states and never at the defaults. Name the
+            // minimum at the reachable output where AC is LOWEST — i.e. AC
+            // is no higher than at either neighbouring slider stop (the
+            // output var's step is 0.5).
+            const atMinAC = ac(v.q) <= ac(v.q - 0.5) && ac(v.q) < ac(v.q + 0.5);
 
             return {
                 curves: [
@@ -886,14 +1123,14 @@ SIMS.push({
                 ],
                 verdict: {
                     kind: mc(v.q) < ac(v.q) ? 'movement' : 'shift',
-                    title: mc(v.q) < ac(v.q) - 0.15
-                        ? 'MC &lt; AC → <b>AC is still falling</b>'
-                        : mc(v.q) > ac(v.q) + 0.15
-                            ? 'MC &gt; AC → <b>AC is now rising</b>'
-                            : 'MC = AC → you are at the <b>minimum point of AC</b>',
-                    detail: `At Q = ${fmt(v.q, 1)}: MC = ₹${fmt(mc(v.q), 2)} and AC = ₹${fmt(ac(v.q), 2)}. ${mc(v.q) < ac(v.q) - 0.15 ? 'Each extra unit costs less than the running average, so the average is pulled <b>down</b>.' : mc(v.q) > ac(v.q) + 0.15 ? 'Each extra unit costs more than the running average, so the average is pulled <b>up</b>.' : 'Neither pulls — this is exactly where MC crosses AC, and AC is at its lowest.'} AC reaches its minimum at Q ≈ ${fmt(minAC.q, 1)} and AVC at Q ≈ ${fmt(minAVC.q, 1)} — AVC bottoms out <b>before</b> AC, because falling AFC keeps dragging AC down for a while longer. Raise TFC and watch AC and AFC lift while <b>AVC and MC do not move at all</b>.`
+                    title: atMinAC
+                        ? 'MC = AC → you are at the <b>minimum point of AC</b>'
+                        : mc(v.q) < ac(v.q)
+                            ? 'MC &lt; AC → <b>AC is still falling</b>'
+                            : 'MC &gt; AC → <b>AC is now rising</b>',
+                    detail: `At Q = ${fmt(v.q, 1)}: MC = ₹${fmt(mc(v.q), 2)} and AC = ₹${fmt(ac(v.q), 2)}. ${atMinAC ? `MC crosses AC at Q ≈ ${fmt(minAC.q, 2)} — the nearest output on this slider — and that crossing is exactly where AC is lowest: below it MC pulls AC down, above it MC pulls AC up.` : mc(v.q) < ac(v.q) ? 'Each extra unit costs less than the running average, so the average is pulled <b>down</b>.' : 'Each extra unit costs more than the running average, so the average is pulled <b>up</b>.'} AC reaches its minimum at Q ≈ ${fmt(minAC.q, 1)} and AVC at Q ≈ ${fmt(minAVC.q, 1)} — AVC bottoms out <b>before</b> AC, because falling AFC keeps dragging AC down for a while longer. Raise TFC and watch AC and AFC lift while <b>AVC and MC do not move at all</b>.`
                 },
-                metrics: { q: v.q, ac: ac(v.q), mc: mc(v.q), avc: avc(v.q), minACq: minAC.q }
+                metrics: { q: v.q, ac: ac(v.q), mc: mc(v.q), avc: avc(v.q), minACq: minAC.q, atMinAC }
             };
         }
     },
@@ -916,13 +1153,13 @@ SIMS.push({
     class: 'XI', part: 'B', unit: 6, unitTitle: 'Producer Behaviour and Supply', topicLabel: 'Revenue & Producer Equilibrium',
     syllabusIds: ['XI-B-U6-REVENUE', 'XI-B-U6-PRODUCER-EQ'],
     mode: 'graphlab',
-    concept: '<p><b>Perfect competition:</b> the firm is a price-taker, so it sells any quantity at the same price. Then <b>AR = MR = price</b>, and both are a horizontal straight line; TR rises as a straight line through the origin.</p><p><b>Monopoly / imperfect competition:</b> to sell more the firm must cut price, so AR slopes downward and <b>MR falls twice as fast</b>, lying below AR. TR rises, peaks where MR = 0, then falls.</p><p><b>Producer\'s equilibrium</b> is where <b>MR = MC and MC is rising</b> (cutting MR from below). Both conditions are needed — MR = MC alone can also occur at a loss-maximising point where MC is falling.</p>',
+    concept: '<p><b>Perfect competition:</b> the firm is a price-taker, so it sells any quantity at the same price. Then <b>AR = MR = price</b>, and both are a horizontal straight line; TR rises as a straight line through the origin.</p><p><b>Monopoly / imperfect competition:</b> to sell more the firm must cut price, so AR slopes downward and <b>MR falls twice as fast</b>, lying below AR. TR rises, peaks where MR = 0, then falls.</p><p><b>Producer\'s equilibrium</b> is where <b>MR = MC and MC cuts MR from below</b> — beyond that output MC is greater than MR. Both conditions are needed: MR = MC can also occur where MC cuts MR from <i>above</i>, which is a profit-<i>minimising</i> point. Under perfect competition (flat MR) "cuts from below" simply means MC is rising; under monopoly MR slopes down, so MC can cut it from below even while MC is still falling.</p>',
     formulas: [
         'TR = P × Q      AR = TR / Q = P      MR = ΔTR / ΔQ',
         'Perfect competition: AR = MR = P (horizontal line)',
         'Monopoly: AR slopes down; MR falls twice as steeply, MR < AR',
         'TR is maximum where MR = 0',
-        "Producer's equilibrium: MR = MC, and MC rising",
+        "Producer's equilibrium: MR = MC, and MC cuts MR from below (MC > MR beyond it)",
         'Profit = (AR − AC) × Q'
     ],
     graphLab: {
@@ -941,6 +1178,75 @@ SIMS.push({
             { label: 'Jump to MR = MC', note: "Producer's equilibrium", set: { q: 11 } },
             { label: 'Costs rise', note: 'Equilibrium output falls', set: { cost: 6 } }
         ],
+        stories: [{
+            id: 'workshop',
+            title: { en: "Meera's workshop — how much to produce?", hi: 'मीरा की कार्यशाला — कितना उत्पादन करें?' },
+            intro: {
+                en: 'Meera stitches kurtas in a competitive market: she can sell any number at the market price of ₹34. Help her find the output that makes the most profit — one unit at a time.',
+                hi: 'मीरा प्रतियोगी बाज़ार में कुर्ते सिलती है: वह बाज़ार कीमत ₹34 पर कितने भी बेच सकती है। एक-एक इकाई सोचकर उसे सबसे ज़्यादा लाभ वाला उत्पादन ढूँढ़ने में मदद कीजिए।'
+            },
+            outro: {
+                en: "Producer's equilibrium: MR = MC, and MC cuts MR from below (beyond it MC > MR). Under perfect competition MR = AR = price; under monopoly MR falls below AR, and the price is read off AR — above MR.",
+                hi: 'उत्पादक संतुलन: MR = MC, और MC, MR को नीचे से काटे (उसके बाद MC > MR)। पूर्ण प्रतियोगिता में MR = AR = कीमत; एकाधिकार में MR, AR से नीचे चला जाता है, और कीमत AR से पढ़ी जाती है — MR से ऊपर।'
+            },
+            steps: [
+                {
+                    set: { q: 4 },
+                    say: (c, hi) => hi
+                        ? `${fmt(c.v.q, 0)} कुर्तों पर: एक और कुर्ता ₹${fmt(c.m.metrics.mr, 0)} लाता है (MR) पर केवल ₹${fmt(c.m.metrics.mc, 1)} लागत (MC) लगाता है। MR > MC — हर अतिरिक्त कुर्ता लाभ <b>बढ़ाता</b> है, इसलिए उत्पादन बढ़ाना चाहिए।`
+                        : `At ${fmt(c.v.q, 0)} kurtas: one more kurta brings in ₹${fmt(c.m.metrics.mr, 0)} (MR) but costs only ₹${fmt(c.m.metrics.mc, 1)} (MC). MR > MC — every extra kurta <b>adds</b> to profit, so output should expand.`,
+                    check: c => c.m.metrics.isPC && c.m.metrics.mr > c.m.metrics.mc
+                },
+                {
+                    set: { q: 19 },
+                    ask: {
+                        q: { en: 'Excited, Meera jumps to 19 kurtas. Is that 19th kurta worth making?', hi: 'उत्साह में मीरा 19 कुर्तों पर पहुँच जाती है। क्या वह 19वाँ कुर्ता बनाना ठीक है?' },
+                        options: c => [
+                            { en: `No — it costs ₹${fmt(c.m.metrics.mc, 0)} but earns only ₹${fmt(c.m.metrics.mr, 0)}`, hi: `नहीं — इसकी लागत ₹${fmt(c.m.metrics.mc, 0)} है पर कमाई केवल ₹${fmt(c.m.metrics.mr, 0)}` },
+                            { en: 'Yes — more output always means more profit', hi: 'हाँ — ज़्यादा उत्पादन का मतलब हमेशा ज़्यादा लाभ' },
+                            { en: 'Yes — her total profit is still positive', hi: 'हाँ — उसका कुल लाभ अब भी धनात्मक है' }
+                        ],
+                        correct: c => c.m.metrics.mr < c.m.metrics.mc ? 0 : 1
+                    },
+                    say: (c, hi) => hi
+                        ? `अब MC (₹${fmt(c.m.metrics.mc, 1)}) > MR (₹${fmt(c.m.metrics.mr, 0)}): आख़िरी कुर्ते <b>लाभ घटा रहे</b> हैं। कुल लाभ अब भी धनात्मक है (₹${fmt(c.m.metrics.profit, 0)}), पर यह एक फंदा है — सवाल यह नहीं कि लाभ है या नहीं, सवाल यह है कि <i>अगली इकाई</i> उसे बढ़ाती है या घटाती है।`
+                        : `Now MC (₹${fmt(c.m.metrics.mc, 1)}) > MR (₹${fmt(c.m.metrics.mr, 0)}): the last kurtas are <b>eating into profit</b>. Total profit is still positive (₹${fmt(c.m.metrics.profit, 0)}), but that is the trap — the question is not whether there is profit, but whether the <i>next unit</i> adds to it or takes from it.`,
+                    check: c => c.m.metrics.mr < c.m.metrics.mc && c.m.metrics.profit > 0 && c.m.metrics.eqQ < c.v.q
+                },
+                {
+                    set: { q: 17 },
+                    ask: {
+                        q: { en: 'So where should she settle?', hi: 'तो उसे कहाँ रुकना चाहिए?' },
+                        options: [
+                            { en: 'Where MR = MC, with MC cutting MR from below', hi: 'जहाँ MR = MC हो, और MC, MR को नीचे से काटे' },
+                            { en: 'Where AC is lowest', hi: 'जहाँ AC सबसे कम हो' },
+                            { en: 'At the largest output she can manage', hi: 'जितना अधिकतम उत्पादन वह कर सके' }
+                        ],
+                        correct: c => c.m.verdict.kind === 'movement' ? 0 : 2
+                    },
+                    say: (c, hi) => hi
+                        ? `${fmt(c.v.q, 0)} कुर्तों पर MR = MC (₹${fmt(c.m.metrics.mr, 0)} ≈ ₹${fmt(c.m.metrics.mc, 1)}), और इसके आगे MC, MR से ऊपर चला जाता है। लाभ यहीं सबसे अधिक है: ₹${fmt(c.m.metrics.profit, 0)} — 4 कुर्तों (₹${fmt(c.first.m.metrics.profit, 0)}) और 19 कुर्तों (₹${fmt(c.prev.m.metrics.profit, 0)}) दोनों से ज़्यादा। यही <b>उत्पादक संतुलन</b> है।`
+                        : `At ${fmt(c.v.q, 0)} kurtas MR = MC (₹${fmt(c.m.metrics.mr, 0)} ≈ ₹${fmt(c.m.metrics.mc, 1)}), and beyond it MC rises above MR. Profit peaks right here: ₹${fmt(c.m.metrics.profit, 0)} — more than at 4 kurtas (₹${fmt(c.first.m.metrics.profit, 0)}) or at 19 (₹${fmt(c.prev.m.metrics.profit, 0)}). This is <b>producer's equilibrium</b>.`,
+                    check: c => c.m.verdict.kind === 'movement' && c.m.metrics.profit > c.prev.m.metrics.profit && c.m.metrics.profit > c.first.m.metrics.profit
+                },
+                {
+                    set: { q: 11, market: 7, price: 50 },
+                    ask: {
+                        q: { en: 'Years later her designs are unique — she has monopoly power, so to sell more she must lower her price. At her new equilibrium, which is true?', hi: 'बरसों बाद उसके डिज़ाइन अनोखे हैं — उसके पास एकाधिकार शक्ति है, इसलिए ज़्यादा बेचने के लिए उसे कीमत घटानी पड़ती है। उसके नए संतुलन पर क्या सही है?' },
+                        options: [
+                            { en: 'Price (AR) is above MR = MC', hi: 'कीमत (AR), MR = MC से ऊपर है' },
+                            { en: 'Price = MR = MC, just like before', hi: 'कीमत = MR = MC, पहले जैसा' },
+                            { en: 'Price is below MC', hi: 'कीमत, MC से नीचे है' }
+                        ],
+                        correct: c => (c.m.metrics.ar > c.m.metrics.mr + 1 ? 0 : (Math.abs(c.m.metrics.ar - c.m.metrics.mr) <= 1 ? 1 : 2))
+                    },
+                    say: (c, hi) => hi
+                        ? `अब AR नीचे ढलता है और MR उससे भी तेज़ी से गिरकर AR के <b>नीचे</b> रहता है। संतुलन फिर MR = MC पर है (${fmt(c.v.q, 0)} इकाई, MR ₹${fmt(c.m.metrics.mr, 1)} ≈ MC ₹${fmt(c.m.metrics.mc, 1)}), पर कीमत AR से पढ़ी जाती है: ₹${fmt(c.m.metrics.ar, 1)} — MR से काफ़ी ऊपर। प्रतियोगिता में कीमत = MR थी; एकाधिकार में कीमत > MR।`
+                        : `Now AR slopes down, and MR falls even faster, lying <b>below</b> AR. Equilibrium is still at MR = MC (${fmt(c.v.q, 0)} units, MR ₹${fmt(c.m.metrics.mr, 1)} ≈ MC ₹${fmt(c.m.metrics.mc, 1)}), but the price is read off AR: ₹${fmt(c.m.metrics.ar, 1)} — well above MR. Under competition price = MR; under monopoly price > MR.`,
+                    check: c => !c.m.metrics.isPC && c.m.verdict.kind === 'movement' && c.m.metrics.ar > c.m.metrics.mr + 1 && Math.abs(c.m.metrics.mr - c.m.metrics.mc) < 1.5
+                }
+            ]
+        }],
         model(v) {
             const slope = v.market * 0.22;
             const ar = q => v.price - slope * q;
@@ -959,9 +1265,16 @@ SIMS.push({
             // Solve MR = MC on the rising branch of MC — "MC rising" is half
             // the equilibrium condition, so picking the falling-branch root
             // would be teaching the wrong answer.
+            // Equilibrium = where MC cuts MR FROM BELOW: MR − MC turns from
+            // positive to non-positive (beyond it, MC > MR). Under perfect
+            // competition (flat MR) that is the same as "MC rising", but a
+            // monopolist's MR slopes down, so MC can cut it from below while
+            // MC itself is still falling. Testing "MC rising" literally put
+            // the monopoly equilibrium at MC's minimum instead — e.g. Q 7.55
+            // vs the true profit maximum 4.35 at monopoly power 10.
             let eqQ = null;
-            for (let q = 2; q <= 19; q += 0.05) {
-                if (mr(q) - mc(q) <= 0 && mc(q) > mc(q - 0.05)) { eqQ = q; break; }
+            for (let q = 1.05; q <= 19; q += 0.05) {
+                if (mr(q - 0.05) - mc(q - 0.05) > 0 && mr(q) - mc(q) <= 0) { eqQ = q; break; }
             }
 
             const isPC = v.market === 0;
@@ -998,18 +1311,18 @@ SIMS.push({
                 verdict: {
                     kind: atEq ? 'movement' : 'shift',
                     title: atEq
-                        ? "✔ <b>Producer's equilibrium</b> — MR = MC and MC is rising."
+                        ? "✔ <b>Producer's equilibrium</b> — MR = MC, and MC cuts MR from below."
                         : (mr(v.q) > mc(v.q) ? 'MR &gt; MC → the firm should <b>expand</b> output' : 'MR &lt; MC → the firm should <b>cut</b> output'),
-                    detail: `${isPC ? 'Under perfect competition the firm is a price-taker: <b>AR = MR = price</b>, so the revenue line is horizontal and the firm produces where MC rises to meet it.' : 'Under monopoly the firm must cut price to sell more, so AR slopes down and <b>MR falls twice as fast</b> and lies below AR — which is why the monopolist stops at a smaller output and charges a price <i>above</i> MR.'} ${atEq ? `At Q = ${fmt(v.q, 1)} the last unit adds exactly what it costs, so no further change raises profit. Profit here = ₹${fmt(profit, 1)}.` : `At Q = ${fmt(v.q, 1)}, MR = ₹${fmt(mr(v.q), 2)} against MC = ₹${fmt(mc(v.q), 2)} — the last unit ${mr(v.q) > mc(v.q) ? 'earns more than it costs, so producing it adds to profit' : 'costs more than it earns, so producing it destroys profit'}. Drag toward Q = ${eqQ ? fmt(eqQ, 1) : '—'}.`} Remember: MR = MC alone is <b>not</b> enough — MC must also be <b>rising</b> through MR.`
+                    detail: `${isPC ? 'Under perfect competition the firm is a price-taker: <b>AR = MR = price</b>, so the revenue line is horizontal and the firm produces where MC rises to meet it.' : 'Under monopoly the firm must cut price to sell more, so AR slopes down and <b>MR falls twice as fast</b> and lies below AR — which is why the monopolist stops at a smaller output and charges a price <i>above</i> MR.'} ${atEq ? `At Q = ${fmt(v.q, 1)} the last unit adds exactly what it costs, so no further change raises profit. Profit here = ₹${fmt(profit, 1)}.` : `At Q = ${fmt(v.q, 1)}, MR = ₹${fmt(mr(v.q), 2)} against MC = ₹${fmt(mc(v.q), 2)} — the last unit ${mr(v.q) > mc(v.q) ? 'earns more than it costs, so producing it adds to profit' : 'costs more than it earns, so producing it destroys profit'}. Drag toward Q = ${eqQ ? fmt(eqQ, 1) : '—'}.`} Remember: MR = MC alone is <b>not</b> enough — MC must cut MR <b>from below</b>, so that beyond this output MC &gt; MR. Under perfect competition that simply means MC must be rising.`
                 },
-                metrics: { q: v.q, eqQ, profit, isPC }
+                metrics: { q: v.q, eqQ, profit, isPC, mr: mr(v.q), mc: mc(v.q), ar: ar(v.q) }
             };
         }
     },
     practice: [
         { prompt: 'Set monopoly power to 0. What is the relationship between AR and MR, and why?', hint: 'AR = MR = price. A price-taker sells every extra unit at the same unchanged price, so the extra revenue from one more unit IS the price.' },
         { prompt: 'Raise monopoly power. Why does MR fall below AR?', hint: 'To sell one more unit the monopolist must cut the price on ALL units. The gain from the extra unit is partly offset by the loss on the earlier ones, so MR < AR.' },
-        { prompt: 'Why is "MR = MC" alone not the full equilibrium condition?', hint: 'MR = MC can also happen where MC is falling — there, producing more still adds to profit. The second condition is that MC must be rising (cutting MR from below).' }
+        { prompt: 'Why is "MR = MC" alone not the full equilibrium condition?', hint: 'MR = MC can also happen where MC is falling — there, producing more still adds to profit. The second condition is that MC must cut MR from below (MC > MR beyond that output) — which under perfect competition means MC must be rising.' }
     ],
     challenge: {
         prompt: "Find the producer's equilibrium output under monopoly (set monopoly power to 7, then drag to where MR = MC).",
@@ -1049,6 +1362,108 @@ SIMS.push({
             { label: 'A point OUTSIDE', note: 'Unattainable', set: { px: 38, py: 38 } },
             { label: 'Economic growth', note: 'PPC shifts outward', set: { growth: 12 } }
         ],
+        stories: [{
+            id: 'lockdown',
+            title: { en: 'A lockdown, a recovery — and growth', hi: 'एक लॉकडाउन, एक रिकवरी — और विकास' },
+            intro: {
+                en: 'An economy makes wheat (X) and cloth (Y). Live through a lockdown, the recovery, a change of priorities and finally new technology — and see where every point sits on the PPC.',
+                hi: 'एक अर्थव्यवस्था गेहूँ (X) और कपड़ा (Y) बनाती है। एक लॉकडाउन, रिकवरी, प्राथमिकताओं में बदलाव और आख़िर में नई तकनीक के दौर से गुज़रिए — और देखिए कि हर बिंदु PPC पर कहाँ बैठता है।'
+            },
+            outro: {
+                en: 'ON the PPC: full, efficient use — more of one good costs some of the other (rising MRT). INSIDE: idle resources — you can have more of both for free. OUTSIDE: unattainable — only growth shifts the PPC out to reach it.',
+                hi: 'PPC पर: पूर्ण, कुशल उपयोग — एक वस्तु ज़्यादा लेने पर दूसरी कुछ छोड़नी पड़ती है (बढ़ती MRT)। अंदर: बेकार पड़े संसाधन — दोनों ज़्यादा मुफ़्त में मिल सकते हैं। बाहर: अप्राप्य — केवल विकास PPC को बाहर खिसकाकर वहाँ पहुँचाता है।'
+            },
+            steps: [
+                {
+                    set: { px: 24, py: 32 },
+                    say: (c, hi) => hi
+                        ? `अर्थव्यवस्था ${c.v.px} इकाई गेहूँ और ${c.v.py} इकाई कपड़ा बनाती है — PPC <b>पर</b>। हर कारखाना और हर कामगार काम पर है: पूर्ण और कुशल उपयोग।`
+                        : `The economy makes ${c.v.px} units of wheat and ${c.v.py} units of cloth — <b>on</b> the PPC. Every factory and every worker is busy: full, efficient use.`,
+                    check: c => c.m.metrics.zone === 'on'
+                },
+                {
+                    set: { px: 15, py: 20 },
+                    ask: {
+                        q: { en: 'A lockdown: factories shut, workers sit at home. Machines and people still exist. Where does the production point go?', hi: 'एक लॉकडाउन: कारखाने बंद, कामगार घर बैठे। मशीनें और लोग अब भी मौजूद हैं। उत्पादन बिंदु कहाँ जाएगा?' },
+                        options: [
+                            { en: 'Inside the PPC', hi: 'PPC के अंदर' },
+                            { en: 'The whole PPC shifts inward', hi: 'पूरा PPC अंदर खिसक जाता है' },
+                            { en: 'It stays on the PPC', hi: 'यह PPC पर ही रहता है' },
+                            { en: 'Outside the PPC', hi: 'PPC के बाहर' }
+                        ],
+                        correct: c => c.m.metrics.growth !== 0 ? 1 : ({ inside: 0, on: 2, outside: 3 })[c.m.metrics.zone]
+                    },
+                    say: (c, hi) => hi
+                        ? `बिंदु PPC के <b>अंदर</b> चला गया (${c.v.px} गेहूँ, ${c.v.py} कपड़ा)। PPC नहीं खिसका — क्षमता वही है, बस इस्तेमाल नहीं हो रही। अंदर का बिंदु = <b>बेरोज़गारी या संसाधनों का अकुशल उपयोग</b>।`
+                        : `The point dropped <b>inside</b> the PPC (${c.v.px} wheat, ${c.v.py} cloth). The PPC did not shift — the capacity is all still there, just unused. An inside point = <b>unemployment or inefficient use</b> of resources.`,
+                    check: c => c.m.metrics.zone === 'inside' && c.m.metrics.growth === 0
+                },
+                {
+                    set: { px: 24, py: 32 },
+                    ask: {
+                        q: { en: 'The lockdown ends and everyone returns to work. To get back on the curve, what must the economy give up?', hi: 'लॉकडाउन ख़त्म, सब काम पर लौटते हैं। वापस curve पर आने के लिए अर्थव्यवस्था को क्या छोड़ना पड़ेगा?' },
+                        options: [
+                            { en: 'Nothing — idle resources simply come back into use', hi: 'कुछ नहीं — बेकार संसाधन बस फिर काम पर लग जाते हैं' },
+                            { en: 'Some cloth, to get more wheat', hi: 'थोड़ा कपड़ा, ज़्यादा गेहूँ पाने के लिए' },
+                            { en: 'It needs economic growth first', hi: 'पहले आर्थिक विकास चाहिए' }
+                        ],
+                        correct: c => (c.m.metrics.zone === 'on' && c.v.px >= c.prev.v.px && c.v.py >= c.prev.v.py && c.m.metrics.growth === 0) ? 0 : 1
+                    },
+                    say: (c, hi) => hi
+                        ? `<b>दोनों</b> वस्तुएँ बढ़ीं — गेहूँ ${c.prev.v.px} → ${c.v.px}, कपड़ा ${c.prev.v.py} → ${c.v.py} — और कुछ भी नहीं छोड़ना पड़ा। अंदर के बिंदु से curve तक जाना <b>मुफ़्त</b> है: कोई अवसर लागत नहीं, क्योंकि कोई संसाधन किसी और काम से नहीं हटाया गया।`
+                        : `<b>Both</b> goods rose — wheat ${c.prev.v.px} → ${c.v.px}, cloth ${c.prev.v.py} → ${c.v.py} — and nothing was given up. Moving from inside to the curve is <b>free</b>: no opportunity cost, because no resource was pulled away from anything else.`,
+                    check: c => c.m.metrics.zone === 'on' && c.v.px > c.prev.v.px && c.v.py > c.prev.v.py
+                },
+                {
+                    set: { px: 32, py: 24 },
+                    ask: {
+                        q: { en: 'After a bad harvest abroad, the country wants more wheat: 32 units. What does that cost now?', hi: 'विदेश में ख़राब फ़सल के बाद, देश ज़्यादा गेहूँ चाहता है: 32 इकाई। अब इसकी क्या कीमत है?' },
+                        options: [
+                            { en: 'Some cloth must be given up — an opportunity cost', hi: 'कुछ कपड़ा छोड़ना होगा — अवसर लागत' },
+                            { en: 'Nothing, just like after the lockdown', hi: 'कुछ नहीं, लॉकडाउन के बाद की तरह' },
+                            { en: 'It is impossible', hi: 'यह असंभव है' }
+                        ],
+                        correct: c => (c.m.metrics.zone === 'on' && c.v.py < c.prev.v.py) ? 0 : (c.m.metrics.zone === 'outside' ? 2 : 1)
+                    },
+                    say: (c, hi) => hi
+                        ? `अब हम <b>curve के साथ</b> चले: ${c.v.px - c.prev.v.px} इकाई और गेहूँ के लिए ${c.prev.v.py - c.v.py} इकाई कपड़ा छोड़ना पड़ा — यही <b>अवसर लागत</b> है। और देखिए, MRT ${fmt(c.prev.m.metrics.mrt, 2)} से बढ़कर ${fmt(c.m.metrics.mrt, 2)} हो गई: हर अगला गेहूँ महँगा पड़ता है, क्योंकि कपड़े में ज़्यादा माहिर संसाधन खींचने पड़ते हैं। बढ़ती MRT ही PPC को मूल-बिंदु की ओर <b>अवतल</b> बनाती है।`
+                        : `Now we moved <b>along the curve</b>: ${c.v.px - c.prev.v.px} more units of wheat cost ${c.prev.v.py - c.v.py} units of cloth — that is the <b>opportunity cost</b>. And MRT rose from ${fmt(c.prev.m.metrics.mrt, 2)} to ${fmt(c.m.metrics.mrt, 2)}: each extra unit of wheat costs more, because it pulls in resources better suited to cloth. Rising MRT is what makes the PPC <b>concave</b> to the origin.`,
+                    check: c => c.m.metrics.zone === 'on' && c.prev.m.metrics.zone === 'on' && c.v.py < c.prev.v.py && c.m.metrics.mrt > c.prev.m.metrics.mrt
+                },
+                {
+                    set: { px: 38, py: 35 },
+                    ask: {
+                        q: { en: 'Citizens now demand 38 wheat AND 35 cloth. Can the economy produce that today?', hi: 'नागरिक अब 38 गेहूँ और 35 कपड़ा माँगते हैं। क्या अर्थव्यवस्था आज इतना बना सकती है?' },
+                        options: [
+                            { en: 'No — the point lies outside the PPC', hi: 'नहीं — बिंदु PPC के बाहर है' },
+                            { en: 'Yes — it lies on the PPC', hi: 'हाँ — यह PPC पर है' },
+                            { en: 'Yes — it lies inside the PPC', hi: 'हाँ — यह PPC के अंदर है' }
+                        ],
+                        correct: c => ({ outside: 0, on: 1, inside: 2 })[c.m.metrics.zone]
+                    },
+                    say: (c, hi) => hi
+                        ? `(${c.v.px}, ${c.v.py}) PPC के <b>बाहर</b> है — मौजूदा संसाधनों का कोई भी बँटवारा वहाँ नहीं पहुँचा सकता। यह <b>अप्राप्य</b> है।`
+                        : `(${c.v.px}, ${c.v.py}) lies <b>outside</b> the PPC — no way of re-arranging today's resources can reach it. It is <b>unattainable</b>.`,
+                    check: c => c.m.metrics.zone === 'outside' && c.m.metrics.growth === 0
+                },
+                {
+                    set: { px: 38, py: 35, growth: 12 },
+                    ask: {
+                        q: { en: 'What could bring that point within reach?', hi: 'उस बिंदु तक कौन पहुँचा सकता है?' },
+                        options: [
+                            { en: 'Economic growth — more resources or better technology', hi: 'आर्थिक विकास — ज़्यादा संसाधन या बेहतर तकनीक' },
+                            { en: 'Using today\'s resources more efficiently', hi: 'आज के संसाधनों का ज़्यादा कुशल उपयोग' },
+                            { en: 'Reducing unemployment', hi: 'बेरोज़गारी घटाना' }
+                        ],
+                        correct: c => (c.m.metrics.growth > 0 && c.m.metrics.zone !== 'outside') ? 0 : 1
+                    },
+                    say: (c, hi) => hi
+                        ? `नई तकनीक और ज़्यादा संसाधनों से पूरा PPC <b>बाहर खिसक</b> गया (PPC₁)। जो बिंदु कल अप्राप्य था, वह अब नए curve पर है। कुशलता या रोज़गार केवल आपको पुराने PPC <i>तक</i> ला सकते हैं — उसके <i>पार</i> सिर्फ़ विकास ले जाता है।`
+                        : `New technology and more resources shifted the whole PPC <b>outward</b> (PPC₁). The point that was unattainable yesterday is now on the new curve. Efficiency or full employment can only bring you <i>up to</i> the old PPC — only growth takes you <i>beyond</i> it.`,
+                    check: c => c.m.metrics.growth > 0 && c.m.metrics.zone === 'on' && c.prev.m.metrics.zone === 'outside'
+                }
+            ]
+        }],
         model(v) {
             const R = 40 + v.growth;           // "radius": a quarter-ellipse PPC is concave to the origin
             const yOf = x => R * Math.sqrt(Math.max(0, 1 - (x / R) * (x / R)));

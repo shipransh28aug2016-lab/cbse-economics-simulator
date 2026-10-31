@@ -25,7 +25,19 @@
 // whose words drift from its model fails the build.
 // ══════════════════════════════════════════════════════════════
 
-let storyActive = null; // { sim, story, idx, answered:{idx:choice} }
+let storyActive = null; // { sim, story, idx, answered:{idx:choice}, order:{idx:[…]} }
+// The language toggle re-opens the sim (js/app.js applyLanguage → openSim),
+// which rebuilds the stage. Remember where the story was, for a moment, so
+// it resumes in the new language instead of being thrown away.
+let storyResume = null;
+document.addEventListener('click', e => {
+    if (!e.target.closest || !e.target.closest('#lang-toggle')) return;
+    if (!storyActive || !document.getElementById('story-card')) return;
+    storyResume = {
+        simId: storyActive.sim.id, storyId: storyActive.story.id, idx: storyActive.idx,
+        answered: Object.assign({}, storyActive.answered), order: Object.assign({}, storyActive.order), at: Date.now()
+    };
+}, true);
 
 function storyLang() {
     return (typeof currentLang !== 'undefined' && currentLang === 'hi') ? 'hi' : 'en';
@@ -115,6 +127,19 @@ function storyRenderLauncher(sim, panel) {
         quick.textContent = storyLabel('🎬 Story', '🎬 स्टोरी');
         quick.addEventListener('click', () => storyStart(sim, stories[0]));
         actions.insertBefore(quick, actions.firstChild);
+    }
+
+    const resume = storyResume;
+    storyResume = null;
+    if (resume && resume.simId === sim.id && Date.now() - resume.at < 3000) {
+        const story = stories.find(st => st.id === resume.storyId);
+        if (story) {
+            storyStart(sim, story);
+            storyActive.answered = resume.answered;
+            storyActive.order = resume.order;
+            if (resume.idx >= story.steps.length) storyFinish();
+            else if (resume.idx >= 0) storyGo(resume.idx, false);
+        }
     }
 }
 

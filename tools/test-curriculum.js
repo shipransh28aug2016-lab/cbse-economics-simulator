@@ -665,6 +665,53 @@ function extractNodePos(html, label) {
     ok(paths > 0, 'Graph Lab glide: at least one scenario glide path was exercised');
 })();
 
+// ── Producer's equilibrium = the real profit maximum ─────────────
+// The lab used to require "MC rising" literally, which is only the same as
+// "MC cuts MR from below" under perfect competition. Under monopoly it put
+// equilibrium at MC's minimum (Q 7.55) instead of the profit maximum (4.35).
+// Check the model's eqQ against a brute-force profit search everywhere.
+(function testProducerEquilibriumIsProfitMax() {
+    const sim = findSim('gl-revenue-producer-eq');
+    const M = st => sim.graphLab.model(st, {});
+    let compared = 0;
+    [0, 2, 4, 7, 10].forEach(market => [20, 34, 50].forEach(price => [-6, 0, 8].forEach(cost => {
+        const base = { q: 8, price, market, cost };
+        const eqQ = M(base).metrics.eqQ;
+        if (!eqQ) return;
+        let best = { q: 1, p: -Infinity };
+        for (let q = 1; q <= 19; q += 0.05) { const p = M(Object.assign({}, base, { q })).metrics.profit; if (p > best.p) best = { q, p }; }
+        if (best.q <= 1.05 || best.q >= 18.95) return; // corner solution: no interior MR = MC
+        compared++;
+        ok(Math.abs(eqQ - best.q) <= 0.11, `Producer eq (market ${market}, price ${price}, cost ${cost}): MR = MC output ${eqQ.toFixed(2)} is the profit-maximising output ${best.q.toFixed(2)}`);
+    })));
+    ok(compared >= 20, `Producer eq: compared against brute-force profit maxima in ${compared} cases`);
+})();
+
+// ── Cost curves: the "minimum of AC" verdict must be reachable ─────
+// It used to need |MC − AC| < 0.15 at an output the 0.5-step slider can
+// land on — true in 110 of ~14,000 states, never at the defaults, and not
+// at the "Read cost at min AC" scenario either. For every cost condition,
+// exactly one reachable output must carry it: the one where AC is lowest.
+(function testCostMinimumIsReachable() {
+    const sim = findSim('gl-cost-curves');
+    const qv = sim.graphLab.vars.find(v => v.id === 'q');
+    let configs = 0;
+    for (let tfc = 20; tfc <= 160; tfc += 20) for (let eff = -6; eff <= 6; eff += 3) {
+        const grid = [];
+        for (let q = qv.min; q <= qv.max + 1e-9; q += qv.step) grid.push(sim.graphLab.model({ q, tfc, eff }, {}));
+        const flagged = grid.filter(m => m.metrics.atMinAC);
+        const lowest = grid.reduce((a, b) => (b.metrics.ac < a.metrics.ac ? b : a));
+        configs++;
+        ok(flagged.length === 1, `Cost curves (TFC ${tfc}, eff ${eff}): exactly one reachable output is named AC's minimum (found ${flagged.length})`);
+        ok(flagged.length === 1 && flagged[0].metrics.q === lowest.metrics.q, `Cost curves (TFC ${tfc}, eff ${eff}): it is the reachable output where AC is lowest`);
+        ok(flagged.length === 1 && /minimum point/.test(flagged[0].verdict.title), `Cost curves (TFC ${tfc}, eff ${eff}): the verdict there says so`);
+    }
+    const sc = sim.graphLab.scenarios.find(s => /min AC/.test(s.label));
+    const base = {}; sim.graphLab.vars.forEach(v => { base[v.id] = v.value; });
+    ok(/minimum point/.test(sim.graphLab.model(Object.assign(base, sc.set), {}).verdict.title), 'Cost curves: the "Read cost at min AC" scenario really lands on the minimum-point verdict');
+    ok(configs > 20, 'Cost curves: minimum checked across many cost conditions');
+})();
+
 // ── Story Mode (js/story-mode.js) ──────────────────────────────────
 // The honesty contract: a story may only CLAIM what its lab's model()
 // actually produces. Each step restates its claim as check(); this runs
