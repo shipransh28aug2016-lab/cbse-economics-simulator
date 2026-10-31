@@ -176,6 +176,25 @@ Three points that are load-bearing rather than stylistic:
    with several variables moving at once, `testGraphLabGlidePathsStayFinite` walks the
    exact glide path of every scenario of every Graph Lab.
 
+### Story Mode (`js/story-mode.js`) — live through a classic exam situation
+
+`graphLab.stories` turns a lab into a guided, predict-first walkthrough: a real situation
+(Ramu's tea stall, a bad monsoon hitting onion prices, a recession and its fiscal fix)
+unfolds step by step; the student predicts each step **before** it applies, the diagram
+glides to the new state (rule 4 above), and the narration explains it. Launched from the
+controls panel and from a `🎬 Story` button on the diagram's own toolbar. Currently on
+`gl-demand-movement-shift`, `gl-market-equilibrium-shifts`, `gl-ad-as-equilibrium`.
+
+**The honesty contract (enforced by `testStoriesMatchTheirModels`, not by convention):**
+every number in a narration is read from the model's output at that step (`ctx.m`), the
+graded answer is computed from `ctx.m`, and every claim the narration makes is restated as
+the step's `check(ctx)` — which the test suite runs against the real model. A story whose
+words drift from its model fails the build (verified by planting a false claim). Step
+states are absolute (`set` on top of the lab's defaults), so Back/Next always land on the
+same state. Options are shown in a shuffled order per run and graded by original index, so
+"always click the first one" scores at chance. A story is lost on a language toggle (the
+app re-opens the sim) — known, acceptable for now.
+
 ### Holo Mode (`js/holo-mode.js`) — the immersive skin over every Graph Lab
 
 A presentation-only layer, ON by default, toggled per viewer (`🛸 Holo`, persisted in
