@@ -628,6 +628,41 @@ function extractNodePos(html, label) {
     ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
 })();
 
+// ── Graph Lab glide (js/graph-lab-engine.js glGlideSvg) ───────────
+// A scenario preset or Reset no longer teleports the diagram: it glides,
+// and every frame is model() run at values part-way between the old and
+// new state — with SEVERAL variables moving at once, off the step grid.
+// The single-variable domain sweep above never visits those combined
+// in-between states, so walk the exact glide path for every scenario of
+// every Graph Lab (defaults → scenario, which Reset then reverses).
+(function testGraphLabGlidePathsStayFinite() {
+    let paths = 0;
+    SIMS.filter(sim => sim.mode === 'graphlab').forEach(sim => {
+        const cfg = sim.graphLab;
+        const base = {};
+        cfg.vars.forEach(v => { base[v.id] = v.value; });
+        (cfg.scenarios || []).forEach((sc, si) => {
+            const target = Object.assign({}, base, sc.set || {});
+            paths++;
+            for (let i = 1; i < 12; i++) {
+                const e = i / 12;
+                const v = {};
+                cfg.vars.forEach(cv => { v[cv.id] = base[cv.id] + (target[cv.id] - base[cv.id]) * e; });
+                let m;
+                try { m = cfg.model(Object.assign({}, v), { prev: target, base: target }); } catch (err) {
+                    ok(false, `${sim.id}: model() threw on the glide into scenario ${si} at ${(e * 100).toFixed(0)}% — ${err.message}`);
+                    return;
+                }
+                const finite = (m.curves || []).every(c => (c.pts || []).every(pt => isFinite(pt[0]) && isFinite(pt[1]))) &&
+                    (m.points || []).every(p => isFinite(p.x) && isFinite(p.y)) &&
+                    (m.handles || []).every(h => isFinite(h.x) && isFinite(h.y));
+                ok(finite, `${sim.id}: glide frame into scenario ${si} at ${(e * 100).toFixed(0)}% has only finite geometry`);
+            }
+        });
+    });
+    ok(paths > 0, 'Graph Lab glide: at least one scenario glide path was exercised');
+})();
+
 // ── AI Tutor (js/ai-tutor.js) config on macro-multiplier ──────────
 // js/ai-tutor.js itself is DOM-wiring code (chat panel, quiz buttons);
 // what actually needs economic-correctness coverage is the DATA it

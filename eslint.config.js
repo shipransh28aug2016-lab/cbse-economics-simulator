@@ -80,7 +80,7 @@ module.exports = [
             globals: {
                 window: 'readonly', document: 'readonly', console: 'readonly',
                 localStorage: 'readonly', sessionStorage: 'readonly', fetch: 'readonly', setTimeout: 'readonly',
-                performance: 'readonly', requestAnimationFrame: 'readonly', DOMParser: 'readonly',
+                performance: 'readonly', requestAnimationFrame: 'readonly', cancelAnimationFrame: 'readonly', DOMParser: 'readonly',
                 module: 'writable', require: 'readonly',
                 ...appGlobals
             }
