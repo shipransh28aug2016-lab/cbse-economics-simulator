@@ -8,6 +8,9 @@
 // treatment as the Class XI labs — see js/graph-lab-engine.js.
 // ══════════════════════════════════════════════════════════════
 
+// Indian digit grouping for rupee amounts in story narration: ₹8,60,000.
+function glINR(n) { return Math.round(n).toLocaleString('en-IN'); }
+
 SIMS.push({
     id: 'gl-ad-as-equilibrium',
     module: 'macro',
@@ -232,6 +235,75 @@ SIMS.push({
             { label: 'High income — saving', note: 'APC < 1, S > 0', set: { y: 500 } },
             { label: 'Higher MPC', note: 'Flatter saving line, bigger multiplier', set: { mpc: 0.9 } }
         ],
+        stories: [{
+            id: 'household',
+            title: { en: 'A country growing richer — saving and spending', hi: 'एक अमीर होता देश — बचत और ख़र्च' },
+            intro: {
+                en: 'Follow one economy as its income rises from ₹100 cr to ₹500 cr. People must eat even with no income — so watch when they dissave, when they break even, and when saving begins.',
+                hi: 'एक अर्थव्यवस्था के साथ चलिए जिसकी आय ₹100 cr से ₹500 cr तक बढ़ती है। आय न हो तब भी लोगों को खाना तो है — इसलिए देखिए कि वे कब अबचत करते हैं, कब बराबरी पर आते हैं, और कब बचत शुरू होती है।'
+            },
+            outro: {
+                en: 'APC can exceed 1 (dissaving) at low income, equals 1 at break-even, and keeps falling as income rises — while MPC stays constant along a straight consumption line. APC + APS = 1 and MPC + MPS = 1, always.',
+                hi: 'कम आय पर APC, 1 से ज़्यादा (अबचत) हो सकता है, बराबरी बिंदु पर 1 होता है, और आय बढ़ने पर गिरता जाता है — जबकि सीधी उपभोग रेखा पर MPC स्थिर रहता है। APC + APS = 1 और MPC + MPS = 1, हमेशा।'
+            },
+            steps: [
+                {
+                    set: { y: 100 },
+                    say: (c, hi) => hi
+                        ? `आय ₹${fmt(c.v.y, 0)} cr, पर उपभोग ₹${fmt(c.v.y * c.m.metrics.apc, 0)} cr — आय से ज़्यादा! अंतर ₹${fmt(-c.m.metrics.s, 0)} cr पुरानी बचत या उधार से आता है: <b>अबचत</b>। APC = ${fmt(c.m.metrics.apc, 2)} — हाँ, APC 1 से ज़्यादा हो सकता है।`
+                        : `Income is ₹${fmt(c.v.y, 0)} cr, but consumption is ₹${fmt(c.v.y * c.m.metrics.apc, 0)} cr — more than income! The ₹${fmt(-c.m.metrics.s, 0)} cr gap comes from past savings or borrowing: <b>dissaving</b>. APC = ${fmt(c.m.metrics.apc, 2)} — yes, APC can be greater than 1.`,
+                    check: c => c.m.metrics.s < 0 && c.m.metrics.apc > 1
+                },
+                {
+                    set: { y: 200 },
+                    ask: {
+                        q: { en: 'Income doubles to ₹200 cr. What happens to saving?', hi: 'आय दोगुनी होकर ₹200 cr हो जाती है। बचत का क्या होगा?' },
+                        options: [
+                            { en: 'Saving becomes exactly zero — the break-even point', hi: 'बचत ठीक शून्य हो जाती है — बराबरी बिंदु' },
+                            { en: 'Still negative (dissaving)', hi: 'अब भी ऋणात्मक (अबचत)' },
+                            { en: 'Positive saving begins', hi: 'धनात्मक बचत शुरू होती है' }
+                        ],
+                        correct: c => Math.abs(c.m.metrics.s) < 0.5 ? 0 : (c.m.metrics.s < 0 ? 1 : 2)
+                    },
+                    say: (c, hi) => hi
+                        ? `₹${fmt(c.v.y, 0)} cr पर उपभोग ठीक आय के बराबर: C = Y, <b>S = 0</b>, <b>APC = ${fmt(c.m.metrics.apc, 2)}</b>। यह <b>बराबरी बिंदु</b> है — यहीं उपभोग रेखा 45° रेखा को काटती है और बचत रेखा X-अक्ष को।`
+                        : `At ₹${fmt(c.v.y, 0)} cr, consumption exactly equals income: C = Y, <b>S = 0</b>, <b>APC = ${fmt(c.m.metrics.apc, 2)}</b>. This is the <b>break-even point</b> — where the consumption line cuts the 45° line and the saving line cuts the X-axis.`,
+                    check: c => Math.abs(c.m.metrics.s) < 0.5 && Math.abs(c.m.metrics.apc - 1) < 0.005 && Math.abs(c.m.metrics.be - c.v.y) < 0.5
+                },
+                {
+                    set: { y: 500 },
+                    ask: {
+                        q: { en: 'Income keeps rising, to ₹500 cr. What happens to APC?', hi: 'आय बढ़ती रहती है, ₹500 cr तक। APC का क्या होगा?' },
+                        options: [
+                            { en: 'It falls below 1 — and keeps falling', hi: 'यह 1 से नीचे गिरता है — और गिरता रहता है' },
+                            { en: 'It stays at 1', hi: 'यह 1 पर ही रहता है' },
+                            { en: 'It rises above 1', hi: 'यह 1 से ऊपर बढ़ता है' }
+                        ],
+                        correct: c => c.m.metrics.apc < c.prev.m.metrics.apc - 0.001 ? 0 : (c.m.metrics.apc > c.prev.m.metrics.apc + 0.001 ? 2 : 1)
+                    },
+                    say: (c, hi) => hi
+                        ? `APC ${fmt(c.first.m.metrics.apc, 2)} → ${fmt(c.prev.m.metrics.apc, 2)} → <b>${fmt(c.m.metrics.apc, 2)}</b> गिरता गया, और अब ₹${fmt(c.m.metrics.s, 0)} cr की बचत है। पर फंदा देखिए: इस पूरे सफ़र में <b>MPC = ${fmt(c.v.mpc, 2)} एक बार भी नहीं बदला</b>। APC गिरता है, MPC स्थिर रहता है — परीक्षा में इन्हें मत मिलाइए। जाँच: APC + APS = ${fmt(c.m.metrics.apc + c.m.metrics.aps, 2)}।`
+                        : `APC kept falling, ${fmt(c.first.m.metrics.apc, 2)} → ${fmt(c.prev.m.metrics.apc, 2)} → <b>${fmt(c.m.metrics.apc, 2)}</b>, and there is now ₹${fmt(c.m.metrics.s, 0)} cr of saving. But spot the trap: <b>MPC = ${fmt(c.v.mpc, 2)} never changed once</b> on this whole journey. APC falls while MPC stays constant — don't mix them up in the exam. Check: APC + APS = ${fmt(c.m.metrics.apc + c.m.metrics.aps, 2)}.`,
+                    check: c => c.m.metrics.apc < c.prev.m.metrics.apc && c.m.metrics.apc < 1 && c.m.metrics.s > 0 && c.v.mpc === c.first.v.mpc && Math.abs(c.m.metrics.apc + c.m.metrics.aps - 1) < 1e-9
+                },
+                {
+                    set: { y: 500, mpc: 0.9 },
+                    ask: {
+                        q: { en: 'A consumer boom: people now spend 90 paise of every extra rupee (MPC 0.7 → 0.9). What happens to the break-even income?', hi: 'उपभोक्ता उछाल: लोग अब हर अतिरिक्त रुपये में से 90 पैसे ख़र्च करते हैं (MPC 0.7 → 0.9)। बराबरी आय का क्या होगा?' },
+                        options: [
+                            { en: 'It moves to a higher income', hi: 'यह ऊँची आय पर खिसक जाती है' },
+                            { en: 'It moves to a lower income', hi: 'यह कम आय पर खिसक जाती है' },
+                            { en: 'It stays the same', hi: 'यह वही रहती है' }
+                        ],
+                        correct: c => c.m.metrics.be > c.prev.m.metrics.be + 0.5 ? 0 : (c.m.metrics.be < c.prev.m.metrics.be - 0.5 ? 1 : 2)
+                    },
+                    say: (c, hi) => hi
+                        ? `बराबरी आय ₹${fmt(c.prev.m.metrics.be, 0)} cr से <b>₹${fmt(c.m.metrics.be, 0)} cr</b> पर चली गई — अब बचत शुरू होने के लिए कहीं ज़्यादा आय चाहिए। उसी ₹${fmt(c.v.y, 0)} cr पर बचत ₹${fmt(c.prev.m.metrics.s, 0)} cr से गिरकर ₹${fmt(c.m.metrics.s, 0)} cr हो गई — फिर से अबचत। ऊँचा MPC = छोटा MPS (${fmt(1 - c.v.mpc, 2)})।`
+                        : `Break-even income jumped from ₹${fmt(c.prev.m.metrics.be, 0)} cr to <b>₹${fmt(c.m.metrics.be, 0)} cr</b> — saving now needs far more income to begin. At the same ₹${fmt(c.v.y, 0)} cr, saving fell from ₹${fmt(c.prev.m.metrics.s, 0)} cr to ₹${fmt(c.m.metrics.s, 0)} cr — dissaving again. Higher MPC = smaller MPS (${fmt(1 - c.v.mpc, 2)}).`,
+                    check: c => c.m.metrics.be > c.prev.m.metrics.be && c.m.metrics.s < c.prev.m.metrics.s
+                }
+            ]
+        }],
         model(v) {
             const C = y => v.cbar + v.mpc * y;
             const S = y => y - C(y);
@@ -330,6 +402,79 @@ SIMS.push({
             { label: 'FII money flows out', note: 'Rupee depreciates', set: { supplyShift: -18 } },
             { label: 'Remittances rise', note: 'Rupee appreciates', set: { supplyShift: 14 } }
         ],
+        stories: [{
+            id: 'study-abroad',
+            title: { en: "Aarav's US college fees — is the rupee stronger or weaker?", hi: 'आरव की अमेरिकी कॉलेज फ़ीस — रुपया मज़बूत हुआ या कमज़ोर?' },
+            intro: {
+                en: "Aarav's family must pay $10,000 in college fees. Foreign investors pull money out, then exports boom. Predict each move of the ₹/$ rate — and catch the trap that a BIGGER number means a WEAKER rupee.",
+                hi: 'आरव के परिवार को $10,000 कॉलेज फ़ीस भरनी है। विदेशी निवेशक पैसा निकालते हैं, फिर निर्यात में उछाल आता है। ₹/$ दर की हर चाल का अनुमान लगाइए — और उस फंदे को पकड़िए कि बड़ी संख्या का मतलब कमज़ोर रुपया है।'
+            },
+            outro: {
+                en: 'More ₹ per $ = rupee DEPRECIATES (weaker); fewer ₹ per $ = rupee APPRECIATES (stronger). Forex supply: exports, FDI/FII inflows, remittances. Forex demand: imports, travel and study abroad, investing abroad.',
+                hi: 'प्रति $ ज़्यादा ₹ = रुपये का मूल्यह्रास (कमज़ोर); प्रति $ कम ₹ = रुपये का मूल्यवृद्धि (मज़बूत)। विदेशी मुद्रा की आपूर्ति: निर्यात, FDI/FII प्रवाह, प्रेषण। माँग: आयात, विदेश यात्रा और पढ़ाई, विदेश में निवेश।'
+            },
+            steps: [
+                {
+                    set: { rate: 80 },
+                    say: (c, hi) => hi
+                        ? `विदेशी मुद्रा बाज़ार संतुलन में है: ₹${fmt(c.m.metrics.rate, 0)} प्रति $। आरव की $10,000 फ़ीस = ₹${glINR(c.m.metrics.rate * 10000)}।`
+                        : `The forex market clears at ₹${fmt(c.m.metrics.rate, 0)} per $. Aarav's $10,000 fees cost ₹${glINR(c.m.metrics.rate * 10000)}.`,
+                    check: c => c.m.verdict.kind === 'none' && Math.abs(c.m.metrics.gap) < 0.6
+                },
+                {
+                    set: { rate: 80, supplyShift: -15 },
+                    ask: {
+                        q: { en: 'Foreign investors (FIIs) pull their money out of Indian shares. Which curve moves, and which way?', hi: 'विदेशी निवेशक (FII) भारतीय शेयरों से अपना पैसा निकाल लेते हैं। कौन-सा curve खिसकेगा, और किस ओर?' },
+                        options: [
+                            { en: 'Forex demand (D) shifts right', hi: 'विदेशी मुद्रा की माँग (D) दाईं ओर' },
+                            { en: 'Forex demand (D) shifts left', hi: 'विदेशी मुद्रा की माँग (D) बाईं ओर' },
+                            { en: 'Forex supply (S) shifts right', hi: 'विदेशी मुद्रा की आपूर्ति (S) दाईं ओर' },
+                            { en: 'Forex supply (S) shifts left', hi: 'विदेशी मुद्रा की आपूर्ति (S) बाईं ओर' }
+                        ],
+                        correct: c => {
+                            const d = c.v.demandShift, s = c.v.supplyShift;
+                            return Math.abs(s) > Math.abs(d) ? (s > 0 ? 2 : 3) : (d > 0 ? 0 : 1);
+                        }
+                    },
+                    say: (c, hi) => hi
+                        ? `डॉलर देश में <b>आना</b> बंद हुए — विदेशी मुद्रा की <b>आपूर्ति</b> घटी, S बाईं ओर खिसका। पुरानी दर ₹${fmt(c.v.rate, 0)} पर अब $${fmt(c.m.metrics.gap, 0)}m डॉलर की <b>कमी</b> है: ख़रीदार ज़्यादा, डॉलर कम।`
+                        : `Dollars stopped <b>coming in</b> — the <b>supply</b> of forex fell, and S shifted left. At the old rate of ₹${fmt(c.v.rate, 0)} there is now a <b>shortage</b> of $${fmt(c.m.metrics.gap, 0)}m: more buyers than dollars.`,
+                    check: c => c.v.supplyShift < 0 && c.v.demandShift === 0 && c.m.metrics.gap > 0
+                },
+                {
+                    set: { rate: 86, supplyShift: -15 },
+                    ask: {
+                        q: { en: 'The shortage pushes the rate from ₹80 to ₹86 per $. Has the rupee become stronger or weaker?', hi: 'कमी के कारण दर ₹80 से ₹86 प्रति $ हो जाती है। रुपया मज़बूत हुआ या कमज़ोर?' },
+                        options: [
+                            { en: 'Weaker — it depreciated (more ₹ needed for each $)', hi: 'कमज़ोर — मूल्यह्रास (हर $ के लिए ज़्यादा ₹)' },
+                            { en: 'Stronger — it appreciated (the number went up)', hi: 'मज़बूत — मूल्यवृद्धि (संख्या बढ़ गई)' },
+                            { en: 'No change', hi: 'कोई बदलाव नहीं' }
+                        ],
+                        correct: c => c.m.metrics.dRate > 0.4 ? 0 : (c.m.metrics.dRate < -0.4 ? 1 : 2)
+                    },
+                    say: (c, hi) => hi
+                        ? `संख्या <i>बढ़ी</i>, पर रुपया <b>कमज़ोर</b> हुआ — अब हर डॉलर के लिए ₹${fmt(c.m.metrics.rate, 0)} चाहिए: <b>मूल्यह्रास</b>। आरव की वही $10,000 फ़ीस अब ₹${glINR(c.m.metrics.rate * 10000)} की है — ₹${glINR(c.m.metrics.dRate * 10000)} ज़्यादा, बिना किसी के कुछ बदले।`
+                        : `The number went <i>up</i>, but the rupee got <b>weaker</b> — each dollar now takes ₹${fmt(c.m.metrics.rate, 0)}: <b>depreciation</b>. Aarav's same $10,000 fees now cost ₹${glINR(c.m.metrics.rate * 10000)} — ₹${glINR(c.m.metrics.dRate * 10000)} more, though nothing about the college changed.`,
+                    check: c => c.m.metrics.dRate > 0.4 && Math.abs(c.m.metrics.gap) < 0.6 && Math.abs(c.v.rate - c.m.metrics.rate) < 0.5
+                },
+                {
+                    set: { rate: 74, supplyShift: 15 },
+                    ask: {
+                        q: { en: 'Next year Indian software exports boom and dollars pour in. What happens to the rupee?', hi: 'अगले साल भारतीय सॉफ़्टवेयर निर्यात में उछाल आता है और डॉलर बरसते हैं। रुपये का क्या होगा?' },
+                        options: [
+                            { en: 'It appreciates — fewer ₹ per $', hi: 'मूल्यवृद्धि — प्रति $ कम ₹' },
+                            { en: 'It depreciates — more ₹ per $', hi: 'मूल्यह्रास — प्रति $ ज़्यादा ₹' },
+                            { en: 'No change', hi: 'कोई बदलाव नहीं' }
+                        ],
+                        correct: c => c.m.metrics.dRate < -0.4 ? 0 : (c.m.metrics.dRate > 0.4 ? 1 : 2)
+                    },
+                    say: (c, hi) => hi
+                        ? `निर्यात से विदेशी मुद्रा की <b>आपूर्ति</b> बढ़ी — S दाईं ओर खिसका, दर ₹${fmt(c.m.metrics.rate, 0)} प्रति $ पर आ गई: रुपये की <b>मूल्यवृद्धि</b>। अब आरव की फ़ीस ₹${glINR(c.m.metrics.rate * 10000)} — पिछले साल से ₹${glINR((c.prev.m.metrics.rate - c.m.metrics.rate) * 10000)} कम।`
+                        : `Exports raised the <b>supply</b> of forex — S shifted right and the rate fell to ₹${fmt(c.m.metrics.rate, 0)} per $: the rupee <b>appreciated</b>. Aarav's fees now cost ₹${glINR(c.m.metrics.rate * 10000)} — ₹${glINR((c.prev.m.metrics.rate - c.m.metrics.rate) * 10000)} less than last year.`,
+                    check: c => c.v.supplyShift > 0 && c.m.metrics.dRate < -0.4 && Math.abs(c.m.metrics.gap) < 0.6 && c.m.metrics.rate < c.prev.m.metrics.rate
+                }
+            ]
+        }],
         model(v) {
             const b = 0.8, d = 0.8;
             const a = 120 + v.demandShift * b;   // Demand: R = a − b·Q

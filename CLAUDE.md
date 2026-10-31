@@ -182,8 +182,10 @@ Three points that are load-bearing rather than stylistic:
 (Ramu's tea stall, a bad monsoon hitting onion prices, a recession and its fiscal fix)
 unfolds step by step; the student predicts each step **before** it applies, the diagram
 glides to the new state (rule 4 above), and the narration explains it. Launched from the
-controls panel and from a `🎬 Story` button on the diagram's own toolbar. Currently on
-`gl-demand-movement-shift`, `gl-market-equilibrium-shifts`, `gl-ad-as-equilibrium`.
+controls panel and from a `🎬 Story` button on the diagram's own toolbar. **Every one of the
+10 Graph Labs has one**, each built around that chapter's specific exam trap (e.g. "MC rising
+≠ AC rising", "a price change swivels the budget line, an income change shifts it", "a
+bigger ₹/$ number means a weaker rupee", "APC falls while MPC stays constant").
 
 **The honesty contract (enforced by `testStoriesMatchTheirModels`, not by convention):**
 every number in a narration is read from the model's output at that step (`ctx.m`), the
@@ -192,8 +194,18 @@ the step's `check(ctx)` — which the test suite runs against the real model. A 
 words drift from its model fails the build (verified by planting a false claim). Step
 states are absolute (`set` on top of the lab's defaults), so Back/Next always land on the
 same state. Options are shown in a shuffled order per run and graded by original index, so
-"always click the first one" scores at chance. A story is lost on a language toggle (the
-app re-opens the sim) — known, acceptable for now.
+"always click the first one" scores at chance. A language toggle re-opens the sim, so the
+story's position, answers and option order are stashed on the toggle click and resumed in
+the new language (a 3-second window, so a later toggle never resurrects a closed story).
+
+Writing these stories surfaced two real model bugs, both now fixed and tested:
+`gl-revenue-producer-eq` used "MC rising" as the second-order condition, which is only
+equivalent to "MC cuts MR from below" under perfect competition — under monopoly it
+misplaced equilibrium (see `docs/economics/models/producer-equilibrium.md`,
+`testProducerEquilibriumIsProfitMax`); and `gl-cost-curves` could almost never show its
+"minimum point of AC" verdict on the 0.5-step output slider (`testCostMinimumIsReachable`).
+Lesson worth keeping: authoring a story forces a precise claim about the model, and a
+precise claim is what exposes a model that is only approximately right.
 
 ### Holo Mode (`js/holo-mode.js`) — the immersive skin over every Graph Lab
 
