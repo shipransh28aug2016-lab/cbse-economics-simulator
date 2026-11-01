@@ -7,7 +7,7 @@ if (typeof SIMS !== 'undefined') {
         // ── MICROECONOMICS (Class XI, Part B) ──────────────────────
         {
             id: 'micro-consumer-equilibrium',
-            metricLabels: { Qstar: 'Equilibrium Q* (MU = Price)', muPerRupee: 'MU per Rupee', bestQx: 'Equi-marginal Qx', bestQy: 'Equi-marginal Qy' },
+            metricLabels: { Qstar: 'Equilibrium Q* (MU = Price)', muPerRupee: 'MU per Rupee', bestQx: 'Equi-marginal Qx', bestQy: 'Equi-marginal Qy', Qx: 'Quantity of X (Qx)', Qy: 'Quantity of Y (Qy)', muxPerRupee: 'MUx / Px', muyPerRupee: 'MUy / Py', diff: 'MUx/Px − MUy/Py' },
             module: 'micro',
             title: 'Consumer Equilibrium (Marginal Utility)',
             desc: 'See how diminishing marginal utility, price, and money income together determine equilibrium — single-good (MU = Price) and the two-good Law of Equi-Marginal Utility (MUx/Px = MUy/Py).',
@@ -387,6 +387,7 @@ if (typeof SIMS !== 'undefined') {
         // ── MACROECONOMICS (Class XII, Part A) ─────────────────────
         {
             id: 'macro-money-creation',
+            metricLabels: { totalMoney: 'Total Money Created' },
             module: 'macro',
             title: 'Credit / Money Creation',
             desc: 'See how banks multiply an initial deposit through successive lending.',
@@ -665,6 +666,7 @@ if (typeof SIMS !== 'undefined') {
         // ── STATISTICS FOR ECONOMICS (Class XI, Part A) ────────────
         {
             id: 'stats-dispersion',
+            metricLabels: { range: 'Range' },
             module: 'stats',
             title: 'Measures of Dispersion',
             desc: 'See how spread-out data affects Range, Quartile Deviation, SD and CV.',
@@ -823,6 +825,7 @@ if (typeof SIMS !== 'undefined') {
         // ── INDIAN ECONOMIC DEVELOPMENT (Class XII, Part B) ────────
         {
             id: 'india-human-capital',
+            metricLabels: { literacy: 'Literacy Rate (%)', lifeExpectancy: 'Life Expectancy (years)' },
             module: 'india',
             title: 'Human Capital Formation: Education & Health',
             desc: 'Both named sources of human capital — Education and Health spending — modeled and charted together.',
@@ -874,6 +877,7 @@ if (typeof SIMS !== 'undefined') {
         },
         {
             id: 'india-employment-structure',
+            metricLabels: { agri: 'Agriculture (% of jobs)', industry: 'Industry (% of jobs)', services: 'Services (% of jobs)', formal: 'Formal Sector (%)', informal: 'Informal Sector (%)' },
             module: 'india',
             title: 'Employment: Structural Transformation & Formalisation',
             desc: 'See how employment shifts from agriculture to industry/services, and from informal to formal work.',

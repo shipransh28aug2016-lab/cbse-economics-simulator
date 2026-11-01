@@ -25,6 +25,7 @@ const _corrNoise = range(30).map(() => _corrRandN());
 const SIMS = [
     {
         id: 'micro-supply-demand',
+        metricLabels: { demandShift: 'Net demand shift', supplyShift: 'Net supply shift (+ = supply decreased)' },
         // Draws its own baseline ("original") curves, which are
         // all-determinants-zero relative rather than previous-step
         // relative. Two different "before" references on one chart would
@@ -122,6 +123,7 @@ const SIMS = [
     },
     {
         id: 'micro-elasticity',
+        metricLabels: { substitutes: 'Number of Close Substitutes' },
         module: 'micro',
         title: 'Elasticity of Demand (Price / Income / Cross)',
         desc: 'The CBSE-named Price Elasticity of Demand, plus Income and Cross elasticity as extra contrast.',
@@ -276,7 +278,7 @@ const SIMS = [
     },
     {
         id: 'macro-gdp',
-        metricLabels: { gdpExp: 'GDP (Expenditure Method)', totalInjections: 'Total Injections', totalLeakages: 'Total Leakages', wages: 'Factor Payments', consumption: 'Consumption Expenditure', investment: 'Investment (I)', saving: 'Savings (S)', taxes: 'Taxes (T)', exportsVal: 'Exports (X)', imports: 'Imports (M)' },
+        metricLabels: { gdpExp: 'GDP (Expenditure Method)', totalInjections: 'Total Injections', totalLeakages: 'Total Leakages', wages: 'Factor Payments', consumption: 'Consumption Expenditure', investment: 'Investment (I)', saving: 'Savings (S)', taxes: 'Taxes (T)', exportsVal: 'Exports (X)', imports: 'Imports (M)', g: 'Government Spending (G)', nx: 'Net Exports (X − M)' },
         module: 'macro',
         title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector + Financial Market)',
         desc: 'Choose 2-Sector, 3-Sector or 4-Sector, and optionally switch on the Financial Market (Banks) — the diagram draws ONLY the sectors and flows that exist in your choice, correctly split into injections and leakages.',
