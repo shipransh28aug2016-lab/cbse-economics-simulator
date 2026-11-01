@@ -28,6 +28,20 @@ function cloneRows(rows) {
     return (rows || []).map(r => Object.assign({}, r));
 }
 
+// The default rows, with their English text values (student names, budget
+// heads, countries…) in Hindi when Hindi is on — from js/i18n_hi_charts.js's
+// DATALAB_ROWS_HI. Only defaults are translated; typed values never are.
+function localDefaultRows(sim) {
+    const rows = cloneRows(sim.dataLab.defaultRows);
+    const map = (typeof currentLang !== 'undefined' && currentLang === 'hi' && typeof DATALAB_ROWS_HI !== 'undefined') ? DATALAB_ROWS_HI[sim.id] : null;
+    if (!map) return rows;
+    return rows.map(r => {
+        const o = {};
+        Object.keys(r).forEach(k => { o[k] = (typeof r[k] === 'string' && map[r[k]]) || r[k]; });
+        return o;
+    });
+}
+
 // Guards against NaN/blank/out-of-range cells ever reaching calculate() —
 // an invalid or empty cell falls back to a safe default instead of
 // crashing the computation or propagating NaN into the chart.
@@ -85,7 +99,7 @@ function renderDataLabTable(sim, container) {
         </div>
         <p class="controls-panel-hint">${tEngine('engine.dataLabHint', 'Type your own numbers directly into the table below — the calculation, chart and interpretation update instantly. Add or remove rows to try a dataset of your own, not just the sample.')}</p>
         <div class="datalab-table-wrap"><table class="datalab-table"><thead><tr>`;
-    cols.forEach(c => { const label = dataLabColLabel(sim, c); html += `<th>${label}${c.unit ? ` (${c.unit})` : ''}</th>`; });
+    cols.forEach(c => { const label = dataLabColLabel(sim, c); html += `<th>${label}${c.unit ? ` (${typeof localUnit === 'function' ? localUnit(c.unit) : c.unit})` : ''}</th>`; });
     html += `<th class="datalab-row-action-col"></th></tr></thead><tbody>`;
     dataLabRows.forEach((row, i) => {
         html += '<tr>';
@@ -139,7 +153,7 @@ function renderDataLabTable(sim, container) {
         // the click from bubbling up and also toggling the panel.
         resetBtn.addEventListener('click', (e) => e.stopPropagation());
         resetBtn.addEventListener('click', () => {
-            dataLabRows = cloneRows(sim.dataLab.defaultRows);
+            dataLabRows = localDefaultRows(sim);
             dataLabPrevRows = null;
             recomputeDataLab(sim, true);
         });
@@ -170,7 +184,8 @@ function recomputeDataLab(sim, rebuildTable) {
     layout.xaxis = styledAxisTitle(Object.assign({}, base.xaxis, (result.layout && result.layout.xaxis) || {}));
     layout.yaxis = styledAxisTitle(Object.assign({}, base.yaxis, (result.layout && result.layout.yaxis) || {}));
     if (typeof Plotly !== 'undefined') {
-        Plotly.react(overlay, result.traces || [], layout, { displayModeBar: false, responsive: true }).catch(() => {});
+        const shown = typeof localizeChart === 'function' ? localizeChart(sim, result.traces || [], layout) : { traces: result.traces || [], layout };
+        Plotly.react(overlay, shown.traces, shown.layout, { displayModeBar: false, responsive: true }).catch(() => {});
     }
     overlay.classList.remove('chart-fresh');
     void overlay.offsetWidth; // restart the CSS "just updated" fade
@@ -199,7 +214,7 @@ function recomputeDataLab(sim, rebuildTable) {
 function renderDataLab(sim) {
     const controlsPanel = document.getElementById('controls-panel');
     if (!controlsPanel || !sim.dataLab) return;
-    dataLabRows = cloneRows(sim.dataLab.defaultRows);
+    dataLabRows = localDefaultRows(sim);
     dataLabPrevRows = null;
     renderDataLabTable(sim, controlsPanel);
     recomputeDataLab(sim, false);

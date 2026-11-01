@@ -380,6 +380,9 @@ const SIMS = [
             // guarding against — verified by screenshot, not just by reading
             // the code, since a "close enough" hard-coded number is exactly
             // the kind of thing that reads fine and renders wrong.
+            // Every label below is drawn through translateChartText (Hindi in
+            // Hindi mode, from CHART_I18N_HI['macro-gdp']); English otherwise.
+            const L = t => (typeof translateChartText === 'function' ? translateChartText({ id: 'macro-gdp' }, t) : t);
             const hh = { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' };
             const firm = { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' };
             const gov = { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' };
@@ -459,7 +462,7 @@ const SIMS = [
                     const ratio = Math.max(0, Math.min(1, f.value / maxValue));
                     const duration = Math.max(1.1, 3.4 - 2.1 * ratio);
                     const pos = curveOffsetPoint(f.from.x, f.from.y, f.to.x, f.to.y, f.bend + f.labelOffset);
-                    return flowLabelSVG(pos.x, pos.y, f.label, f.color, duration);
+                    return flowLabelSVG(pos.x, pos.y, L(f.label), f.color, duration);
                 })
                 .join('');
 
@@ -468,16 +471,16 @@ const SIMS = [
                     <g>
                         <circle cx="${n.x}" cy="${n.y}" r="26" fill="${n.color}26" stroke="${n.color}" stroke-width="2"></circle>
                         <text x="${n.x}" y="${n.y - 1}" text-anchor="middle" font-size="16">${n.icon}</text>
-                        <text x="${n.x}" y="${n.y + 17}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e1b3a">${n.label}</text>
+                        <text x="${n.x}" y="${n.y + 17}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e1b3a">${L(n.label)}</text>
                     </g>`)
                 .join('');
 
             const legendSVG = `
                 <g font-family="Inter, sans-serif">
                     <line x1="8" y1="9" x2="26" y2="9" stroke="#8b5cf6" stroke-width="2.5"></line>
-                    <text x="30" y="12" font-size="8" fill="#4b4470">Money Flow (payments)</text>
+                    <text x="30" y="12" font-size="8" fill="#4b4470">${L('Money Flow (payments)')}</text>
                     <line x1="8" y1="20" x2="26" y2="20" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="5 4"></line>
-                    <text x="30" y="23" font-size="8" fill="#4b4470">Real Flow (factors / goods)</text>
+                    <text x="30" y="23" font-size="8" fill="#4b4470">${L('Real Flow (factors / goods)')}</text>
                 </g>`;
 
             const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');

@@ -418,7 +418,7 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 question: { en: 'A rise in Imports (Current Account) does what to the Rupee?', hi: 'आयात (चालू खाता) में वृद्धि रुपये का क्या करती है?' },
                 options: [
                     { en: 'Depreciates it (more rupees needed per dollar)', hi: 'इसका मूल्यह्रास करती है (प्रति डॉलर अधिक रुपये चाहिए)' },
-                    { en: 'Appreciates it', hi: 'इसकी सराहना (appreciate) करती है' },
+                    { en: 'Appreciates it', hi: 'इसकी मूल्यवृद्धि करती है (appreciate)' },
                     { en: 'Has no effect', hi: 'कोई प्रभाव नहीं' },
                     { en: 'Fixes it permanently', hi: 'इसे स्थायी रूप से तय कर देती है' }
                 ],
@@ -445,13 +445,13 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 level: 'apply',
                 build(state, metrics) {
                     if (!metrics || typeof metrics.trend !== 'string') return null;
-                    const options = quizShuffle(['Depreciating', 'Appreciating', 'Stable']).map(v => ({ Depreciating: { en: 'Depreciating', hi: 'मूल्यह्रास (Depreciating)' }, Appreciating: { en: 'Appreciating', hi: 'सराहना (Appreciating)' }, Stable: { en: 'Stable', hi: 'स्थिर (Stable)' } }[v]));
-                    const correctOpt = { Depreciating: { en: 'Depreciating', hi: 'मूल्यह्रास (Depreciating)' }, Appreciating: { en: 'Appreciating', hi: 'सराहना (Appreciating)' }, Stable: { en: 'Stable', hi: 'स्थिर (Stable)' } }[metrics.trend];
+                    const options = quizShuffle(['Depreciating', 'Appreciating', 'Stable']).map(v => ({ Depreciating: { en: 'Depreciating', hi: 'मूल्यह्रास (Depreciating)' }, Appreciating: { en: 'Appreciating', hi: 'मूल्यवृद्धि (Appreciating)' }, Stable: { en: 'Stable', hi: 'स्थिर (Stable)' } }[v]));
+                    const correctOpt = { Depreciating: { en: 'Depreciating', hi: 'मूल्यह्रास (Depreciating)' }, Appreciating: { en: 'Appreciating', hi: 'मूल्यवृद्धि (Appreciating)' }, Stable: { en: 'Stable', hi: 'स्थिर (Stable)' } }[metrics.trend];
                     return {
-                        question: { en: `With Imports=${state.imports}, Exports=${state.exports}, Capital Outflow=${state.capOut}, Capital Inflow=${state.capIn} — is the Rupee Depreciating, Appreciating, or Stable?`, hi: `आयात=${state.imports}, निर्यात=${state.exports}, पूँजी बहिर्वाह=${state.capOut}, पूँजी अंतर्वाह=${state.capIn} के साथ — रुपया मूल्यह्रास, सराहना, या स्थिर है?` },
+                        question: { en: `With Imports=${state.imports}, Exports=${state.exports}, Capital Outflow=${state.capOut}, Capital Inflow=${state.capIn} — is the Rupee Depreciating, Appreciating, or Stable?`, hi: `आयात=${state.imports}, निर्यात=${state.exports}, पूँजी बहिर्वाह=${state.capOut}, पूँजी अंतर्वाह=${state.capIn} के साथ — रुपये का मूल्यह्रास हो रहा है, मूल्यवृद्धि हो रही है, या वह स्थिर है?` },
                         options: [correctOpt, ...options.filter(o => quizLocalize(o) !== quizLocalize(correctOpt))].slice(0, 3),
                         correctIndex: 0,
-                        explain: { en: `Comparing total demand for $ (Imports+Capital Outflow) against total supply of $ (Exports+Capital Inflow) gives the "Rupee Trend" reading: ${metrics.trend}.`, hi: `डॉलर की कुल माँग (आयात+पूँजी बहिर्वाह) की डॉलर की कुल आपूर्ति (निर्यात+पूँजी अंतर्वाह) से तुलना करने पर "Rupee Trend" रीडिंग मिलती है: ${metrics.trend}.` }
+                        explain: { en: `Comparing total demand for $ (Imports+Capital Outflow) against total supply of $ (Exports+Capital Inflow) gives the "Rupee Trend" reading: ${metrics.trend}.`, hi: `डॉलर की कुल माँग (आयात+पूँजी बहिर्वाह) की डॉलर की कुल आपूर्ति (निर्यात+पूँजी अंतर्वाह) से तुलना करने पर "रुपये की प्रवृत्ति" रीडिंग मिलती है: ${({ Depreciating: 'मूल्यह्रास', Appreciating: 'मूल्यवृद्धि', Stable: 'स्थिर' })[metrics.trend] || metrics.trend}।` }
                     };
                 }
             }
@@ -631,7 +631,7 @@ if (typeof QUIZ_BANK !== 'undefined') {
                         question: { en: 'For the commodity basket currently shown in the table, what is the Price Index (Base = 100)?', hi: 'तालिका में वर्तमान में दिखाई गई वस्तु बास्केट के लिए, मूल्य सूचकांक (आधार = 100) क्या है?' },
                         options,
                         correctIndex: 0,
-                        explain: { en: `Index = (ΣP₁/ΣP₀)×100, read directly from the "Price Index" row: ${correct}.`, hi: `सूचकांक = (ΣP₁/ΣP₀)×100, "Price Index" पंक्ति से सीधे पढ़ें: ${correct}।` }
+                        explain: { en: `Index = (ΣP₁/ΣP₀)×100, read directly from the "Price Index (Base = 100)" row: ${correct}.`, hi: `सूचकांक = (ΣP₁/ΣP₀)×100, "Price Index (Base = 100)" पंक्ति से सीधे पढ़ें: ${correct}।` }
                     };
                 }
             }
@@ -678,7 +678,7 @@ if (typeof QUIZ_BANK !== 'undefined') {
                         question: { en: `At Education Spending = ${state.edu}% of GDP, what is the projected Literacy Rate by the final year shown?`, hi: `शिक्षा व्यय = GDP का ${state.edu}% पर, दिखाए गए अंतिम वर्ष तक अनुमानित साक्षरता दर क्या है?` },
                         options,
                         correctIndex: 0,
-                        explain: { en: `Read the "Projected Literacy (latest)" row in Live Readings: ${correct}%.`, hi: `Live Readings में "Projected Literacy (latest)" पंक्ति पढ़ें: ${correct}%।` }
+                        explain: { en: `Read the "Projected Literacy after 25 years" row in Live Readings: ${correct}%.`, hi: `Live Readings में "Projected Literacy after 25 years" पंक्ति पढ़ें: ${correct}%।` }
                     };
                 }
             }

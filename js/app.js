@@ -188,6 +188,10 @@ function wireQuizModal() {
 // not fabricated data, so this is purely a motion touch. Respects
 // prefers-reduced-motion by snapping straight to the final value.
 function animateHeroStats() {
+    // The lab count is the real number of sims, not a hand-typed one that
+    // goes stale every time a lab is added (it read 34 when there were 44).
+    const labCount = document.getElementById('hero-lab-count');
+    if (labCount && typeof SIMS !== 'undefined') labCount.textContent = String(SIMS.length);
     const nums = document.querySelectorAll('.hero-stats-strip b');
     if (!nums.length) return;
     const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

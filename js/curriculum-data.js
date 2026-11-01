@@ -106,6 +106,14 @@ function partTitle(cls, part) {
 function chapterTagText(sim) {
     if (!sim || !sim.class || !sim.part || !sim.unit) return sim && sim.chapter || '';
     const pt = partTitle(sim.class, sim.part);
+    // Hindi mode: names from js/i18n_hi_chapters.js, keyed by the English
+    // text (which stays the source of truth for where the sim sits).
+    if (typeof currentLang !== 'undefined' && currentLang === 'hi' && typeof UNIT_TITLES_HI !== 'undefined') {
+        const unitHi = UNIT_TITLES_HI[sim.unitTitle] || sim.unitTitle || '';
+        let hi = `कक्षा ${sim.class} · भाग ${sim.part}: ${PART_TITLES_HI[pt] || pt} · इकाई ${sim.unit}: ${unitHi}`;
+        if (sim.topicLabel) hi += ` — ${TOPIC_LABELS_HI[sim.topicLabel] || sim.topicLabel}`;
+        return hi;
+    }
     let text = `Class ${sim.class} · Part ${sim.part}: ${pt} · Unit ${sim.unit}: ${sim.unitTitle || ''}`;
     if (sim.topicLabel) text += ` — ${sim.topicLabel}`;
     return text;

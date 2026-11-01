@@ -102,7 +102,10 @@ function quizNumericOptions(correctValue, deltas, opts) {
         seen.add(fmtNum(v));
         finalValues.push(v);
     });
-    return finalValues.map(v => `${prefix}${fmtNum(v)}${suffix}`);
+    // Numbers are language-neutral; a unit word in the suffix is not.
+    const SUFFIX_HI = { ' units': ' इकाई', ' cr': ' करोड़' };
+    const sfx = (typeof currentLang !== 'undefined' && currentLang === 'hi' && SUFFIX_HI[suffix]) || suffix;
+    return finalValues.map(v => `${prefix}${fmtNum(v)}${sfx}`);
 }
 
 // Resolves a raw bank entry (English/Hindi option objects, etc.) to a
@@ -115,6 +118,17 @@ function quizNumericOptions(correctValue, deltas, opts) {
 // (already-localized) TEXT rather than its index, so it survives
 // shuffleQuizOptions() reordering the options array untouched — no
 // separate bookkeeping needed to keep it aligned after a shuffle.
+// A template's Hindi text names readings rows ("Karl Pearson's r") as they
+// read in English, but in Hindi mode the panel shows them in Hindi. Run the
+// Hindi through the SAME translateReadings() the panel uses, so the quiz
+// names exactly the label the student sees. No-op in English mode.
+function quizHindiLabels(sim, built) {
+    if (typeof currentLang === 'undefined' || currentLang !== 'hi' || typeof translateReadings !== 'function') return built;
+    const fix = v => (v && typeof v === 'object' && typeof v.hi === 'string')
+        ? Object.assign({}, v, { hi: translateReadings(sim, v.hi.replace(/Live Readings(\/Stats)?/g, 'लाइव रीडिंग्स')) }) : v;
+    return Object.assign({}, built, { question: fix(built.question), explain: fix(built.explain), options: (built.options || []).map(fix) });
+}
+
 function normalizeQuizQuestion(q) {
     const options = (q.options || []).map(quizLocalize);
     let misconceptions = null;
@@ -168,7 +182,8 @@ function generateQuiz(sim, count) {
                     const result = sim.graphLab.model(state, { prev: state, base: state });
                     built = tpl.build(state, (result && result.metrics) || {});
                 } else if (sim.mode === 'datalab' && sim.dataLab) {
-                    const rows = sim.dataLab.defaultRows;
+                    // The same rows the table shows (Hindi names in Hindi mode).
+                    const rows = typeof localDefaultRows === 'function' ? localDefaultRows(sim) : sim.dataLab.defaultRows;
                     const result = sim.dataLab.calculate(rows);
                     built = tpl.build(rows, (result && result.metrics) || {});
                 } else if (typeof sim.compute === 'function') {
@@ -184,7 +199,7 @@ function generateQuiz(sim, count) {
                     const result = sim.customRender(scratch, state);
                     built = tpl.build(state, (result && result.metrics) || {});
                 }
-                if (built) pool.push(normalizeQuizQuestion(Object.assign({ level: tpl.level || 'apply' }, built)));
+                if (built) pool.push(normalizeQuizQuestion(Object.assign({ level: tpl.level || 'apply' }, quizHindiLabels(sim, built))));
             } catch (e) {
                 // Skip — this random state didn't produce a well-formed
                 // question (e.g. a metric was undefined); try again.

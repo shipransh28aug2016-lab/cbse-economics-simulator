@@ -271,6 +271,20 @@ per-sim code**:
   `hiPath()` like chip labels. `testGraphLabDiagramIsTranslated` fails on any English word
   left in the drawn text, a label whose numbers change, or a dead pair — so a new label in a
   `model()` needs its pair in the same change.
+- **Everything else in Hindi** — chart text (`CHART_I18N_HI` in `js/i18n_hi_charts.js`, via
+  `translateChartText`/`localizeChart` in sim-engine.js, used by both chart engines and the
+  circular-flow SVG; whole-word matching; annotations/shapes anchored to a category are
+  translated with it so they keep their position), Data Lab default rows
+  (`DATALAB_ROWS_HI` → `localDefaultRows`, shared with the quiz), chapter tags
+  (`js/i18n_hi_chapters.js`), PREDICT cards, units (`localUnit`) and quiz numeric suffixes.
+  `testHindiHasNoEnglishResidue` reads the OUTPUT in Hindi mode — chapter tags, every chart
+  text, readings line, formula and SVG label across the control sweep — and fails on any
+  English word (a bracketed gloss after the Hindi, "मूल्यह्रास (depreciation)", is allowed
+  in authored text), a number changed by translation, a dead pair, or a category anchor that
+  no longer names a drawn bar. `testQuizHindiAndRowPointers` does the same for quiz text and
+  fails if an explanation points to a `"…" row` the sim does not show. Terminology:
+  मूल्यह्रास = depreciation (market), अवमूल्यन = devaluation (government), मूल्यवृद्धि =
+  appreciation, पुनर्मूल्यन = revaluation — the old Hindi text had these swapped.
 - **Auto-ghosting** (`buildGhostTraces`) — the previous positions of **only the curves
   that actually moved**, drawn dimmed beneath the live ones. This is the
   movement-vs-shift distinction generalised to every simulator-mode sim, derived from
