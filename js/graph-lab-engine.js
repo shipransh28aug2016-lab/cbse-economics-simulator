@@ -87,6 +87,20 @@ function glSnap(val, step) {
 
 // A graphLab string field, translated when the sim carries a matching
 // `hi.graphLab.…` entry (same mechanism as hiPath elsewhere), else English.
+// Text drawn inside the diagram (axis titles, curve/point/arrow labels,
+// ticks, handle hints) in Hindi mode: the lab's GL_DIAGRAM_HI pairs from
+// js/i18n_hi_diagram.js, longest first, applied to the model's own text —
+// numbers inside a label pass through untouched.
+function glDiagramText(text, sim) {
+    if (text == null) return text;
+    const id = (sim || glSim || {}).id;
+    if (typeof currentLang === 'undefined' || currentLang !== 'hi' || typeof GL_DIAGRAM_HI === 'undefined' || !GL_DIAGRAM_HI[id]) return text;
+    let out = String(text);
+    GL_DIAGRAM_HI[id].slice().sort((a, b) => b[0].length - a[0].length)
+        .forEach(([en, hi]) => { if (out.includes(en)) out = out.split(en).join(hi); });
+    return out;
+}
+
 function glT(path, fallback) {
     if (typeof hiPath !== 'function') return fallback;
     return hiPath(glSim, `graphLab.${path}`) || fallback;
@@ -121,9 +135,9 @@ function glAxes(cfg, s) {
     <line class="gl-axis" x1="${x0}" y1="${y0}" x2="${xEnd}" y2="${y0}" marker-end="url(#gl-axis-arrow)"></line>
     <line class="gl-axis" x1="${x0}" y1="${y0}" x2="${x0}" y2="${yEnd}" marker-end="url(#gl-axis-arrow)"></line>
     <text class="gl-origin" x="${x0 - 13}" y="${y0 + 17}">O</text>
-    <text class="gl-axis-title" x="${(x0 + xEnd) / 2}" y="${y0 + 44}" text-anchor="middle">${glEsc(cfg.x.label)}</text>
+    <text class="gl-axis-title" x="${(x0 + xEnd) / 2}" y="${y0 + 44}" text-anchor="middle">${glEsc(glDiagramText(cfg.x.label))}</text>
     <text class="gl-axis-title" x="${x0 - 50}" y="${(y0 + yEnd) / 2}" text-anchor="middle"
-          transform="rotate(-90 ${x0 - 50} ${(y0 + yEnd) / 2})">${glEsc(cfg.y.label)}</text>`;
+          transform="rotate(-90 ${x0 - 50} ${(y0 + yEnd) / 2})">${glEsc(glDiagramText(cfg.y.label))}</text>`;
 }
 
 function glCurve(c, s) {
@@ -136,7 +150,7 @@ function glCurve(c, s) {
     const ly = s.sy(at[1]) + (c.labelDy || -6);
     const dash = c.dash ? ` stroke-dasharray="${c.dash}"` : '';
     const label = c.label
-        ? `<text class="gl-curve-label" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="${c.color}">${glEsc(c.label)}</text>` : '';
+        ? `<text class="gl-curve-label" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="${c.color}">${glEsc(glDiagramText(c.label))}</text>` : '';
     return `<path class="gl-curve" d="${d}" stroke="${c.color}" stroke-width="${c.width || 2.8}"${dash}
              opacity="${c.opacity == null ? 1 : c.opacity}"></path>${label}`;
 }
@@ -153,12 +167,12 @@ function glPoint(p, s, cfg) {
     if (p.drop !== false) {
         out += `<line class="gl-drop" x1="${px}" y1="${py}" x2="${x0}" y2="${py}" stroke="${col}"></line>
                 <line class="gl-drop" x1="${px}" y1="${py}" x2="${px}" y2="${y0}" stroke="${col}"></line>`;
-        if (p.yTick !== false) out += `<text class="gl-tick" x="${x0 - 8}" y="${py + 4}" text-anchor="end" fill="${col}">${glEsc(p.yTick || p.y)}</text>`;
-        if (p.xTick !== false) out += `<text class="gl-tick" x="${px}" y="${y0 + 17}" text-anchor="middle" fill="${col}">${glEsc(p.xTick || p.x)}</text>`;
+        if (p.yTick !== false) out += `<text class="gl-tick" x="${x0 - 8}" y="${py + 4}" text-anchor="end" fill="${col}">${glEsc(glDiagramText(p.yTick || p.y))}</text>`;
+        if (p.xTick !== false) out += `<text class="gl-tick" x="${px}" y="${y0 + 17}" text-anchor="middle" fill="${col}">${glEsc(glDiagramText(p.xTick || p.x))}</text>`;
     }
     out += `<circle class="gl-point" cx="${px}" cy="${py}" r="5.2" fill="${col}"></circle>`;
-    if (p.label) out += `<text class="gl-point-label" x="${px + (p.labelDx || 9)}" y="${py + (p.labelDy || -9)}" fill="${col}">${glEsc(p.label)}</text>`;
-    if (p.sub) out += `<text class="gl-point-sub" x="${px + (p.labelDx || 9)}" y="${py + (p.labelDy || -9) + 13}" fill="${col}">${glEsc(p.sub)}</text>`;
+    if (p.label) out += `<text class="gl-point-label" x="${px + (p.labelDx || 9)}" y="${py + (p.labelDy || -9)}" fill="${col}">${glEsc(glDiagramText(p.label))}</text>`;
+    if (p.sub) out += `<text class="gl-point-sub" x="${px + (p.labelDx || 9)}" y="${py + (p.labelDy || -9) + 13}" fill="${col}">${glEsc(glDiagramText(p.sub))}</text>`;
     return out;
 }
 
@@ -180,10 +194,11 @@ function glArrow(a, s) {
     if (a.label) {
         const lx = (bend ? cx : mx) + (a.labelDx || 0);
         const ly = (bend ? cy : my) + (a.labelDy == null ? -9 : a.labelDy);
-        const w = String(a.label).length * 5.6 + 14;
+        const text = glDiagramText(a.label);
+        const w = String(text).length * 5.6 + 14;
         out += `<g transform="translate(${lx.toFixed(1)},${ly.toFixed(1)})">
             <rect class="gl-arrow-chip" x="${(-w / 2).toFixed(1)}" y="-9" width="${w.toFixed(1)}" height="18" rx="9" stroke="${col}"></rect>
-            <text class="gl-arrow-text" x="0" y="4" text-anchor="middle" fill="${col}">${glEsc(a.label)}</text></g>`;
+            <text class="gl-arrow-text" x="0" y="4" text-anchor="middle" fill="${col}">${glEsc(text)}</text></g>`;
     }
     return out;
 }
@@ -196,7 +211,7 @@ function glHandle(h, s) {
     const col = h.color || '#7c3aed';
     const cls = 'gl-handle' + (h.axis === 'y' ? ' gl-handle--y' : ' gl-handle--x');
     return `<g class="${cls}" data-handle="${glEsc(h.id)}" tabindex="0" role="slider"
-               aria-label="${glEsc(h.hint || h.id)}" transform="translate(${px.toFixed(1)},${py.toFixed(1)})">
+               aria-label="${glEsc(glDiagramText(h.hint) || h.id)}" transform="translate(${px.toFixed(1)},${py.toFixed(1)})">
         <circle class="gl-handle-hit" r="24"></circle>
         <circle class="gl-handle-halo" r="13" stroke="${col}"></circle>
         <circle class="gl-handle-dot" r="7" fill="${col}"></circle>
@@ -284,7 +299,7 @@ function glVarChip(sim, v) {
     const label = hiPath(sim, `graphLab.vars.${v.id}.label`) || v.label;
     const unit = hiPath(sim, `graphLab.vars.${v.id}.unit`) || v.unit || '';
     const pct = ((val - v.min) / ((v.max - v.min) || 1)) * 100;
-    return `<div class="gl-chip" id="gl-chip-${glEsc(v.id)}" data-var="${glEsc(v.id)}" title="${glEsc(v.hint || label)}">
+    return `<div class="gl-chip" id="gl-chip-${glEsc(v.id)}" data-var="${glEsc(v.id)}" title="${glEsc(hiPath(sim, `graphLab.vars.${v.id}.hint`) || v.hint || label)}">
         <div class="gl-chip-top">
             <span class="gl-chip-label">${glEsc(label)}</span>
             <span class="gl-chip-val" id="gl-val-${glEsc(v.id)}">${glFmtVar(val, v)}<em>${glEsc(unit)}</em></span>

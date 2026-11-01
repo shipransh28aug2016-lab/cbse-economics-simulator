@@ -70,7 +70,8 @@ const FILES = [
     'js/i18n_hi_macro_datalab.js',
     'js/i18n_hi_ied.js',
     'js/i18n_hi_graphlab.js',
-    'js/i18n_hi_metrics.js'
+    'js/i18n_hi_metrics.js',
+    'js/i18n_hi_diagram.js'
 ];
 
 function noop() {}
@@ -819,6 +820,66 @@ function extractNodePos(html, label) {
     ok(vm.runInContext('glLocalVerdict', context)(m.verdict).title === m.verdict.title, 'Graph Lab verdicts: English mode is untouched');
     const strip = vm.runInContext('mimaStripTags', context);
     ok(strip('MC &lt; AC → <b>AC अभी घट रहा है</b>') === 'MC < AC → AC अभी घट रहा है', 'Mima: verdict entities are decoded before display/speech (no "&lt;" read aloud)');
+})();
+
+// ── Graph Lab diagram text in Hindi ─────────────────────────────────
+// Axis titles, curve/point/arrow labels, ticks and handle hints are drawn
+// inside the SVG from the model's own text; js/i18n_hi_diagram.js translates
+// them. Sweeps every lab: after translation no English word may remain, the
+// numbers in every label must survive unchanged, every pair must match some
+// text the lab really draws (no dead entries), and English mode is untouched.
+(function testGraphLabDiagramIsTranslated() {
+    const tr = vm.runInContext('glDiagramText', context);
+    const DIAG = vm.runInContext('GL_DIAGRAM_HI', context);
+    const hasDeva = t => /[ऀ-ॿ]/.test(t);
+    // A word with two or more lowercase letters is English prose; symbols
+    // such as DD, D₁D₁, AC, MRT, IC₂, Px, Qd, Y_F, OP stay as they are.
+    const englishWord = t => (String(t).match(/\b[A-Za-z][a-z]{2,}\b/) || [null])[0];
+    const nums = t => (String(t).match(/\d+(?:\.\d+)?/g) || []).join(',');
+    SIMS.filter(s => s.mode === 'graphlab').forEach(sim => {
+        const cfg = sim.graphLab;
+        const texts = new Set([cfg.x && cfg.x.label, cfg.y && cfg.y.label]);
+        const def = {}; cfg.vars.forEach(v => { def[v.id] = v.value; });
+        const vals = v => { const o = [v.value]; for (let i = 0; i <= 10; i++) o.push(+(v.min + (v.max - v.min) * i / 10).toFixed(4)); return o; };
+        const states = [def];
+        cfg.vars.forEach(a => vals(a).forEach(x => {
+            states.push(Object.assign({}, def, { [a.id]: x }));
+            cfg.vars.forEach(b => { if (b !== a) vals(b).forEach(y => states.push(Object.assign({}, def, { [a.id]: x, [b.id]: y }))); });
+        }));
+        (cfg.scenarios || []).forEach(sc => states.push(Object.assign({}, def, sc.set)));
+        (cfg.stories || []).forEach(st => st.steps.forEach(step => states.push(Object.assign({}, def, step.set || {}))));
+        states.forEach(st => {
+            const m = cfg.model(st, {});
+            (m.curves || []).forEach(c => texts.add(c.label));
+            (m.points || []).forEach(p => { texts.add(p.label); texts.add(p.sub); if (typeof p.xTick === 'string') texts.add(p.xTick); if (typeof p.yTick === 'string') texts.add(p.yTick); });
+            (m.arrows || []).forEach(a => texts.add(a.label));
+            (m.handles || []).forEach(h => texts.add(h.hint));
+        });
+        texts.delete(undefined); texts.delete(null); texts.delete('');
+        const pairs = DIAG[sim.id] || [];
+        const used = new Set();
+        vm.runInContext('currentLang = "hi";', context);
+        const bad = [];
+        try {
+            texts.forEach(t => {
+                pairs.forEach(([en]) => { if (String(t).includes(en)) used.add(en); });
+                const hi = tr(t, sim);
+                const w = englishWord(hi);
+                if (w) bad.push(`"${t}" → "${hi}" (English "${w}" left)`);
+                else if (nums(hi) !== nums(t)) bad.push(`"${t}" → "${hi}" (numbers changed)`);
+            });
+        } finally { vm.runInContext('currentLang = "en";', context); }
+        ok(bad.length === 0, `${sim.id}: all ${texts.size} diagram texts are Hindi in Hindi mode${bad.length ? ' — ' + bad.slice(0, 3).join('; ') : ''}`);
+        const dead = pairs.filter(([en]) => !used.has(en)).map(([en]) => en);
+        ok(dead.length === 0, `${sim.id}: every GL_DIAGRAM_HI pair matches a real diagram text${dead.length ? ' — dead: ' + dead.join(' | ') : ''}`);
+        ok(pairs.every(([, hi]) => hasDeva(hi)), `${sim.id}: every GL_DIAGRAM_HI translation is Devanagari`);
+        texts.forEach(t => { if (tr(t, sim) !== t) ok(false, `${sim.id}: English mode leaves "${t}" untouched`); });
+        // Chip tooltips: every English hint has a Hindi one.
+        cfg.vars.filter(v => v.hint).forEach(v => {
+            const h = SIM_I18N_HI[sim.id] && SIM_I18N_HI[sim.id].graphLab && SIM_I18N_HI[sim.id].graphLab.vars && SIM_I18N_HI[sim.id].graphLab.vars[v.id];
+            ok(h && hasDeva(h.hint || ''), `${sim.id}: chip "${v.id}" tooltip has a Hindi hint`);
+        });
+    });
 })();
 
 // ── Economic-correctness audit regressions ──────────────────────────
