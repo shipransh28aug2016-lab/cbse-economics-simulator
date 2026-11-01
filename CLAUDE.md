@@ -258,6 +258,12 @@ per-sim code**:
   `testEffectLabelsAreTranslated` fails the build if any numeric metric of a simulator sim
   lacks a Hindi label, or if a Hindi key matches no real metric. So **a new metric needs a
   Hindi label in the same change**; Mima reads these labels aloud.
+- **Graph Lab verdicts in Hindi** — every `graphLab.model()` verdict carries a `hi: {title,
+  detail, chips}` twin built in the same branch from the same numbers; `glLocalVerdict()`
+  (graph-lab-engine.js) is the one switch the banner, PREDICT reveal, Holo HUD and Mima all
+  read. `testGraphLabVerdictsAreTranslated` sweeps every lab and fails on a missing twin,
+  leftover English, or **a Hindi verdict whose numbers differ from the English** — so a new
+  verdict branch needs its Hindi in the same change.
 - **Auto-ghosting** (`buildGhostTraces`) — the previous positions of **only the curves
   that actually moved**, drawn dimmed beneath the live ones. This is the
   movement-vs-shift distinction generalised to every simulator-mode sim, derived from

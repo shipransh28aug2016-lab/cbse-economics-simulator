@@ -17,14 +17,14 @@
 // lab can never drift into naming the same event differently.
 const GL_TERMS = {
     demand: {
-        curve: 'DD', shifted: 'D₁D₁',
+        curve: 'DD', shifted: 'D₁D₁', qtyHi: 'माँगी गई मात्रा',
         up: 'Contraction of Demand', upHi: 'माँग में संकुचन',
         down: 'Expansion of Demand', downHi: 'माँग में विस्तार',
         right: 'Increase in Demand', rightHi: 'माँग में वृद्धि',
         left: 'Decrease in Demand', leftHi: 'माँग में कमी'
     },
     supply: {
-        curve: 'SS', shifted: 'S₁S₁',
+        curve: 'SS', shifted: 'S₁S₁', qtyHi: 'पूर्ति की गई मात्रा',
         up: 'Expansion of Supply', upHi: 'पूर्ति में विस्तार',
         down: 'Contraction of Supply', downHi: 'पूर्ति में संकुचन',
         right: 'Increase in Supply', rightHi: 'पूर्ति में वृद्धि',
@@ -91,12 +91,19 @@ function glMoveShiftVerdict(kindKey, priceD, shiftD) {
     const shiftName = shiftD > 0 ? T.right : T.left;
     const shiftHi = shiftD > 0 ? T.rightHi : T.leftHi;
     const dirWord = shiftD > 0 ? 'RIGHTWARD' : 'LEFTWARD';
+    const dirHi = shiftD > 0 ? 'दाईं ओर' : 'बाईं ओर';
+    // Demand: price up ⇒ quantity down. Supply: price up ⇒ quantity up.
+    const qtyRose = kindKey === 'demand' ? priceD < 0 : priceD > 0;
 
     if (!moved && !shifted) {
         return {
             kind: 'none',
             title: `Nothing has changed yet — this is the original ${T.curve} curve.`,
-            detail: `Move an <b>own-price</b> chip to travel <i>along</i> ${T.curve}. Move any <b>other determinant</b> to make the whole curve <i>shift</i> to a new position. The diagram will name what you did.`
+            detail: `Move an <b>own-price</b> chip to travel <i>along</i> ${T.curve}. Move any <b>other determinant</b> to make the whole curve <i>shift</i> to a new position. The diagram will name what you did.`,
+            hi: {
+                title: `अभी कुछ नहीं बदला — यह मूल ${T.curve} वक्र है।`,
+                detail: `${T.curve} के <i>साथ-साथ</i> चलने के लिए वस्तु की <b>अपनी कीमत</b> वाला चिप हिलाएँ। पूरे वक्र को नई स्थिति में <i>खिसकाने</i> के लिए कोई <b>अन्य निर्धारक</b> बदलें। आरेख बताएगा कि आपने क्या किया।`
+            }
         };
     }
     if (moved && !shifted) {
@@ -104,7 +111,12 @@ function glMoveShiftVerdict(kindKey, priceD, shiftD) {
             kind: 'movement',
             chips: ['Same curve', 'Price changed'],
             title: `MOVEMENT along ${T.curve} → <b>${moveName}</b> <span class="gl-hi">(${moveHi})</span>`,
-            detail: `Only the good's <b>own price</b> changed, so the curve itself did <b>not</b> move — you slid from one point on ${T.curve} to another point on the <i>same</i> ${T.curve}. Price ${priceD > 0 ? 'rose' : 'fell'}, so quantity ${kindKey === 'demand' ? (priceD > 0 ? 'demanded fell' : 'demanded rose') : (priceD > 0 ? 'supplied rose' : 'supplied fell')}. In the exam this is called <b>${moveName}</b> — never "${shiftD >= 0 ? T.right : T.left}".`
+            detail: `Only the good's <b>own price</b> changed, so the curve itself did <b>not</b> move — you slid from one point on ${T.curve} to another point on the <i>same</i> ${T.curve}. Price ${priceD > 0 ? 'rose' : 'fell'}, so quantity ${kindKey === 'demand' ? (priceD > 0 ? 'demanded fell' : 'demanded rose') : (priceD > 0 ? 'supplied rose' : 'supplied fell')}. In the exam this is called <b>${moveName}</b> — never "${shiftD >= 0 ? T.right : T.left}".`,
+            hi: {
+                chips: ['वही वक्र', 'कीमत बदली'],
+                title: `${T.curve} के साथ संचलन → <b>${moveHi}</b>`,
+                detail: `केवल वस्तु की <b>अपनी कीमत</b> बदली, इसलिए वक्र स्वयं <b>नहीं</b> खिसका — आप ${T.curve} के एक बिंदु से <i>उसी</i> ${T.curve} के दूसरे बिंदु पर गए। कीमत ${priceD > 0 ? 'बढ़ी' : 'घटी'}, इसलिए ${T.qtyHi} ${qtyRose ? 'बढ़ी' : 'घटी'}। परीक्षा में इसे <b>${moveHi}</b> कहते हैं — "${shiftD >= 0 ? T.rightHi : T.leftHi}" कभी नहीं।`
+            }
         };
     }
     if (!moved && shifted) {
@@ -112,14 +124,24 @@ function glMoveShiftVerdict(kindKey, priceD, shiftD) {
             kind: 'shift',
             chips: ['New curve', 'Price unchanged'],
             title: `SHIFT of ${T.curve} → ${T.shifted} (${dirWord}) → <b>${shiftName}</b> <span class="gl-hi">(${shiftHi})</span>`,
-            detail: `A <b>non-price determinant</b> changed, so at <i>every</i> price the quantity ${kindKey === 'demand' ? 'demanded' : 'supplied'} is now ${shiftD > 0 ? 'higher' : 'lower'} — the entire curve has moved to a new position ${T.shifted}. Own price never moved, so this is <b>not</b> ${moveName.toLowerCase()}. The exam term is <b>${shiftName}</b>.`
+            detail: `A <b>non-price determinant</b> changed, so at <i>every</i> price the quantity ${kindKey === 'demand' ? 'demanded' : 'supplied'} is now ${shiftD > 0 ? 'higher' : 'lower'} — the entire curve has moved to a new position ${T.shifted}. Own price never moved, so this is <b>not</b> ${moveName.toLowerCase()}. The exam term is <b>${shiftName}</b>.`,
+            hi: {
+                chips: ['नया वक्र', 'कीमत अपरिवर्तित'],
+                title: `${T.curve} का खिसकाव → ${T.shifted} (${dirHi}) → <b>${shiftHi}</b>`,
+                detail: `एक <b>गैर-कीमत निर्धारक</b> बदला, इसलिए <i>हर</i> कीमत पर ${T.qtyHi} अब ${shiftD > 0 ? 'अधिक' : 'कम'} है — पूरा वक्र नई स्थिति ${T.shifted} पर खिसक गया। अपनी कीमत नहीं बदली, इसलिए यह ${moveHi} <b>नहीं</b> है। परीक्षा शब्द है <b>${shiftHi}</b>।`
+            }
         };
     }
     return {
         kind: 'both',
         chips: ['New curve', 'Price changed'],
         title: `BOTH at once → <b>${shiftName}</b> + <b>${moveName}</b>`,
-        detail: `Two separate things happened and the exam expects them named separately. <b>1.</b> A non-price determinant shifted ${T.curve} ${dirWord.toLowerCase()} to ${T.shifted} — that is <b>${shiftName}</b>. <b>2.</b> Own price then changed, moving you <i>along the new</i> ${T.shifted} — that is <b>${moveName}</b>. A shift relocates the curve; a movement relocates you on it.`
+        detail: `Two separate things happened and the exam expects them named separately. <b>1.</b> A non-price determinant shifted ${T.curve} ${dirWord.toLowerCase()} to ${T.shifted} — that is <b>${shiftName}</b>. <b>2.</b> Own price then changed, moving you <i>along the new</i> ${T.shifted} — that is <b>${moveName}</b>. A shift relocates the curve; a movement relocates you on it.`,
+        hi: {
+            chips: ['नया वक्र', 'कीमत बदली'],
+            title: `दोनों एक साथ → <b>${shiftHi}</b> + <b>${moveHi}</b>`,
+            detail: `दो अलग घटनाएँ हुईं, और परीक्षा में दोनों के नाम अलग-अलग लिखने होते हैं। <b>1.</b> एक गैर-कीमत निर्धारक ने ${T.curve} को ${dirHi} ${T.shifted} पर खिसकाया — यह <b>${shiftHi}</b> है। <b>2.</b> फिर अपनी कीमत बदली, जिससे आप <i>नए</i> ${T.shifted} के साथ-साथ चले — यह <b>${moveHi}</b> है। खिसकाव वक्र की जगह बदलता है; संचलन वक्र पर आपकी जगह।`
+        }
     };
 }
 
@@ -696,9 +718,17 @@ SIMS.push({
                 });
             }
 
-            let vTitle, vKind, vDetail;
+            let vTitle, vKind, vDetail, vHi;
             if (!dMoved && !sMoved) {
                 vKind = Math.abs(gap) > 0.6 ? 'movement' : 'none';
+                vHi = {
+                    title: Math.abs(gap) > 0.6
+                        ? (gap > 0 ? 'कीमत संतुलन से <b>नीचे</b> → <b>अधिमाँग (वस्तु की कमी)</b>' : 'कीमत संतुलन से <b>ऊपर</b> → <b>अधिपूर्ति (वस्तु का आधिक्य)</b>')
+                        : 'बाज़ार <b>संतुलन</b> में है — Qd = Qs।',
+                    detail: Math.abs(gap) > 0.6
+                        ? `₹${fmt(v.mktPrice, 0)} पर Qd = ${fmt(qd, 0)} और Qs = ${fmt(qs, 0)}। ${gap > 0 ? 'क्रेता कम वस्तुओं के लिए होड़ करते हैं और कीमत को ₹' + fmt(eq.P, 0) + ' की ओर <b>ऊपर</b> धकेलते हैं — अंतर मिटने तक पूर्ति की गई मात्रा का विस्तार और माँगी गई मात्रा का संकुचन होता है।' : 'बिना बिका माल विक्रेताओं को कीमत ₹' + fmt(eq.P, 0) + ' की ओर <b>घटाने</b> पर मजबूर करता है — अंतर मिटने तक माँगी गई मात्रा का विस्तार और पूर्ति की गई मात्रा का संकुचन होता है।'}`
+                        : `संतुलन कीमत OP = ₹${fmt(eq.P, 0)}, संतुलन मात्रा OQ = ${fmt(eq.Q, 0)} इकाइयाँ। अब कोई वक्र खिसकाएँ, या कीमत को OP से दूर रखें, और बाज़ार को बिगड़ते और फिर संतुलित होते देखें।`
+                };
                 vTitle = Math.abs(gap) > 0.6
                     ? (gap > 0 ? 'Price is BELOW equilibrium → <b>Excess Demand (Shortage)</b>' : 'Price is ABOVE equilibrium → <b>Excess Supply (Surplus)</b>')
                     : 'Market is in <b>equilibrium</b> — Qd = Qs.';
@@ -711,9 +741,27 @@ SIMS.push({
                 vKind = 'shift';
                 const cause = both ? 'Both curves shifted' : (dMoved ? (v.dShift > 0 ? 'Increase in Demand' : 'Decrease in Demand') : (v.sShift > 0 ? 'Increase in Supply' : 'Decrease in Supply'));
                 vTitle = `<b>${cause}</b> → equilibrium moved E → E₁: price ${dp > 0.5 ? '↑ rises' : dp < -0.5 ? '↓ falls' : '— unchanged'}, quantity ${dq > 0.5 ? '↑ rises' : dq < -0.5 ? '↓ falls' : '— unchanged'}`;
-                vDetail = both && Math.abs(dp) < 1.2
+                const causeHi = both ? 'दोनों वक्र खिसके' : (dMoved ? (v.dShift > 0 ? 'माँग में वृद्धि' : 'माँग में कमी') : (v.sShift > 0 ? 'पूर्ति में वृद्धि' : 'पूर्ति में कमी'));
+                const was = `New equilibrium: OP = ₹${fmt(eq.P, 0)} (was ₹${fmt(eq0.P, 0)}), OQ = ${fmt(eq.Q, 0)} (was ${fmt(eq0.Q, 0)}).`;
+                const wasHi = `नया संतुलन: OP = ₹${fmt(eq.P, 0)} (पहले ₹${fmt(eq0.P, 0)}), OQ = ${fmt(eq.Q, 0)} (पहले ${fmt(eq0.Q, 0)})।`;
+                const indet = both && Math.abs(dp) < 1.2;
+                // With BOTH curves moved there is no "other curve that stayed
+                // put" — the old text said so in every case, which was false
+                // whenever both shifted far enough to move the price.
+                vDetail = indet
                     ? `Both curves shifted by a similar amount, so quantity changes definitely but the <b>price effect is indeterminate</b> — it depends on the <i>relative</i> size of the two shifts. Drag one further than the other and watch the price break one way. "Indeterminate" is a complete exam answer here.`
-                    : `New equilibrium: OP = ₹${fmt(eq.P, 0)} (was ₹${fmt(eq0.P, 0)}), OQ = ${fmt(eq.Q, 0)} (was ${fmt(eq0.Q, 0)}). The curve moved to a new position — the other curve did not move, students only travelled <i>along</i> it to the new intersection.`;
+                    : both
+                        ? `${was} Both curves moved to new positions; the new equilibrium E₁ is where D₁D₁ cuts S₁S₁. Price moved because one shift outweighed the other — with equal shifts its direction would be indeterminate.`
+                        : `${was} The curve moved to a new position — the other curve did not move; the market only travelled <i>along</i> it to the new intersection.`;
+                const arrowHi = d => d > 0.5 ? '↑ बढ़ी' : d < -0.5 ? '↓ घटी' : '— अपरिवर्तित';
+                vHi = {
+                    title: `<b>${causeHi}</b> → संतुलन E → E₁ पर गया: कीमत ${arrowHi(dp)}, मात्रा ${arrowHi(dq)}`,
+                    detail: indet
+                        ? `दोनों वक्र लगभग बराबर खिसके, इसलिए मात्रा में परिवर्तन निश्चित है पर <b>कीमत पर प्रभाव अनिर्धार्य</b> है — यह दोनों खिसकावों के <i>सापेक्ष</i> आकार पर निर्भर करता है। एक वक्र को दूसरे से अधिक खींचें और कीमत को एक दिशा में जाते देखें। यहाँ "अनिर्धार्य" परीक्षा में पूरा उत्तर है।`
+                        : both
+                            ? `${wasHi} दोनों वक्र नई स्थितियों पर गए; नया संतुलन E₁ वहाँ है जहाँ D₁D₁, S₁S₁ को काटता है। कीमत इसलिए बदली कि एक खिसकाव दूसरे से बड़ा था — बराबर खिसकाव पर उसकी दिशा अनिर्धार्य होती।`
+                            : `${wasHi} खिसका हुआ वक्र नई स्थिति पर गया — दूसरा वक्र नहीं खिसका; बाज़ार केवल उसके <i>साथ-साथ</i> नए कटान बिंदु तक चला।`
+                };
             }
 
             return {
@@ -731,7 +779,7 @@ SIMS.push({
                     { label: 'Quantity supplied there', value: `${fmt(qs, 1)} units` },
                     { label: gap > 0 ? 'Excess Demand' : gap < 0 ? 'Excess Supply' : 'Market clears', value: Math.abs(gap) < 0.05 ? '✔ Qd = Qs' : `${fmt(Math.abs(gap), 1)} units` }
                 ],
-                verdict: { kind: vKind, title: vTitle, detail: vDetail },
+                verdict: { kind: vKind, title: vTitle, detail: vDetail, hi: vHi },
                 metrics: { eqP: eq.P, eqQ: eq.Q, gap, dShift: v.dShift, sShift: v.sShift }
             };
         }
@@ -921,7 +969,11 @@ SIMS.push({
                 verdict: {
                     kind: 'movement',
                     title: `Equilibrium at E: <b>MRS = Px/Py = ${fmt(ratio, 2)}</b>, on the highest attainable IC₂`,
-                    detail: `The consumer cannot reach IC₃ — it lies entirely beyond the budget line. Any point on IC₁ is affordable but gives less satisfaction than E. Only at E is the budget line <b>tangent</b>, so both conditions hold: MRS equals the price ratio, and MRS is diminishing (the IC is convex to the origin). Drag the <span style="color:#dc2626">red</span> handle to change income — notice the line stays <b>parallel</b>. Drag the <span style="color:#ea580c">orange</span> X-intercept to change Px — notice the line <b>swivels</b> instead. That difference is why a price change, not an income change, traces out the demand curve.`
+                    detail: `The consumer cannot reach IC₃ — it lies entirely beyond the budget line. Any point on IC₁ is affordable but gives less satisfaction than E. Only at E is the budget line <b>tangent</b>, so both conditions hold: MRS equals the price ratio, and MRS is diminishing (the IC is convex to the origin). Drag the <span style="color:#dc2626">red</span> handle to change income — notice the line stays <b>parallel</b>. Drag the <span style="color:#ea580c">orange</span> X-intercept to change Px — notice the line <b>swivels</b> instead. That difference is why a price change, not an income change, traces out the demand curve.`,
+                    hi: {
+                        title: `E पर संतुलन: <b>MRS = Px/Py = ${fmt(ratio, 2)}</b>, सबसे ऊँचे प्राप्य IC₂ पर`,
+                        detail: `उपभोक्ता IC₃ तक नहीं पहुँच सकता — वह पूरी तरह बजट रेखा के बाहर है। IC₁ का कोई भी बिंदु खरीदा जा सकता है पर E से कम संतुष्टि देता है। केवल E पर बजट रेखा IC को <b>स्पर्श</b> करती है, इसलिए दोनों शर्तें पूरी होती हैं: MRS कीमत-अनुपात के बराबर है, और MRS घटती है (IC मूल बिंदु की ओर उन्नतोदर है)। आय बदलने के लिए <span style="color:#dc2626">लाल</span> हैंडल खींचें — रेखा <b>समानांतर</b> खिसकती है। Px बदलने के लिए <span style="color:#ea580c">नारंगी</span> X-अंतःखंड खींचें — रेखा <b>घूमती</b> है। यही अंतर बताता है कि माँग वक्र आय के परिवर्तन से नहीं, कीमत के परिवर्तन से बनता है।`
+                    }
                 },
                 metrics: { xStar, yStar, ratio, M: v.M, xInt, yInt }
             };
@@ -1128,7 +1180,15 @@ SIMS.push({
                         : mc(v.q) < ac(v.q)
                             ? 'MC &lt; AC → <b>AC is still falling</b>'
                             : 'MC &gt; AC → <b>AC is now rising</b>',
-                    detail: `At Q = ${fmt(v.q, 1)}: MC = ₹${fmt(mc(v.q), 2)} and AC = ₹${fmt(ac(v.q), 2)}. ${atMinAC ? `MC crosses AC at Q ≈ ${fmt(minAC.q, 2)} — the nearest output on this slider — and that crossing is exactly where AC is lowest: below it MC pulls AC down, above it MC pulls AC up.` : mc(v.q) < ac(v.q) ? 'Each extra unit costs less than the running average, so the average is pulled <b>down</b>.' : 'Each extra unit costs more than the running average, so the average is pulled <b>up</b>.'} AC reaches its minimum at Q ≈ ${fmt(minAC.q, 1)} and AVC at Q ≈ ${fmt(minAVC.q, 1)} — AVC bottoms out <b>before</b> AC, because falling AFC keeps dragging AC down for a while longer. Raise TFC and watch AC and AFC lift while <b>AVC and MC do not move at all</b>.`
+                    detail: `At Q = ${fmt(v.q, 1)}: MC = ₹${fmt(mc(v.q), 2)} and AC = ₹${fmt(ac(v.q), 2)}. ${atMinAC ? `MC crosses AC at Q ≈ ${fmt(minAC.q, 2)} — the nearest output on this slider — and that crossing is exactly where AC is lowest: below it MC pulls AC down, above it MC pulls AC up.` : mc(v.q) < ac(v.q) ? 'Each extra unit costs less than the running average, so the average is pulled <b>down</b>.' : 'Each extra unit costs more than the running average, so the average is pulled <b>up</b>.'} AC reaches its minimum at Q ≈ ${fmt(minAC.q, 1)} and AVC at Q ≈ ${fmt(minAVC.q, 1)} — AVC bottoms out <b>before</b> AC, because falling AFC keeps dragging AC down for a while longer. Raise TFC and watch AC and AFC lift while <b>AVC and MC do not move at all</b>.`,
+                    hi: {
+                        title: atMinAC
+                            ? 'MC = AC → आप <b>AC के न्यूनतम बिंदु</b> पर हैं'
+                            : mc(v.q) < ac(v.q)
+                                ? 'MC &lt; AC → <b>AC अभी घट रहा है</b>'
+                                : 'MC &gt; AC → <b>AC अब बढ़ रहा है</b>',
+                        detail: `Q = ${fmt(v.q, 1)} पर: MC = ₹${fmt(mc(v.q), 2)} और AC = ₹${fmt(ac(v.q), 2)}। ${atMinAC ? `MC, AC को Q ≈ ${fmt(minAC.q, 2)} पर काटता है — इस स्लाइडर पर निकटतम उत्पादन यही है — और यही कटान वह बिंदु है जहाँ AC न्यूनतम है: इससे पहले MC, AC को नीचे खींचता है, इसके बाद ऊपर।` : mc(v.q) < ac(v.q) ? 'हर अतिरिक्त इकाई की लागत अब तक के औसत से कम है, इसलिए औसत <b>नीचे</b> खिंचता है।' : 'हर अतिरिक्त इकाई की लागत अब तक के औसत से अधिक है, इसलिए औसत <b>ऊपर</b> खिंचता है।'} AC न्यूनतम Q ≈ ${fmt(minAC.q, 1)} पर और AVC न्यूनतम Q ≈ ${fmt(minAVC.q, 1)} पर होता है — AVC, AC से <b>पहले</b> न्यूनतम पर पहुँचता है, क्योंकि घटता AFC, AC को कुछ देर और नीचे खींचता रहता है। TFC बढ़ाएँ और देखें कि AC और AFC ऊपर उठते हैं, जबकि <b>AVC और MC बिल्कुल नहीं हिलते</b>।`
+                    }
                 },
                 metrics: { q: v.q, ac: ac(v.q), mc: mc(v.q), avc: avc(v.q), minACq: minAC.q, atMinAC }
             };
@@ -1313,7 +1373,13 @@ SIMS.push({
                     title: atEq
                         ? "✔ <b>Producer's equilibrium</b> — MR = MC, and MC cuts MR from below."
                         : (mr(v.q) > mc(v.q) ? 'MR &gt; MC → the firm should <b>expand</b> output' : 'MR &lt; MC → the firm should <b>cut</b> output'),
-                    detail: `${isPC ? 'Under perfect competition the firm is a price-taker: <b>AR = MR = price</b>, so the revenue line is horizontal and the firm produces where MC rises to meet it.' : 'Under monopoly the firm must cut price to sell more, so AR slopes down and <b>MR falls twice as fast</b> and lies below AR — which is why the monopolist stops at a smaller output and charges a price <i>above</i> MR.'} ${atEq ? `At Q = ${fmt(v.q, 1)} the last unit adds exactly what it costs, so no further change raises profit. Profit here = ₹${fmt(profit, 1)}.` : `At Q = ${fmt(v.q, 1)}, MR = ₹${fmt(mr(v.q), 2)} against MC = ₹${fmt(mc(v.q), 2)} — the last unit ${mr(v.q) > mc(v.q) ? 'earns more than it costs, so producing it adds to profit' : 'costs more than it earns, so producing it destroys profit'}. Drag toward Q = ${eqQ ? fmt(eqQ, 1) : '—'}.`} Remember: MR = MC alone is <b>not</b> enough — MC must cut MR <b>from below</b>, so that beyond this output MC &gt; MR. Under perfect competition that simply means MC must be rising.`
+                    detail: `${isPC ? 'Under perfect competition the firm is a price-taker: <b>AR = MR = price</b>, so the revenue line is horizontal and the firm produces where MC rises to meet it.' : 'Under monopoly the firm must cut price to sell more, so AR slopes down and <b>MR falls twice as fast</b> and lies below AR — which is why the monopolist stops at a smaller output and charges a price <i>above</i> MR.'} ${atEq ? `At Q = ${fmt(v.q, 1)} the last unit adds exactly what it costs, so no further change raises profit. Profit here = ₹${fmt(profit, 1)}.` : `At Q = ${fmt(v.q, 1)}, MR = ₹${fmt(mr(v.q), 2)} against MC = ₹${fmt(mc(v.q), 2)} — the last unit ${mr(v.q) > mc(v.q) ? 'earns more than it costs, so producing it adds to profit' : 'costs more than it earns, so producing it destroys profit'}. Drag toward Q = ${eqQ ? fmt(eqQ, 1) : '—'}.`} Remember: MR = MC alone is <b>not</b> enough — MC must cut MR <b>from below</b>, so that beyond this output MC &gt; MR. Under perfect competition that simply means MC must be rising.`,
+                    hi: {
+                        title: atEq
+                            ? '✔ <b>उत्पादक का संतुलन</b> — MR = MC, और MC, MR को नीचे से काटता है।'
+                            : (mr(v.q) > mc(v.q) ? 'MR &gt; MC → फ़र्म को उत्पादन <b>बढ़ाना</b> चाहिए' : 'MR &lt; MC → फ़र्म को उत्पादन <b>घटाना</b> चाहिए'),
+                        detail: `${isPC ? 'पूर्ण प्रतियोगिता में फ़र्म कीमत-स्वीकारक है: <b>AR = MR = कीमत</b>, इसलिए आगम रेखा क्षैतिज है और फ़र्म वहाँ उत्पादन करती है जहाँ बढ़ता हुआ MC उससे मिलता है।' : 'एकाधिकार में अधिक बेचने के लिए फ़र्म को कीमत घटानी पड़ती है, इसलिए AR नीचे की ओर ढलता है, और <b>MR उससे दोगुनी तेज़ी से गिरता है</b> तथा AR के नीचे रहता है — इसीलिए एकाधिकारी कम उत्पादन पर रुकता है और MR से <i>ऊँची</i> कीमत लेता है।'} ${atEq ? `Q = ${fmt(v.q, 1)} पर अंतिम इकाई ठीक उतना जोड़ती है जितनी उसकी लागत है, इसलिए कोई और परिवर्तन लाभ नहीं बढ़ाता। यहाँ लाभ = ₹${fmt(profit, 1)}।` : `Q = ${fmt(v.q, 1)} पर MR = ₹${fmt(mr(v.q), 2)} जबकि MC = ₹${fmt(mc(v.q), 2)} — अंतिम इकाई ${mr(v.q) > mc(v.q) ? 'अपनी लागत से अधिक कमाती है, इसलिए उसे बनाने से लाभ बढ़ता है' : 'जितना कमाती है उससे अधिक लागत लेती है, इसलिए उसे बनाने से लाभ घटता है'}। Q = ${eqQ ? fmt(eqQ, 1) : '—'} की ओर खींचें।`} याद रखें: केवल MR = MC पर्याप्त <b>नहीं</b> है — MC को MR को <b>नीचे से</b> काटना चाहिए, ताकि इस उत्पादन के आगे MC &gt; MR रहे। पूर्ण प्रतियोगिता में इसका सीधा अर्थ है कि MC बढ़ रहा हो।`
+                    }
                 },
                 metrics: { q: v.q, eqQ, profit, isPC, mr: mr(v.q), mc: mc(v.q), ar: ar(v.q) }
             };
@@ -1508,7 +1574,15 @@ SIMS.push({
                         : zone === 'inside'
                             ? '⚠ INSIDE the PPC — <b>unemployment or inefficient use</b> of resources'
                             : '✖ OUTSIDE the PPC — this combination is <b>unattainable</b>',
-                    detail: `${zone === 'on' ? `Producing more X now <b>requires</b> giving up Y — that sacrifice is the opportunity cost. Here MRT = ${fmt(mrt, 2)}, so one more unit of X costs ${fmt(mrt, 2)} units of Y.` : zone === 'inside' ? `The economy could produce ${fmt(onY - v.py, 1)} more units of Y <b>without giving up any X at all</b> — so nothing is being sacrificed, which is exactly why an interior point means idle or misallocated resources.` : `No reallocation of existing resources can reach this point. Only <b>economic growth</b> — more resources or better technology — can, and that shifts the whole PPC outward. Drag the growth chip and watch this point come within reach.`} Notice the MRT <b>rises</b> as you move right along the curve: the first units of X are made with resources well suited to X, but each further unit pulls in resources better suited to Y. Rising MRT is exactly what makes the PPC <b>concave to the origin</b>.`
+                    detail: `${zone === 'on' ? `Producing more X now <b>requires</b> giving up Y — that sacrifice is the opportunity cost. Here MRT = ${fmt(mrt, 2)}, so one more unit of X costs ${fmt(mrt, 2)} units of Y.` : zone === 'inside' ? `The economy could produce ${fmt(onY - v.py, 1)} more units of Y <b>without giving up any X at all</b> — so nothing is being sacrificed, which is exactly why an interior point means idle or misallocated resources.` : `No reallocation of existing resources can reach this point. Only <b>economic growth</b> — more resources or better technology — can, and that shifts the whole PPC outward. Drag the growth chip and watch this point come within reach.`} Notice the MRT <b>rises</b> as you move right along the curve: the first units of X are made with resources well suited to X, but each further unit pulls in resources better suited to Y. Rising MRT is exactly what makes the PPC <b>concave to the origin</b>.`,
+                    hi: {
+                        title: zone === 'on'
+                            ? '✔ PPC <b>पर</b> — संसाधनों का <b>पूर्ण और कुशल उपयोग</b>'
+                            : zone === 'inside'
+                                ? '⚠ PPC के <b>अंदर</b> — संसाधनों की <b>बेरोज़गारी या अकुशल उपयोग</b>'
+                                : '✖ PPC के <b>बाहर</b> — यह संयोजन <b>अप्राप्य</b> है',
+                        detail: `${zone === 'on' ? `अब अधिक X बनाने के लिए Y छोड़ना <b>ज़रूरी</b> है — यही त्याग अवसर लागत है। यहाँ MRT = ${fmt(mrt, 2)}, अर्थात X की एक और इकाई की लागत Y की ${fmt(mrt, 2)} इकाइयाँ है।` : zone === 'inside' ? `अर्थव्यवस्था <b>X की एक भी इकाई छोड़े बिना</b> Y की ${fmt(onY - v.py, 1)} इकाइयाँ और बना सकती है — कुछ भी त्यागना नहीं पड़ता, और ठीक इसीलिए अंदर का बिंदु निष्क्रिय या गलत ढंग से बँटे संसाधनों का संकेत है।` : `मौजूदा संसाधनों के किसी भी पुनर्बंटन से यह बिंदु नहीं मिल सकता। केवल <b>आर्थिक संवृद्धि</b> — अधिक संसाधन या बेहतर तकनीक — इसे संभव बनाती है, और वह पूरे PPC को बाहर की ओर खिसकाती है। संवृद्धि वाला चिप खींचें और इस बिंदु को पहुँच में आते देखें।`} ध्यान दें, वक्र पर दाईं ओर बढ़ने पर MRT <b>बढ़ता</b> है: X की पहली इकाइयाँ X के लिए उपयुक्त संसाधनों से बनती हैं, पर हर अगली इकाई Y के लिए बेहतर संसाधनों को खींच लाती है। बढ़ता MRT ही PPC को <b>मूल बिंदु की ओर नतोदर</b> बनाता है।`
+                    }
                 },
                 metrics: { zone, mrt, px: v.px, py: v.py, growth: v.growth }
             };

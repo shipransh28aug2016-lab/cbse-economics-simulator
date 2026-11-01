@@ -224,8 +224,20 @@ const GL_VERDICT_TONE = {
     movement: '#2563eb', shift: '#dc2626', both: '#7c3aed', none: '#64748b'
 };
 
+// A model may return its verdict in both languages: `verdict.hi =
+// {title, detail, chips}` built in the same branch, from the same numbers,
+// as the English. In Hindi mode every consumer (banner, PREDICT reveal,
+// Mima, Holo HUD) reads the Hindi through this one function, so they can
+// never show two different languages — or two different claims.
+function glLocalVerdict(verdict) {
+    if (!verdict) return verdict;
+    if (typeof currentLang !== 'undefined' && currentLang === 'hi' && verdict.hi) return Object.assign({}, verdict, verdict.hi);
+    return verdict;
+}
+
 function glVerdictHTML(verdict) {
     if (!verdict) return '';
+    verdict = glLocalVerdict(verdict);
     const tone = GL_VERDICT_TONE[verdict.kind] || GL_VERDICT_TONE.none;
     const chips = (verdict.chips || []).map(c =>
         `<span class="gl-verdict-chip" style="border-color:${tone};color:${tone}">${glEsc(c)}</span>`).join('');
@@ -576,7 +588,11 @@ function glRender(sim, syncChips, opts) {
     if (syncChips !== false) (cfg.vars || []).forEach(v => glSyncChip(v));
 
     const structuredChanges = typeof structuredWhatChanged === 'function'
-        ? structuredWhatChanged({ controls: cfg.vars }, glPrevState, glState) : [];
+        ? structuredWhatChanged({
+            // Same label the chip shows (Hindi in Hindi mode), so the
+            // "🔄 बदलाव" line and Mima name the control the student sees.
+            controls: cfg.vars.map(v => Object.assign({}, v, { label: hiPath(sim, `graphLab.vars.${v.id}.label`) || v.label }))
+        }, glPrevState, glState) : [];
 
     const readingsBody = document.getElementById('readings-body');
     if (readingsBody) {
@@ -599,7 +615,7 @@ function glRender(sim, syncChips, opts) {
         mimaSetSnapshot(sim, 'graphlab', {
             isFirstRender: !structuredChanges.length,
             changedControls: structuredChanges,
-            verdict: m.verdict || null,
+            verdict: glLocalVerdict(m.verdict) || null,
             currentMetrics: m.metrics || {},
             readingsHTML: Array.isArray(m.readings) ? '' : (m.readings || '')
         });
@@ -759,7 +775,7 @@ function glOpenPredictGate(sim, sc, applyScenario) {
             const prefix = correct
                 ? tEngine('gl.predictCorrectPrefix', '✅ Correct! It really was:')
                 : tEngine('gl.predictWrongPrefix', '❌ Not quite — it was actually:');
-            resultEl.innerHTML = `<b>${prefix}</b> ${answerVerdict.title}`;
+            resultEl.innerHTML = `<b>${prefix}</b> ${glLocalVerdict(answerVerdict).title}`;
         }
         gate.querySelectorAll('.gl-predict-btn, .gl-predict-skip').forEach(b => { b.disabled = true; });
     };

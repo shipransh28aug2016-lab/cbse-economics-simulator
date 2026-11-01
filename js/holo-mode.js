@@ -143,7 +143,7 @@ function holoUpdate(host, m) {
     const hud = host.querySelector('#gl-holo-hud');
     if (!hud) return;
     const rows = Array.isArray(m && m.readings) ? m.readings.slice(0, 3) : [];
-    const title = m && m.verdict ? holoStrip(m.verdict.title) : '';
+    const title = m && m.verdict ? holoStrip(glLocalVerdict(m.verdict).title) : '';
     const tone = (m && m.verdict && m.verdict.kind) || 'none';
     hud.dataset.kind = tone;
     const html = (title ? `<div class="gl-holo-hud-title">${glEsc(title)}</div>` : '') +

@@ -101,8 +101,14 @@ function mimaMovementOrShift(ctx, P) {
     return P.movementVerdict.none;
 }
 
+// Verdicts write "MC &lt; AC" so the banner's HTML stays valid. Mima's text
+// is shown as text and spoken aloud, so decode the entities after stripping
+// tags — otherwise the voice reads "ampersand l t".
+const MIMA_ENTITIES = { lt: '<', gt: '>', amp: '&', quot: '"', nbsp: ' ', '#39': "'" };
 function mimaStripTags(html) {
-    return String(html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return String(html || '').replace(/<[^>]*>/g, ' ')
+        .replace(/&(lt|gt|amp|quot|nbsp|#39);/g, (m, k) => MIMA_ENTITIES[k])
+        .replace(/\s+/g, ' ').trim();
 }
 
 // intent: 'explain' | 'whatChanged' | 'why' | 'movementOrShift' | 'graph'
