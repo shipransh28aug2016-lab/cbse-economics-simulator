@@ -264,6 +264,13 @@ per-sim code**:
   read. `testGraphLabVerdictsAreTranslated` sweeps every lab and fails on a missing twin,
   leftover English, or **a Hindi verdict whose numbers differ from the English** — so a new
   verdict branch needs its Hindi in the same change.
+- **Graph Lab diagram text in Hindi** — axis titles, curve/point/arrow labels, ticks and
+  handle hints are translated by `glDiagramText()` from `GL_DIAGRAM_HI[simId]`
+  (`js/i18n_hi_diagram.js`): `[en, hi]` substring pairs applied longest-first to the
+  model's own text, so numbers inside labels pass through. Chip tooltips/units go through
+  `hiPath()` like chip labels. `testGraphLabDiagramIsTranslated` fails on any English word
+  left in the drawn text, a label whose numbers change, or a dead pair — so a new label in a
+  `model()` needs its pair in the same change.
 - **Auto-ghosting** (`buildGhostTraces`) — the previous positions of **only the curves
   that actually moved**, drawn dimmed beneath the live ones. This is the
   movement-vs-shift distinction generalised to every simulator-mode sim, derived from
