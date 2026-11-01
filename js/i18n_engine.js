@@ -24,7 +24,7 @@ if (typeof I18N_HI === 'undefined') {
 
         'hero.badge': '🎓 सीबीएसई XI–XII',
         'hero.title': 'अर्थशास्त्र <span class="grad-text">आपके हाथों में जीवंत</span> हो उठता है',
-        'hero.statsTitle': '34 सिमुलेशन, डेटा लैब और एक्सप्लोरर · कक्षा XI और XII · 4 भाग · 72+ प्रश्नोत्तरी प्रश्न',
+        'hero.statsTitle': 'सिमुलेशन, ग्राफ़ लैब, डेटा लैब और एक्सप्लोरर · कक्षा XI और XII · 4 भाग · हर लैब के लिए प्रश्नोत्तरी',
         'hero.labs': 'लैब्स',
         'hero.classes': 'कक्षाएँ',
         'hero.parts': 'भाग',
@@ -52,6 +52,7 @@ if (typeof I18N_HI === 'undefined') {
         'card.concept': '📚 अवधारणा',
         'card.formulas': '📐 प्रमुख सूत्र',
         'card.readings': '📊 लाइव रीडिंग्स',
+        'footer.tagline': 'EconSim Pro — CBSE अर्थशास्त्र प्रयोगशाला',
         'card.practice': '🧩 निर्देशित अभ्यास',
         'card.challenge': '🎯 चुनौती',
         'card.tlm': '🧑‍🏫 शिक्षण और अधिगम टूलकिट',

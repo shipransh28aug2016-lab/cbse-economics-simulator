@@ -216,7 +216,7 @@ SIMS.push({
         // tools/test-curriculum.js runs against this model.
         stories: [{
             id: 'tea-stall',
-            title: { en: "Ramu's Tea Stall — movement or shift?", hi: 'रामू की चाय की दुकान — movement या shift?' },
+            title: { en: "Ramu's Tea Stall — movement or shift?", hi: 'रामू की चाय की दुकान — संचलन या खिसकाव?' },
             intro: {
                 en: 'Ramu sells tea outside a college. Four things will happen to his business. Before each one, predict what it does to the demand curve — then watch.',
                 hi: 'रामू एक college के बाहर चाय बेचता है। उसके धंधे में चार चीज़ें होंगी। हर बार पहले अनुमान लगाइए कि demand curve पर क्या असर होगा — फिर देखिए।'
@@ -436,7 +436,7 @@ SIMS.push({
         ],
         stories: [{
             id: 'tomato-farm',
-            title: { en: "Lakshmi's tomato farm — movement or shift?", hi: 'लक्ष्मी का टमाटर का खेत — movement या shift?' },
+            title: { en: "Lakshmi's tomato farm — movement or shift?", hi: 'लक्ष्मी का टमाटर का खेत — संचलन या खिसकाव?' },
             intro: {
                 en: 'Lakshmi grows tomatoes for the mandi. The price changes, then diesel gets costlier, then both happen together. Predict what each does to the supply curve.',
                 hi: 'लक्ष्मी मंडी के लिए टमाटर उगाती है। पहले कीमत बदलती है, फिर डीज़ल महँगा होता है, फिर दोनों एक साथ। अनुमान लगाइए कि हर बार supply curve पर क्या असर होगा।'

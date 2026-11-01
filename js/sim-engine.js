@@ -232,6 +232,64 @@ function translateReadings(sim, html) {
     return out;
 }
 
+// Chart text in Hindi mode (js/i18n_hi_charts.js): the sim's own pairs plus
+// the shared ones, longest first, matched only as whole words so "Demand"
+// never rewrites part of "Demanded". Runs on the text the model produced,
+// so numbers inside a label pass through. English mode returns it as is.
+const _chartPairCache = {};
+function translateChartText(sim, text) {
+    if (typeof text !== 'string' || !text || typeof currentLang === 'undefined' || currentLang !== 'hi' || typeof CHART_I18N_HI === 'undefined') return text;
+    const id = (sim && sim.id) || '';
+    if (!_chartPairCache[id]) {
+        const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        _chartPairCache[id] = (CHART_I18N_HI[id] || []).concat(CHART_I18N_HI._common || [])
+            .slice().sort((a, b) => b[0].length - a[0].length)
+            .map(([en, hi]) => [new RegExp(`(?<![A-Za-z])${esc(en)}(?![A-Za-z])`, 'g'), hi]);
+    }
+    let out = text;
+    _chartPairCache[id].forEach(([re, hi]) => { out = out.replace(re, () => hi); });
+    return out;
+}
+
+// Returns translated COPIES of a chart's traces and layout (the originals
+// stay English: prevSimResult and the ghost diff compare raw model output).
+function localizeChart(sim, traces, layout) {
+    if (typeof currentLang === 'undefined' || currentLang !== 'hi') return { traces, layout };
+    const t = s => translateChartText(sim, s);
+    const tArr = a => Array.isArray(a) ? a.map(v => (typeof v === 'string' ? t(v) : v)) : a;
+    const tTitle = x => (typeof x === 'string' ? t(x) : (x && typeof x.text === 'string' ? Object.assign({}, x, { text: t(x.text) }) : x));
+    const outTraces = (traces || []).map(tr => {
+        const c = Object.assign({}, tr);
+        if (typeof c.name === 'string') c.name = t(c.name);
+        if (typeof c.text === 'string') c.text = t(c.text); else c.text = tArr(c.text);
+        if (typeof c.hovertemplate === 'string') c.hovertemplate = t(c.hovertemplate);
+        c.labels = tArr(c.labels);
+        if (Array.isArray(c.x) && typeof c.x[0] === 'string') c.x = tArr(c.x);
+        if (Array.isArray(c.y) && typeof c.y[0] === 'string') c.y = tArr(c.y);
+        return c;
+    });
+    const L = Object.assign({}, layout);
+    if (L.title) L.title = tTitle(L.title);
+    ['xaxis', 'yaxis', 'xaxis2', 'yaxis2'].forEach(k => { if (L[k] && L[k].title) L[k] = Object.assign({}, L[k], { title: tTitle(L[k].title) }); });
+    // Annotations and shapes on a category axis are POSITIONED by category
+    // name (e.g. the fiscal-deficit bracket sits between two named bars), so
+    // their x/y must be translated exactly like the trace categories are, or
+    // they lose their anchor in Hindi mode.
+    const tPos = o => { const c = Object.assign({}, o); ['x', 'y', 'x0', 'x1', 'y0', 'y1'].forEach(k => { if (typeof c[k] === 'string') c[k] = t(c[k]); }); return c; };
+    if (Array.isArray(L.annotations)) L.annotations = L.annotations.map(a => { const c = tPos(a); if (typeof c.text === 'string') c.text = t(c.text); return c; });
+    if (Array.isArray(L.shapes)) L.shapes = L.shapes.map(tPos);
+    if (L.legend && L.legend.title) L.legend = Object.assign({}, L.legend, { title: tTitle(L.legend.title) });
+    return { traces: outTraces, layout: L };
+}
+
+// Units shown beside a control or a Data Lab column header, in Hindi mode.
+// Anything not listed (₹, %, $…) is already language-neutral.
+const UNIT_HI = { ' yrs': ' वर्ष', yrs: 'वर्ष', million: 'मिलियन', '₹B': '₹ अरब', units: 'इकाई' };
+function localUnit(u) {
+    if (typeof currentLang === 'undefined' || currentLang !== 'hi' || !u) return u;
+    return UNIT_HI[u] || u;
+}
+
 // Looks up a fixed (non-sim-specific) UI string from js/i18n_engine.js's
 // I18N_HI dictionary when Hindi is active — used for the handful of
 // hand-built HTML strings in this file/datalab-engine.js/explorer-engine.js
@@ -600,7 +658,7 @@ function buildControls(sim) {
         }
 
         const label = controlLabel(sim, c);
-        const unit = hiPath(sim, `controls.${c.id}.unit`) || c.unit;
+        const unit = hiPath(sim, `controls.${c.id}.unit`) || localUnit(c.unit);
         row.innerHTML = `
             <div class="control-label-row">
                 <label for="ctl-${c.id}">${label}</label>
@@ -682,9 +740,9 @@ function resetPredictCard(sim) {
         resolved: false
     };
     card.innerHTML = `
-        <p class="predict-prompt">🤔 ${cfg.prompt}</p>
+        <p class="predict-prompt">🤔 ${hiPath(sim, 'predict.prompt') || cfg.prompt}</p>
         <div class="predict-choices">
-            ${cfg.choices.map(c => `<button type="button" class="predict-btn" data-value="${c.value}">${c.label}</button>`).join('')}
+            ${cfg.choices.map((c, i) => `<button type="button" class="predict-btn" data-value="${c.value}">${predictChoiceLabel(sim, i)}</button>`).join('')}
         </div>
         <div class="predict-result hidden" id="predict-result"></div>
     `;
@@ -698,6 +756,11 @@ function resetPredictCard(sim) {
             });
         });
     });
+}
+
+// A PREDICT choice's label in the current language (SIM_I18N_HI[id].predict).
+function predictChoiceLabel(sim, i) {
+    return hiPath(sim, `predict.choices.${i}.label`) || sim.predict.choices[i].label;
 }
 
 // Called from renderSimChart() on every recompute — checks whether the
@@ -715,11 +778,13 @@ function checkPredictReveal(sim, result) {
     resultEl.classList.remove('hidden');
     resultEl.classList.toggle('predict-result--correct', correct);
     resultEl.classList.toggle('predict-result--wrong', !correct);
-    const chosenLabel = (sim.predict.choices.find(c => c.value === predictState.guess) || {}).label || predictState.guess;
-    const correctLabel = (sim.predict.choices.find(c => c.value === correctValue) || {}).label || correctValue;
+    const labelOf = v => { const i = sim.predict.choices.findIndex(c => c.value === v); return i >= 0 ? predictChoiceLabel(sim, i) : v; };
+    const chosenLabel = labelOf(predictState.guess);
+    const correctLabel = labelOf(correctValue);
+    const hi = typeof currentLang !== 'undefined' && currentLang === 'hi';
     resultEl.innerHTML = correct
-        ? `✅ Correct! You guessed <b>${chosenLabel}</b> — that's exactly what happened.`
-        : `❌ Not quite — you guessed <b>${chosenLabel}</b>, but it was actually <b>${correctLabel}</b>.`;
+        ? (hi ? `✅ सही! आपने <b>${chosenLabel}</b> चुना — ठीक यही हुआ।` : `✅ Correct! You guessed <b>${chosenLabel}</b> — that's exactly what happened.`)
+        : (hi ? `❌ पूरी तरह नहीं — आपने <b>${chosenLabel}</b> चुना, पर वास्तव में <b>${correctLabel}</b> हुआ।` : `❌ Not quite — you guessed <b>${chosenLabel}</b>, but it was actually <b>${correctLabel}</b>.`);
 }
 
 // Some controls only make sense for a particular mode of a "select"
@@ -791,9 +856,11 @@ function renderSimChart(sim) {
         // stripping that suffix gives Mima the exact list of curves that
         // moved, read from the same geometry the student sees, never
         // guessed from the sim's economics.
-        var _mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
+        // Mima speaks these names, so in Hindi mode she gets the Hindi ones.
+        var _mimaGhostedNames = ghosts.map(g => translateChartText(sim, String(g.name || '').replace(/ \(before\)$/, '')));
         if (typeof Plotly !== 'undefined') {
-            Plotly.react(overlay, ghosts.concat(result.traces || []), layout, { displayModeBar: false, responsive: true }).catch(() => {});
+            const shown = localizeChart(sim, ghosts.concat(result.traces || []), layout);
+            Plotly.react(overlay, shown.traces, shown.layout, { displayModeBar: false, responsive: true }).catch(() => {});
         }
         if (sim.predict) checkPredictReveal(sim, result);
     } else {

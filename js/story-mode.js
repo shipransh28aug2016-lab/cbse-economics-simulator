@@ -104,7 +104,7 @@ function storyRenderLauncher(sim, panel) {
     const box = document.createElement('div');
     box.className = 'story-launcher';
     box.innerHTML = `<div class="story-launcher-title">${storyLabel('🎬 Story Mode — live the concept', '🎬 स्टोरी मोड — अवधारणा को जियो')}</div>
-        <p class="story-launcher-hint">${storyLabel('A real situation unfolds step by step. Predict each step, then watch the diagram move.', 'एक असली स्थिति कदम-दर-कदम सामने आती है। हर कदम का अनुमान लगाइए, फिर diagram को चलते देखिए।')}</p>`;
+        <p class="story-launcher-hint">${storyLabel('A real situation unfolds step by step. Predict each step, then watch the diagram move.', 'एक असली स्थिति कदम-दर-कदम सामने आती है। हर कदम का अनुमान लगाइए, फिर आरेख को चलते देखिए।')}</p>`;
     stories.forEach(story => {
         const btn = document.createElement('button');
         btn.type = 'button';

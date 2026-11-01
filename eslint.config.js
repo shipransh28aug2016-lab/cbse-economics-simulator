@@ -37,7 +37,7 @@ const appGlobals = {
     glEsc: 'readonly', glSim: 'writable',
     // js/holo-mode.js — the immersive presentation layer over Graph Labs.
     holoAttach: 'readonly', holoUpdate: 'readonly',
-    glLocalVerdict: 'readonly', glDiagramText: 'readonly', GL_DIAGRAM_HI: 'readonly', glDisplayedState: 'readonly',
+    glLocalVerdict: 'readonly', glDiagramText: 'readonly', GL_DIAGRAM_HI: 'readonly', PART_TITLES_HI: 'readonly', UNIT_TITLES_HI: 'readonly', TOPIC_LABELS_HI: 'readonly', CHART_I18N_HI: 'readonly', DATALAB_ROWS_HI: 'readonly', translateChartText: 'readonly', localizeChart: 'readonly', localDefaultRows: 'readonly', localUnit: 'readonly', quizHindiLabels: 'readonly', predictChoiceLabel: 'readonly', glDisplayedState: 'readonly',
     // js/story-mode.js + the story answer keys in js/simulations_graphlab.js.
     storyRenderLauncher: 'readonly', storyContexts: 'readonly',
     GL_DEMAND_STORY_OPTIONS: 'readonly', glDemandStoryAnswer: 'readonly',

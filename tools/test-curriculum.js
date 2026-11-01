@@ -71,7 +71,9 @@ const FILES = [
     'js/i18n_hi_ied.js',
     'js/i18n_hi_graphlab.js',
     'js/i18n_hi_metrics.js',
-    'js/i18n_hi_diagram.js'
+    'js/i18n_hi_diagram.js',
+    'js/i18n_hi_chapters.js',
+    'js/i18n_hi_charts.js'
 ];
 
 function noop() {}
@@ -880,6 +882,181 @@ function extractNodePos(html, label) {
             ok(h && hasDeva(h.hint || ''), `${sim.id}: chip "${v.id}" tooltip has a Hindi hint`);
         });
     });
+})();
+
+// ── No English left in Hindi mode: chapter tags, charts, readings ───
+// The older READINGS check only proves each DECLARED pattern disappears; it
+// cannot see a sentence nobody declared. This sweep looks at the output
+// itself: every sim's chapter tag, and — across each control's sampled
+// values and every select option — every chart text (trace names, axis and
+// chart titles, annotations, category labels), readings line and formula,
+// after translation. Any English word left fails. Chart translations must
+// keep every number, and no CHART_I18N_HI / chapter entry may be dead.
+(function testHindiHasNoEnglishResidue() {
+    const tc = vm.runInContext('translateChartText', context);
+    const rowsHi = vm.runInContext('localDefaultRows', context);
+    const CH = vm.runInContext('CHART_I18N_HI', context);
+    const UNITS = vm.runInContext('UNIT_TITLES_HI', context), TOPICS = vm.runInContext('TOPIC_LABELS_HI', context), PARTS = vm.runInContext('PART_TITLES_HI', context);
+    const chapter = vm.runInContext('chapterTagText', context);
+    // Symbols that are notation, not English: Yfe (full-employment income), Exy (cross elasticity).
+    const SYMBOLS = /\b(Yfe|Exy)\b/g;
+    const plain = t => String(t == null ? '' : t).replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(SYMBOLS, ' ');
+    const englishRun = t => (plain(t).match(/\b[A-Za-z][a-z]{2,}(?:[\s,'’:/()-]+[A-Za-z][a-z]{1,})*\b/) || [null])[0];
+    const nums = t => (String(t).match(/\d+(?:\.\d+)?/g) || []).join(',');
+    const used = {};
+    vm.runInContext('mergeSimTranslations(); currentLang = "hi";', context);
+    try {
+        SIMS.forEach(sim => {
+            const tag = chapter(sim);
+            ok(!englishRun(tag), `${sim.id}: chapter tag is Hindi in Hindi mode (got "${tag}")`);
+            const mode = sim.mode || 'simulator';
+            const results = [];
+            if (mode === 'simulator' && typeof sim.compute === 'function') {
+                const base = collectDefaults(sim);
+                (sim.controls || []).forEach(c => sampleValues(c).forEach(v => { try { results.push(sim.compute(Object.assign({}, base, { [c.id]: v }))); } catch (e) { /* NaN sweep covers crashes */ } }));
+            } else if (mode === 'datalab' && sim.dataLab) {
+                results.push(sim.dataLab.calculate(dataLabValidate(sim, rowsHi(sim))));
+            } else if (typeof sim.customRender === 'function') {
+                // Hand-built SVG (the circular flow): every <text> it draws.
+                const textsOf = () => {
+                    const out = [];
+                    const base = collectDefaults(sim);
+                    const states = [base];
+                    (sim.controls || []).filter(c => c.type === 'select').forEach(c => c.options.forEach(o => states.push(Object.assign({}, base, { [c.id]: o.value }))));
+                    states.forEach(st => { const el = stubEl(); sim.customRender(el, st); (el.innerHTML.match(/<text[^>]*>([^<]*)<\/text>/g) || []).forEach(t => out.push(t.replace(/<[^>]+>/g, ''))); });
+                    return out;
+                };
+                const hiTexts = textsOf();
+                vm.runInContext('currentLang = "en";', context);
+                const enTexts = textsOf();
+                vm.runInContext('currentLang = "hi";', context);
+                const bad = hiTexts.filter(t => englishRun(t));
+                ok(bad.length === 0, `${sim.id}: every SVG label is Hindi in Hindi mode${bad.length ? ' — ' + [...new Set(bad)].slice(0, 4).join(' | ') : ''}`);
+                (CH[sim.id] || []).forEach(([en]) => { if (enTexts.some(t => t.includes(en))) used[en + '@' + sim.id] = true; });
+            }
+            if (!results.length) return;
+            const texts = new Set(), lines = new Set();
+            results.forEach(r => {
+                (r.traces || []).forEach(t => {
+                    texts.add(t.name);
+                    [t.text, t.labels, t.x, t.y].forEach(a => { if (Array.isArray(a)) a.forEach(v => { if (typeof v === 'string') texts.add(v); }); else if (typeof a === 'string') texts.add(a); });
+                });
+                const L = r.layout || {}, title = x => (x && (x.text || x));
+                texts.add(title(L.title)); ['xaxis', 'yaxis', 'xaxis2', 'yaxis2'].forEach(k => L[k] && texts.add(title(L[k].title)));
+                (L.annotations || []).forEach(a => texts.add(a.text));
+                if (r.readings) lines.add(r.readings);
+                if (r.interpretation) lines.add(r.interpretation);
+                (r.stats || []).forEach(st => { lines.add(String(st.label)); lines.add(String(st.value)); });
+                (r.formulas || []).forEach(f => lines.add(f));
+            });
+            const pairs = (CH[sim.id] || []).map(p => p[0]);
+            const bad = [];
+            // A shape/annotation placed BY CATEGORY NAME must still name a drawn
+            // category after translation, or it silently loses its position.
+            const lc = vm.runInContext('localizeChart', context);
+            results.forEach(r => {
+                const shown = lc(sim, r.traces || [], r.layout || {});
+                const cats = new Set();
+                shown.traces.forEach(t => [t.x, t.y].forEach(a => Array.isArray(a) && a.forEach(v => typeof v === 'string' && cats.add(v))));
+                [...(shown.layout.annotations || []), ...(shown.layout.shapes || [])].forEach(o => ['x', 'y', 'x0', 'x1', 'y0', 'y1'].forEach(k => {
+                    if (typeof o[k] === 'string' && !/^(paper|x|y)\d*$/.test(o[k]) && !cats.has(o[k])) bad.push(`anchor ${k}="${o[k]}" names no drawn category`);
+                }));
+            });
+            texts.forEach(t => {
+                if (typeof t !== 'string' || !t) return;
+                pairs.concat(CH._common.map(p => p[0])).forEach(en => { if (new RegExp(`(?<![A-Za-z])${en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z])`).test(t)) used[en + '@' + (pairs.includes(en) ? sim.id : '_common')] = true; });
+                const hi = tc(sim, t);
+                const w = englishRun(hi);
+                if (w) bad.push(`chart "${t}" → "${hi}" ("${w}")`);
+                else if (nums(hi) !== nums(t)) bad.push(`chart "${t}" → "${hi}" (numbers changed)`);
+            });
+            lines.forEach(l => { const w = englishRun(translateReadings(sim, l)); if (w) bad.push(`text "${w}" in "${plain(l).replace(/\s+/g, ' ').trim().slice(0, 80)}"`); });
+            ok(bad.length === 0, `${sim.id}: no English left in charts/readings/formulas in Hindi mode${bad.length ? ' — ' + bad.slice(0, 3).join('; ') : ''}`);
+        });
+    } finally { vm.runInContext('currentLang = "en";', context); }
+    Object.keys(CH).forEach(id => {
+        if (id !== '_common') ok(!!findSim(id), `CHART_I18N_HI: "${id}" is a real sim`);
+        const dead = CH[id].filter(([en]) => !used[en + '@' + id]).map(([en]) => en);
+        ok(dead.length === 0, `CHART_I18N_HI["${id}"]: every pair matches real chart text${dead.length ? ' — dead: ' + dead.join(' | ') : ''}`);
+    });
+    const unitsUsed = new Set(SIMS.map(s => s.unitTitle)), topicsUsed = new Set(SIMS.map(s => s.topicLabel)), partsUsed = new Set(Object.values(vm.runInContext('PART_TITLES', context)).flatMap(o => Object.values(o)));
+    ok(Object.keys(UNITS).every(k => unitsUsed.has(k)) && Object.keys(TOPICS).every(k => topicsUsed.has(k)) && Object.keys(PARTS).every(k => partsUsed.has(k)), 'Chapter tags: every Hindi part/unit/topic entry names a real one (no dead entries)');
+})();
+
+// ── Quiz text in Hindi, and quiz pointers to real rows ─────────────
+// In Hindi mode a quiz question may keep an English exam term only as a
+// bracketed gloss after the Hindi ("मूल्यह्रास (depreciation)"). And when a
+// computed question says 'read the "X" row', X must be a row the sim really
+// shows — two explanations here named rows that did not exist.
+(function testQuizHindiAndRowPointers() {
+    const QB = vm.runInContext('QUIZ_BANK', context);
+    const QH = vm.runInContext('quizHindiLabels', context);
+    const quizRandomState = vm.runInContext('quizRandomState', context);
+    const rowsHi = vm.runInContext('localDefaultRows', context);
+    const bare = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/\([^()]*\)/g, ' ').replace(/\b(Yfe|Exy|kcal)\b/g, ' ');
+    const englishRun = t => (bare(t).match(/\b[A-Za-z][a-z]{2,}(?:[\s,'’:/-]+[A-Za-z][a-z]{1,})*\b/) || [null])[0];
+    const run = (sim, lang) => {
+        vm.runInContext(`currentLang = "${lang}";`, context);
+        try {
+            const def = collectDefaults(sim);
+            if (sim.mode === 'graphlab') { const st = {}; sim.graphLab.vars.forEach(v => { st[v.id] = v.value; }); return { st, out: sim.graphLab.model(st, {}) }; }
+            if (sim.mode === 'datalab') { const st = lang === 'hi' ? rowsHi(sim) : sim.dataLab.defaultRows; return { st, out: sim.dataLab.calculate(dataLabValidate(sim, st)) }; }
+            if (typeof sim.compute === 'function') return { st: def, out: sim.compute(def) };
+            return null;
+        } finally { vm.runInContext('currentLang = "en";', context); }
+    };
+    const bad = [];
+    let pointers = 0;
+    Object.keys(QB).forEach(id => {
+        const sim = findSim(id); if (!sim) return;
+        const b = QB[id];
+        const items = [];
+        (b.static || []).forEach((q, i) => items.push([`q${i}`, q]));
+        const en = run(sim, 'en');
+        (b.applyTemplates || []).forEach((tpl, i) => {
+            if (!en) return;
+            let q = null;
+            vm.runInContext('currentLang = "hi";', context);
+            try { const hi = run(sim, 'hi'); vm.runInContext('currentLang = "hi";', context); q = tpl.build(hi.st, (hi.out && hi.out.metrics) || {}); if (q) q = QH(sim, q); } catch (e) { q = null; } finally { vm.runInContext('currentLang = "en";', context); }
+            if (q) items.push([`t${i}`, q]);
+            // ...and at random states, as the real quiz builds them: some
+            // branches (e.g. "depreciation" vs "appreciation") only fire
+            // away from the defaults.
+            if (sim.mode !== 'datalab') {
+                for (let k = 0; k < 12; k++) {
+                    vm.runInContext('currentLang = "hi";', context);
+                    try {
+                        const st = quizRandomState(sim);
+                        const out = sim.mode === 'graphlab' ? sim.graphLab.model(st, { prev: st, base: st }) : (typeof sim.compute === 'function' ? sim.compute(st) : null);
+                        if (!out) break;
+                        const qr = tpl.build(st, out.metrics || {});
+                        if (qr) items.push([`t${i}@rand`, QH(sim, qr)]);
+                    } catch (e) { /* a state the template skips */ } finally { vm.runInContext('currentLang = "en";', context); }
+                }
+            }
+            // Row pointers, checked in English against the sim's own output.
+            let qe = null; try { qe = tpl.build(en.st, (en.out && en.out.metrics) || {}); } catch (e) { qe = null; }
+            const ex = qe && qe.explain && qe.explain.en;
+            (String(ex || '').match(/"([^"]+)" row/g) || []).forEach(m => {
+                const label = m.slice(1, m.lastIndexOf('"'));
+                pointers++;
+                const o = en.out || {};
+                const shown = [String(o.readings || ''), ...((Array.isArray(o.readings) ? o.readings : []).map(r => r.label)), ...((o.stats || []).map(st => st.label))].join(' | ');
+                if (!shown.includes(label)) bad.push(`${id} t${i}: points to a "${label}" row the sim does not show`);
+            });
+        });
+        items.forEach(([where, q]) => {
+            const texts = [q.question, q.explain, ...(q.options || []), ...Object.values(q.misconceptions || {})];
+            // Plain-string options (computed numbers) are shown as-is in both
+            // languages, so a template's plain strings were built in Hindi mode.
+            texts.forEach(v => {
+                const hiText = v && typeof v.hi === 'string' ? v.hi : (where[0] === 't' && typeof v === 'string' ? v : null);
+                if (hiText === null) return;
+                const w = englishRun(hiText); if (w) bad.push(`${id} ${where}: Hindi has bare English "${w}" — "${hiText.slice(0, 70)}"`);
+            });
+        });
+    });
+    ok(bad.length === 0, `Quiz: Hindi text glosses English only in brackets, and every "… row" pointer names a real row (${pointers} pointers checked)${bad.length ? ' — ' + bad.slice(0, 4).join('; ') : ''}`);
 })();
 
 // ── Economic-correctness audit regressions ──────────────────────────
