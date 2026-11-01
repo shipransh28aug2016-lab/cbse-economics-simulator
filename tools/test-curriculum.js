@@ -755,6 +755,72 @@ function extractNodePos(html, label) {
     ok(fx.length > 0 && fx.every(e => hasDeva(e.label)), 'Effect labels: diffMetrics hands Hindi labels to the readings panel and Mima in Hindi mode');
 })();
 
+// ── Graph Lab verdicts in Hindi ─────────────────────────────────────
+// Every verdict a Graph Lab can show must carry a Hindi twin built in the
+// same branch from the same numbers. Sweeps every variable pair, every
+// scenario and every story step. "Same numbers" is the honesty check: a
+// Hindi banner that states a different figure (or drops one) than the
+// English would be a second, disagreeing claim about the same model.
+(function testGraphLabVerdictsAreTranslated() {
+    const hasDeva = t => /[ऀ-ॿ]/.test(t);
+    const plain = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ');
+    const nums = t => (plain(t).match(/\d+(?:\.\d+)?/g) || []).sort().join(',');
+    // Three or more English words in a row = an untranslated sentence.
+    // Symbols such as MR, MC, IC₂, Qd, Px/Py, OP, D₁D₁ stay as they are.
+    const englishRun = t => (plain(t).match(/\b[A-Za-z]{2,}\b(?:[\s,'’-]+\b[A-Za-z]{2,}\b){2,}/) || [null])[0];
+    let checked = 0;
+    SIMS.filter(s => s.mode === 'graphlab').forEach(sim => {
+        const cfg = sim.graphLab;
+        const def = {}; cfg.vars.forEach(v => { def[v.id] = v.value; });
+        const vals = v => { const o = [v.value]; for (let i = 0; i <= 10; i++) o.push(+(v.min + (v.max - v.min) * i / 10).toFixed(4)); return o; };
+        const states = [def];
+        cfg.vars.forEach(a => vals(a).forEach(x => {
+            states.push(Object.assign({}, def, { [a.id]: x }));
+            cfg.vars.forEach(b => { if (b !== a) vals(b).forEach(y => states.push(Object.assign({}, def, { [a.id]: x, [b.id]: y }))); });
+        }));
+        (cfg.scenarios || []).forEach(sc => states.push(Object.assign({}, def, sc.set)));
+        (cfg.stories || []).forEach(st => st.steps.forEach(step => states.push(Object.assign({}, def, step.set || {}))));
+        const seen = new Set();
+        let bad = 0;
+        states.forEach(st => {
+            const vd = cfg.model(st, {}).verdict;
+            if (!vd) return;
+            const key = plain(vd.title) + '|' + plain(vd.detail);
+            if (seen.has(key)) return;
+            seen.add(key);
+            checked++;
+            const hi = vd.hi;
+            const where = `${sim.id} "${plain(vd.title).trim().slice(0, 60)}"`;
+            if (!hi) { bad++; ok(false, `${where}: verdict has a Hindi twin`); return; }
+            const fails = [];
+            if (!hasDeva(hi.title)) fails.push('title not Hindi');
+            if (vd.detail && !hasDeva(hi.detail)) fails.push('detail not Hindi');
+            const run = englishRun(hi.title) || englishRun(hi.detail);
+            if (run) fails.push(`English left: "${run}"`);
+            if (nums(hi.title) + '|' + nums(hi.detail) !== nums(vd.title) + '|' + nums(vd.detail)) fails.push(`numbers differ: EN ${nums(vd.title)}|${nums(vd.detail)} vs HI ${nums(hi.title)}|${nums(hi.detail)}`);
+            if ((vd.chips || []).length !== ((hi.chips || vd.chips) || []).length) fails.push('chip count differs');
+            if (vd.chips && vd.chips.length && !(hi.chips || []).every(hasDeva)) fails.push('chips not Hindi');
+            if (fails.length) { bad++; ok(false, `${where}: ${fails.join('; ')}`); }
+        });
+        ok(bad === 0, `${sim.id}: all ${seen.size} distinct verdicts have an honest Hindi twin`);
+    });
+    ok(checked > 100, `Graph Lab verdicts: checked ${checked} distinct verdict states`);
+    // ...and the engine actually shows it: banner and Mima snapshot in Hindi mode.
+    const demand = findSim('gl-demand-movement-shift');
+    const m = demand.graphLab.model(Object.assign({}, ...demand.graphLab.vars.map(v => ({ [v.id]: v.value })), { price: demand.graphLab.vars.find(v => v.id === 'price') ? 40 : undefined }), {});
+    vm.runInContext('currentLang = "hi";', context);
+    let html, local;
+    try {
+        html = vm.runInContext('glVerdictHTML', context)(m.verdict);
+        local = vm.runInContext('glLocalVerdict', context)(m.verdict);
+    } finally { vm.runInContext('currentLang = "en";', context); }
+    ok(hasDeva(plain(html)) && !englishRun(html.replace(/class="[^"]*"|style="[^"]*"/g, '')), 'Graph Lab verdicts: glVerdictHTML renders the Hindi banner in Hindi mode');
+    ok(local.kind === m.verdict.kind && hasDeva(local.title), 'Graph Lab verdicts: glLocalVerdict keeps verdict.kind (Mima/PREDICT read it) and swaps the text');
+    ok(vm.runInContext('glLocalVerdict', context)(m.verdict).title === m.verdict.title, 'Graph Lab verdicts: English mode is untouched');
+    const strip = vm.runInContext('mimaStripTags', context);
+    ok(strip('MC &lt; AC → <b>AC अभी घट रहा है</b>') === 'MC < AC → AC अभी घट रहा है', 'Mima: verdict entities are decoded before display/speech (no "&lt;" read aloud)');
+})();
+
 // ── Economic-correctness audit regressions ──────────────────────────
 // Each block states the economic RULE (not the current number) behind one
 // of the 14 audit findings, so the error cannot quietly come back. See

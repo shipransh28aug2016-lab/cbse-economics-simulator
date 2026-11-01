@@ -186,7 +186,19 @@ SIMS.push({
                         ? `At Y<sub>F</sub> = ₹${fmt(v.yf, 0)} cr, AD is ₹${fmt(adAtYf, 0)} cr — <b>above</b> what the economy can actually produce. Output cannot rise past Y<sub>F</sub>, so the excess demand spends itself on <b>rising prices</b>, not more goods. The gap is the <b>vertical</b> distance at Y<sub>F</sub>, and it is ₹${fmt(gap, 0)} cr. Correction: <b>contractionary</b> policy — cut government spending, raise taxes, raise repo/CRR/SLR. To close it, autonomous expenditure must fall by ₹${fmt(gap, 0)} cr (which cuts income by gap × multiplier = ₹${fmt(gap * k, 0)} cr).`
                         : isDefl
                             ? `At Y<sub>F</sub> = ₹${fmt(v.yf, 0)} cr, AD is only ₹${fmt(adAtYf, 0)} cr — <b>short</b> of what would buy full-employment output. Firms find stocks piling up, cut production, and equilibrium settles at Y* = ₹${fmt(yStar, 0)} cr, <b>below</b> Y<sub>F</sub>, leaving <b>involuntary unemployment</b>. The gap is the <b>vertical</b> shortfall at Y<sub>F</sub>: ₹${fmt(-gap, 0)} cr. Correction: <b>expansionary</b> policy — raise government spending, cut taxes, cut repo/CRR/SLR. Autonomous expenditure must rise by ₹${fmt(-gap, 0)} cr, which raises income by ₹${fmt(-gap * k, 0)} cr through the multiplier of ${fmt(k, 2)}.`
-                            : `AD cuts the 45° line exactly at Y<sub>F</sub> = ₹${fmt(v.yf, 0)} cr, so aggregate demand is precisely enough to buy full-employment output — neither gap exists. Drag the AD line up to create excess demand, or down to create deficient demand, and watch the gap appear as a vertical segment at Y<sub>F</sub>.`
+                            : `AD cuts the 45° line exactly at Y<sub>F</sub> = ₹${fmt(v.yf, 0)} cr, so aggregate demand is precisely enough to buy full-employment output — neither gap exists. Drag the AD line up to create excess demand, or down to create deficient demand, and watch the gap appear as a vertical segment at Y<sub>F</sub>.`,
+                    hi: {
+                        title: isInfl
+                            ? 'अधिमाँग → ₹' + fmt(gap, 0) + ' करोड़ का <b>स्फीतिक अंतराल</b>'
+                            : isDefl
+                                ? 'अभावी माँग → ₹' + fmt(-gap, 0) + ' करोड़ का <b>अवस्फीतिक अंतराल</b>'
+                                : '✔ संतुलन पूर्ण रोज़गार पर है — <b>कोई अंतराल नहीं</b>',
+                        detail: isInfl
+                            ? `Y<sub>F</sub> = ₹${fmt(v.yf, 0)} करोड़ पर AD ₹${fmt(adAtYf, 0)} करोड़ है — अर्थव्यवस्था वास्तव में जितना उत्पादन कर सकती है उससे <b>अधिक</b>। उत्पादन Y<sub>F</sub> से आगे नहीं बढ़ सकता, इसलिए अधिमाँग अधिक वस्तुओं में नहीं, <b>बढ़ती कीमतों</b> में खप जाती है। अंतराल Y<sub>F</sub> पर <b>ऊर्ध्वाधर</b> दूरी है, और यह ₹${fmt(gap, 0)} करोड़ है। सुधार: <b>संकुचनकारी</b> नीति — सरकारी व्यय घटाएँ, कर बढ़ाएँ, रेपो/CRR/SLR बढ़ाएँ। इसे पाटने के लिए स्वायत्त व्यय ₹${fmt(gap, 0)} करोड़ घटना चाहिए (जिससे आय अंतराल × गुणक = ₹${fmt(gap * k, 0)} करोड़ घटती है)।`
+                            : isDefl
+                                ? `Y<sub>F</sub> = ₹${fmt(v.yf, 0)} करोड़ पर AD केवल ₹${fmt(adAtYf, 0)} करोड़ है — पूर्ण-रोज़गार उत्पादन को खरीदने के लिए <b>कम</b>। फ़र्मों के पास बिना बिका स्टॉक जमा होता है, वे उत्पादन घटाती हैं, और संतुलन Y* = ₹${fmt(yStar, 0)} करोड़ पर, Y<sub>F</sub> से <b>नीचे</b> टिकता है — जिससे <b>अनैच्छिक बेरोज़गारी</b> बनी रहती है। अंतराल Y<sub>F</sub> पर <b>ऊर्ध्वाधर</b> कमी है: ₹${fmt(-gap, 0)} करोड़। सुधार: <b>विस्तारकारी</b> नीति — सरकारी व्यय बढ़ाएँ, कर घटाएँ, रेपो/CRR/SLR घटाएँ। स्वायत्त व्यय ₹${fmt(-gap, 0)} करोड़ बढ़ना चाहिए, जो ${fmt(k, 2)} के गुणक से आय को ₹${fmt(-gap * k, 0)} करोड़ बढ़ाता है।`
+                                : `AD, 45° रेखा को ठीक Y<sub>F</sub> = ₹${fmt(v.yf, 0)} करोड़ पर काटती है, इसलिए समग्र माँग पूर्ण-रोज़गार उत्पादन खरीदने के लिए बिल्कुल पर्याप्त है — कोई अंतराल नहीं। अधिमाँग बनाने के लिए AD रेखा ऊपर, या अभावी माँग के लिए नीचे खींचें, और Y<sub>F</sub> पर अंतराल को ऊर्ध्वाधर खंड के रूप में उभरते देखें।`
+                    }
                 },
                 metrics: { yStar, gap, k, mpc: v.mpc }
             };
@@ -353,7 +365,15 @@ SIMS.push({
                         : s < 0
                             ? `Below break-even → <b>dissaving</b>: S = −₹${fmt(-s, 0)} cr and <b>APC = ${fmt(apc, 2)} &gt; 1</b>`
                             : `Above break-even → <b>saving</b>: S = ₹${fmt(s, 0)} cr and <b>APC = ${fmt(apc, 2)} &lt; 1</b>`,
-                    detail: `${s < 0 ? `Income of ₹${fmt(v.y, 0)} cr is not enough to cover consumption of ₹${fmt(c, 1)} cr, so the gap of ₹${fmt(-s, 0)} cr is met out of <b>past savings or borrowing</b> — this is why the saving line lies <i>below</i> the X-axis here, and why APC can exceed 1 while MPC cannot.` : `Consumption of ₹${fmt(c, 1)} cr leaves ₹${fmt(s, 1)} cr saved. As income rises, APC keeps <b>falling</b> and APS keeps <b>rising</b>, but they always sum to exactly 1.`} MPC = ${fmt(v.mpc, 2)} means ${fmt(v.mpc * 100, 0)} paise of every extra rupee is spent and ${fmt((1 - v.mpc) * 100, 0)} paise saved — that leakage is what sets the multiplier at ${fmt(1 / (1 - v.mpc), 2)}. Note the C line and the S line always cross the 45° line and the X-axis <b>at the same income</b> — that is the break-even point at ₹${fmt(be, 0)} cr.`
+                    detail: `${s < 0 ? `Income of ₹${fmt(v.y, 0)} cr is not enough to cover consumption of ₹${fmt(c, 1)} cr, so the gap of ₹${fmt(-s, 0)} cr is met out of <b>past savings or borrowing</b> — this is why the saving line lies <i>below</i> the X-axis here, and why APC can exceed 1 while MPC cannot.` : `Consumption of ₹${fmt(c, 1)} cr leaves ₹${fmt(s, 1)} cr saved. As income rises, APC keeps <b>falling</b> and APS keeps <b>rising</b>, but they always sum to exactly 1.`} MPC = ${fmt(v.mpc, 2)} means ${fmt(v.mpc * 100, 0)} paise of every extra rupee is spent and ${fmt((1 - v.mpc) * 100, 0)} paise saved — that leakage is what sets the multiplier at ${fmt(1 / (1 - v.mpc), 2)}. Note the C line and the S line always cross the 45° line and the X-axis <b>at the same income</b> — that is the break-even point at ₹${fmt(be, 0)} cr.`,
+                    hi: {
+                        title: Math.abs(v.y - be) < 12
+                            ? `<b>सम-विच्छेद बिंदु</b> पर — C = Y, इसलिए <b>S = 0</b> और <b>APC = 1</b>`
+                            : s < 0
+                                ? `सम-विच्छेद से नीचे → <b>अबचत</b>: S = −₹${fmt(-s, 0)} करोड़ और <b>APC = ${fmt(apc, 2)} &gt; 1</b>`
+                                : `सम-विच्छेद से ऊपर → <b>बचत</b>: S = ₹${fmt(s, 0)} करोड़ और <b>APC = ${fmt(apc, 2)} &lt; 1</b>`,
+                        detail: `${s < 0 ? `₹${fmt(v.y, 0)} करोड़ की आय ₹${fmt(c, 1)} करोड़ के उपभोग के लिए पर्याप्त नहीं है, इसलिए ₹${fmt(-s, 0)} करोड़ का अंतर <b>पिछली बचत या उधार</b> से पूरा होता है — इसीलिए यहाँ बचत रेखा X-अक्ष के <i>नीचे</i> है, और इसीलिए APC 1 से अधिक हो सकती है पर MPC नहीं।` : `₹${fmt(c, 1)} करोड़ के उपभोग के बाद ₹${fmt(s, 1)} करोड़ बचते हैं। आय बढ़ने पर APC <b>घटती</b> और APS <b>बढ़ती</b> रहती है, पर दोनों का योग सदा ठीक 1 रहता है।`} MPC = ${fmt(v.mpc, 2)} का अर्थ है कि हर अतिरिक्त रुपये में से ${fmt(v.mpc * 100, 0)} पैसे खर्च होते हैं और ${fmt((1 - v.mpc) * 100, 0)} पैसे बचते हैं — यही रिसाव गुणक को ${fmt(1 / (1 - v.mpc), 2)} पर तय करता है। ध्यान दें, C रेखा 45° रेखा को और S रेखा X-अक्ष को सदा <b>एक ही आय पर</b> काटती हैं — यही ₹${fmt(be, 0)} करोड़ पर सम-विच्छेद बिंदु है।`
+                    }
                 },
                 metrics: { apc, aps, s, be, y: v.y }
             };
@@ -541,7 +561,23 @@ SIMS.push({
                             ? `${sMoved && v.supplyShift > 0 ? 'More forex is supplied at every rate (exports, remittances or foreign investment rose), so the S curve shifted <b>right</b>. ' : ''}${dMoved && v.demandShift < 0 ? 'Less forex is demanded at every rate, so the D curve shifted <b>left</b>. ' : ''}Each dollar now costs fewer rupees. Consequence: <b>imports become cheaper</b> so imports rise, while Indian <b>exports become dearer</b> abroad so exports fall.`
                             : Math.abs(gap) > 0.6
                                 ? `At ₹${fmt(v.rate, 0)} per $, forex demanded is $${fmt(qd, 1)}m against supply of $${fmt(qs, 1)}m. ${gap > 0 ? 'Buyers of forex outbid each other, driving ₹/$ <b>up</b> toward ₹' + fmt(eq.P, 1) + ' — the rupee depreciates until the market clears.' : 'Unsold forex forces the rate <b>down</b> toward ₹' + fmt(eq.P, 1) + ' — the rupee appreciates until the market clears.'}`
-                                : `Demand for and supply of foreign exchange are equal at ₹${fmt(eq.P, 1)} per $, with $${fmt(eq.Q, 1)}m traded. Drag either curve to see the rate move, or set an off-equilibrium rate to create a shortage or surplus.`
+                                : `Demand for and supply of foreign exchange are equal at ₹${fmt(eq.P, 1)} per $, with $${fmt(eq.Q, 1)}m traded. Drag either curve to see the rate move, or set an off-equilibrium rate to create a shortage or surplus.`,
+                    hi: {
+                        title: dep
+                            ? `रुपये का <b>मूल्यह्रास</b>: ₹${fmt(eq0.P, 1)} → ₹${fmt(eq.P, 1)} प्रति $`
+                            : app
+                                ? `रुपये की <b>मूल्यवृद्धि</b>: ₹${fmt(eq0.P, 1)} → ₹${fmt(eq.P, 1)} प्रति $`
+                                : Math.abs(gap) > 0.6
+                                    ? (gap > 0 ? 'दर संतुलन से नीचे → <b>विदेशी मुद्रा की कमी</b>, ₹/$ ऊपर धकेला जाता है' : 'दर संतुलन से ऊपर → <b>विदेशी मुद्रा का आधिक्य</b>, ₹/$ नीचे धकेला जाता है')
+                                    : 'विदेशी विनिमय बाज़ार <b>संतुलन</b> में है',
+                        detail: dep
+                            ? `${dMoved && v.demandShift > 0 ? 'हर दर पर विदेशी मुद्रा की माँग अधिक है (आयात, विदेश यात्रा या विदेश में निवेश बढ़ा), इसलिए D वक्र <b>दाईं ओर</b> खिसका। ' : ''}${sMoved && v.supplyShift < 0 ? 'हर दर पर विदेशी मुद्रा की पूर्ति कम है (निर्यात घटे या विदेशी निवेश बाहर गया), इसलिए S वक्र <b>बाईं ओर</b> खिसका। ' : ''}अब हर डॉलर के लिए अधिक रुपये देने पड़ते हैं। परिणाम: विदेशियों के लिए भारतीय <b>निर्यात सस्ते</b> होते हैं इसलिए निर्यात बढ़ते हैं, जबकि <b>आयात महँगे</b> होते हैं इसलिए आयात घटते हैं — इसीलिए मूल्यह्रास व्यापार संतुलन को सुधारने की ओर ले जाता है। यह मूल्यह्रास है, <b>अवमूल्यन नहीं</b>: यह बाज़ार की शक्तियों से आया, सरकार के निर्णय से नहीं।`
+                            : app
+                                ? `${sMoved && v.supplyShift > 0 ? 'हर दर पर विदेशी मुद्रा की पूर्ति अधिक है (निर्यात, प्रेषण या विदेशी निवेश बढ़ा), इसलिए S वक्र <b>दाईं ओर</b> खिसका। ' : ''}${dMoved && v.demandShift < 0 ? 'हर दर पर विदेशी मुद्रा की माँग कम है, इसलिए D वक्र <b>बाईं ओर</b> खिसका। ' : ''}अब हर डॉलर के लिए कम रुपये देने पड़ते हैं। परिणाम: <b>आयात सस्ते</b> होते हैं इसलिए आयात बढ़ते हैं, जबकि भारतीय <b>निर्यात</b> विदेश में <b>महँगे</b> होते हैं इसलिए निर्यात घटते हैं।`
+                                : Math.abs(gap) > 0.6
+                                    ? `₹${fmt(v.rate, 0)} प्रति $ पर विदेशी मुद्रा की माँग $${fmt(qd, 1)} मिलियन है जबकि पूर्ति $${fmt(qs, 1)} मिलियन। ${gap > 0 ? 'विदेशी मुद्रा के क्रेता एक-दूसरे से ऊँची बोली लगाते हैं, जिससे ₹/$ ₹' + fmt(eq.P, 1) + ' की ओर <b>ऊपर</b> जाता है — बाज़ार संतुलित होने तक रुपये का मूल्यह्रास होता है।' : 'बिना बिकी विदेशी मुद्रा दर को ₹' + fmt(eq.P, 1) + ' की ओर <b>नीचे</b> लाती है — बाज़ार संतुलित होने तक रुपये की मूल्यवृद्धि होती है।'}`
+                                    : `विदेशी मुद्रा की माँग और पूर्ति ₹${fmt(eq.P, 1)} प्रति $ पर बराबर हैं, और $${fmt(eq.Q, 1)} मिलियन का लेन-देन होता है। दर को बदलते देखने के लिए कोई भी वक्र खींचें, या कमी या आधिक्य बनाने के लिए संतुलन से अलग दर रखें।`
+                    }
                 },
                 metrics: { rate: eq.P, dRate, gap, traded: eq.Q }
             };
