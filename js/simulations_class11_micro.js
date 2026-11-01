@@ -8,6 +8,7 @@ if (typeof SIMS !== 'undefined') {
     SIMS.push(
         {
             id: 'micro-ppf',
+            metricLabels: { oppCost: 'Opportunity cost at this point', X: 'Good X at the point', Y: 'Good Y at the point', Yfrontier: 'Frontier Y at this X' },
             module: 'micro',
             title: 'Production Possibility Frontier & Opportunity Cost',
             desc: 'Choose a point on, inside, or outside the PPF and see the opportunity cost of producing more of one good in terms of the other.',

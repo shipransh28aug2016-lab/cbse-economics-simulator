@@ -69,7 +69,8 @@ const FILES = [
     'js/i18n_hi_statistics.js',
     'js/i18n_hi_macro_datalab.js',
     'js/i18n_hi_ied.js',
-    'js/i18n_hi_graphlab.js'
+    'js/i18n_hi_graphlab.js',
+    'js/i18n_hi_metrics.js'
 ];
 
 function noop() {}
@@ -710,6 +711,48 @@ function extractNodePos(html, label) {
     const base = {}; sim.graphLab.vars.forEach(v => { base[v.id] = v.value; });
     ok(/minimum point/.test(sim.graphLab.model(Object.assign(base, sc.set), {}).verdict.title), 'Cost curves: the "Read cost at min AC" scenario really lands on the minimum-point verdict');
     ok(configs > 20, 'Cost curves: minimum checked across many cost conditions');
+})();
+
+// ── Effect-line labels in Hindi (js/transition-layer.js + js/i18n_hi_metrics.js) ──
+// The "⚡ परिणामी प्रभाव" line — and Mima, who reads it aloud — used to show
+// every metric name in English in Hindi mode (89 of 89). Every numeric metric
+// a simulator sim can produce must now resolve to a Devanagari label, and the
+// Hindi map must not carry keys that match no real metric (a stale entry would
+// mean a renamed metric silently fell back to English).
+(function testEffectLabelsAreTranslated() {
+    const metricLabel = vm.runInContext('metricLabel', context);
+    const hasDeva = t => /[ऀ-ॿ]/.test(t);
+    vm.runInContext('mergeSimTranslations(); currentLang = "hi";', context);
+    let total = 0;
+    try {
+        SIMS.filter(sim => (sim.mode || 'simulator') === 'simulator').forEach(sim => {
+            const keys = new Set();
+            const base = collectDefaults(sim);
+            const states = [base];
+            (sim.controls || []).filter(c => c.type === 'select').forEach(c => c.options.forEach(o => states.push(Object.assign({}, base, { [c.id]: o.value }))));
+            states.forEach(st => {
+                let r;
+                try { r = typeof sim.compute === 'function' ? sim.compute(st) : sim.customRender(stubEl(), st); } catch (e) { return; }
+                Object.entries((r && r.metrics) || {}).forEach(([k, v]) => { if (typeof v === 'number') keys.add(k); });
+            });
+            keys.forEach(k => {
+                total++;
+                const label = metricLabel(sim, k);
+                ok(hasDeva(label), `${sim.id}: effect label for "${k}" is Hindi in Hindi mode (got "${label}")`);
+            });
+            const hiMap = (SIM_I18N_HI[sim.id] && SIM_I18N_HI[sim.id].metricLabels) || {};
+            Object.keys(hiMap).forEach(k => ok(keys.has(k), `${sim.id}: Hindi metricLabels.${k} matches a real numeric metric`));
+        });
+    } finally {
+        vm.runInContext('currentLang = "en";', context);
+    }
+    ok(total > 80, `Effect labels: checked ${total} metric labels across simulator sims`);
+    // A Hindi effect line must also reach Mima as Hindi, not English.
+    const gb = findSim('macro-govt-budget');
+    vm.runInContext('currentLang = "hi";', context);
+    const fx = diffMetrics(gb, gb.compute({ rr: 150, re: 180, interest: 30 }).metrics, gb.compute({ rr: 150, re: 220, interest: 30 }).metrics, 3, ['re']);
+    vm.runInContext('currentLang = "en";', context);
+    ok(fx.length > 0 && fx.every(e => hasDeva(e.label)), 'Effect labels: diffMetrics hands Hindi labels to the readings panel and Mima in Hindi mode');
 })();
 
 // ── Economic-correctness audit regressions ──────────────────────────

@@ -252,7 +252,12 @@ per-sim code**:
   even if some other control shares its name, because a model forcing wages to follow
   consumption (the `Y = C` identity) is a real effect and one of the more interesting
   ones. Labels come from `sim.metricLabels`, then a shared glossary of standard
-  economics abbreviations, then camelCase humanisation.
+  economics abbreviations, then camelCase humanisation. In Hindi mode they come from the
+  sim's `SIM_I18N_HI[id].metricLabels` (all sim-specific ones live in
+  `js/i18n_hi_metrics.js`), then the Hindi glossary `ECON_METRIC_LABELS_HI`.
+  `testEffectLabelsAreTranslated` fails the build if any numeric metric of a simulator sim
+  lacks a Hindi label, or if a Hindi key matches no real metric. So **a new metric needs a
+  Hindi label in the same change**; Mima reads these labels aloud.
 - **Auto-ghosting** (`buildGhostTraces`) — the previous positions of **only the curves
   that actually moved**, drawn dimmed beneath the live ones. This is the
   movement-vs-shift distinction generalised to every simulator-mode sim, derived from
