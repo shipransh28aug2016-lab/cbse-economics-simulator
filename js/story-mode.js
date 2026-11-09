@@ -39,6 +39,32 @@ document.addEventListener('click', e => {
     };
 }, true);
 
+// Read-only view for econsimState(). Story phase is encoded in idx and
+// answered: -1 intro · k asking/revealed · steps.length finished.
+if (typeof registerStateObserver === 'function') registerStateObserver('story', () => {
+    if (!storyActive) return { phase: 'off' };
+    const n = storyActive.story.steps.length, i = storyActive.idx;
+    const phase = i < 0 ? 'intro' : i >= n ? 'finished' : (storyActive.answered[i] !== undefined ? 'revealed' : 'asking');
+    return { phase, simId: storyActive.sim.id, storyId: storyActive.story.id, step: i, steps: n };
+});
+
+// Leaving the sim ends its story (and any pending language-resume).
+if (typeof onSimLeave === 'function') onSimLeave(() => { if (storyActive) storyExit(); storyResume = null; });
+
+// The 🔊 button shows ⏹ while the STORY's narration is playing (the voice
+// machine reports every start/stop, including a stop from elsewhere).
+// Subscribed once all scripts have loaded: mima-voice.js loads after this file.
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof MimaVoice === 'undefined' || typeof MimaVoice.subscribe !== 'function') return;
+    MimaVoice.subscribe((state, owner) => {
+        const btn = document.querySelector('#story-card .story-speak');
+        if (!btn) return;
+        const mine = state === 'speaking' && owner === 'story';
+        btn.textContent = mine ? `⏹ ${storyLabel('Stop', 'रोकें')}` : `🔊 ${storyLabel('Speak', 'बोलें')}`;
+        btn.classList.toggle('story-btn--active', mine);
+    });
+});
+
 function storyLang() {
     return (typeof currentLang !== 'undefined' && currentLang === 'hi') ? 'hi' : 'en';
 }
@@ -189,7 +215,7 @@ function storyStart(sim, story) {
         if (typeof MimaVoice === 'undefined') return;
         if (MimaVoice.isSpeaking()) { MimaVoice.stop(); return; }
         const body = card.querySelector('.story-body');
-        MimaVoice.speak(storyPlain(body ? body.innerHTML : ''), storyLang());
+        MimaVoice.speak(storyPlain(body ? body.innerHTML : ''), storyLang(), null, null, 'story');
     });
     card.querySelector('.story-body').innerHTML = `<p class="story-say">${storyText(story.intro)}</p>`;
     storyRefreshNav();

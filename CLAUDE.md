@@ -232,6 +232,31 @@ http(s). The service worker is deliberately **network-first** (cache is only an 
 fallback) so the `?v=N` cache-busting in `index.html` keeps working — bump `?v=` on any
 changed CSS/JS as before.
 
+## State machines (`js/state-machine.js`) — one owner per piece of state
+
+Every interactive part of the app is a state machine. Four of them are **explicit**
+(`createMachine`), because their implicit versions had bugs where copies of one state
+drifted apart. Those were: a language toggle on Home re-opening the last sim, a quiz
+question scored twice across a toggle, a PREDICT answer left on screen after Reset, and a
+story or voice outliving its sim.
+
+- `app` (`home`·`sim`·`profile`, js/app.js) is the only thing that sets or clears
+  `currentSim`. Use `showScreen()`/`openSim()`, and never paint screens yourself. Leaving a
+  sim runs every engine's `onSimLeave(fn)` teardown, and **a new engine that starts
+  something (timer, voice, animation) must register one**.
+- `quiz` (`closed`·`asking`·`answered`·`results`), `predictGate`
+  (`hidden`·`asking`·`revealed`, with a `STALE` check in `glRender()`) and `voice`
+  (`idle`·`speaking`+owner).
+- The other machines (Graph Lab drag/glide, Story, simulator PREDICT card, Data Lab,
+  Explorer, Holo, Mima panel, AI tutor) still work implicitly, and are exposed read-only
+  through `registerStateObserver`.
+- **Agents and tests: read `econsim.state()`** (one JSON snapshot) and
+  `<body data-screen|quiz|predict-gate|voice>`, instead of reverse-engineering globals.
+- `testStateMachines` audits every registered machine (no missing target, no unreachable
+  state, no dead end). `tools/smoke.js` holds a browser regression for each fixed bug.
+- The full map of all 14 machines, and the rule for when to convert one, is in
+  `docs/architecture/state-machines.md`.
+
 ## The transition layer (`js/transition-layer.js`) — cause → effect
 
 `renderSimChart()` used to retain only the previous **control** state and discard the

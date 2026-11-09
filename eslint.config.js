@@ -6,6 +6,11 @@ const js = require('@eslint/js');
 
 const appGlobals = {
     // Shared across js/*.js via plain <script> tags, in load order.
+    // js/state-machine.js — explicit state machines (loaded first).
+    createMachine: 'readonly', registerStateObserver: 'readonly', econsimState: 'readonly',
+    onSimLeave: 'readonly', runSimLeaveHooks: 'readonly',
+    appMachine: 'readonly', quizMachine: 'readonly', closeQuiz: 'readonly', quizView: 'readonly',
+    paintScreen: 'readonly', predictGateMachine: 'readonly',
     PART_TITLES: 'readonly', CURRICULUM_NODES: 'readonly', partTitle: 'readonly',
     chapterTagText: 'readonly', findNode: 'readonly', validateCurriculum: 'readonly',
     Plotly: 'readonly',

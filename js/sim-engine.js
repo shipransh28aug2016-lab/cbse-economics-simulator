@@ -720,6 +720,12 @@ function buildControls(sim) {
 // to a different mode of a `select` control first) leaves the card
 // pending rather than resolving on a question that no longer applies.
 let predictState = null;
+// Read-only view for econsimState(): a simulator sim's controls and its
+// PREDICT card (pending → guessed → resolved).
+if (typeof registerStateObserver === 'function') registerStateObserver('simulator', () => ({
+    controls: Object.assign({}, simEngineState),
+    predictCard: predictState ? (predictState.resolved ? 'resolved' : predictState.guess ? 'guessed' : 'pending') : 'none'
+}));
 
 function resetPredictCard(sim) {
     const card = document.getElementById('predict-card');

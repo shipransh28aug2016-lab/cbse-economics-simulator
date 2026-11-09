@@ -22,6 +22,9 @@ const HOLO_MAX_TILT = 6; // degrees
 function holoEnabled() {
     try { return localStorage.getItem(HOLO_KEY) !== '0'; } catch { return true; }
 }
+if (typeof registerStateObserver === 'function') registerStateObserver('holo', () => ({
+    on: holoEnabled(), fullscreen: typeof document !== 'undefined' && !!document.fullscreenElement
+}));
 function holoSave(on) {
     try { localStorage.setItem(HOLO_KEY, on ? '1' : '0'); } catch { /* private mode */ }
 }
