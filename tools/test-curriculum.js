@@ -36,15 +36,18 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const FILES = [
+    'js/state-machine.js',
     'js/curriculum-data.js',
     'js/panel-collapse.js',
     'js/transition-layer.js',
     'js/mima-context.js',
     'js/mima-explain.js',
+    'js/mima-voice.js',
     'js/sim-engine.js',
     'js/datalab-engine.js',
     'js/explorer-engine.js',
     'js/graph-lab-engine.js',
+    'js/story-mode.js',
     'js/simulations.js',
     'js/simulations_extended.js',
     'js/simulations_class11_micro.js',
@@ -68,7 +71,11 @@ const FILES = [
     'js/i18n_hi_statistics.js',
     'js/i18n_hi_macro_datalab.js',
     'js/i18n_hi_ied.js',
-    'js/i18n_hi_graphlab.js'
+    'js/i18n_hi_graphlab.js',
+    'js/i18n_hi_metrics.js',
+    'js/i18n_hi_diagram.js',
+    'js/i18n_hi_chapters.js',
+    'js/i18n_hi_charts.js'
 ];
 
 function noop() {}
@@ -97,12 +104,13 @@ const sandbox = {
     Plotly: { react: () => Promise.resolve(), purge: noop },
     Set, Map, Math, Array, Object, JSON, isFinite, isNaN, parseFloat, parseInt, String, Number,
     // Quiz engine's quizLocalize() looks these up at call-time — stub the
-    // same English-fallback localize() app.js provides in the browser.
+    // same localize() app.js provides in the browser (Hindi when
+    // currentLang is 'hi', English otherwise).
     currentLang: 'en',
     localize(val) {
         if (val === undefined || val === null) return '';
         if (typeof val === 'string') return val;
-        if (typeof val === 'object') return val.en !== undefined ? val.en : '';
+        if (typeof val === 'object') return (sandbox.currentLang === 'hi' && val.hi) ? val.hi : (val.en !== undefined ? val.en : '');
         return String(val);
     }
 };
@@ -132,6 +140,7 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const storyContexts = vm.runInContext('storyContexts', context);
 
 let failures = 0, checks = 0, warnings = 0;
 function ok(cond, label) {
@@ -626,6 +635,684 @@ function extractNodePos(html, label) {
 (function testMimaHandlesNoActiveSimulation() {
     const result = mimaExplain(null, 'explain');
     ok(typeof result.text === 'string' && result.text.length > 0, 'Mima: gives a sensible prompt when no simulation is open, rather than throwing or showing blank text');
+})();
+
+// ── Graph Lab glide (js/graph-lab-engine.js glGlideSvg) ───────────
+// A scenario preset or Reset no longer teleports the diagram: it glides,
+// and every frame is model() run at values part-way between the old and
+// new state — with SEVERAL variables moving at once, off the step grid.
+// The single-variable domain sweep above never visits those combined
+// in-between states, so walk the exact glide path for every scenario of
+// every Graph Lab (defaults → scenario, which Reset then reverses).
+(function testGraphLabGlidePathsStayFinite() {
+    let paths = 0;
+    SIMS.filter(sim => sim.mode === 'graphlab').forEach(sim => {
+        const cfg = sim.graphLab;
+        const base = {};
+        cfg.vars.forEach(v => { base[v.id] = v.value; });
+        (cfg.scenarios || []).forEach((sc, si) => {
+            const target = Object.assign({}, base, sc.set || {});
+            paths++;
+            for (let i = 1; i < 12; i++) {
+                const e = i / 12;
+                const v = {};
+                cfg.vars.forEach(cv => { v[cv.id] = base[cv.id] + (target[cv.id] - base[cv.id]) * e; });
+                let m;
+                try { m = cfg.model(Object.assign({}, v), { prev: target, base: target }); } catch (err) {
+                    ok(false, `${sim.id}: model() threw on the glide into scenario ${si} at ${(e * 100).toFixed(0)}% — ${err.message}`);
+                    return;
+                }
+                const finite = (m.curves || []).every(c => (c.pts || []).every(pt => isFinite(pt[0]) && isFinite(pt[1]))) &&
+                    (m.points || []).every(p => isFinite(p.x) && isFinite(p.y)) &&
+                    (m.handles || []).every(h => isFinite(h.x) && isFinite(h.y));
+                ok(finite, `${sim.id}: glide frame into scenario ${si} at ${(e * 100).toFixed(0)}% has only finite geometry`);
+            }
+        });
+    });
+    ok(paths > 0, 'Graph Lab glide: at least one scenario glide path was exercised');
+})();
+
+// ── Producer's equilibrium = the real profit maximum ─────────────
+// The lab used to require "MC rising" literally, which is only the same as
+// "MC cuts MR from below" under perfect competition. Under monopoly it put
+// equilibrium at MC's minimum (Q 7.55) instead of the profit maximum (4.35).
+// Check the model's eqQ against a brute-force profit search everywhere.
+(function testProducerEquilibriumIsProfitMax() {
+    const sim = findSim('gl-revenue-producer-eq');
+    const M = st => sim.graphLab.model(st, {});
+    let compared = 0;
+    [0, 2, 4, 7, 10].forEach(market => [20, 34, 50].forEach(price => [-6, 0, 8].forEach(cost => {
+        const base = { q: 8, price, market, cost };
+        const eqQ = M(base).metrics.eqQ;
+        if (!eqQ) return;
+        let best = { q: 1, p: -Infinity };
+        for (let q = 1; q <= 19; q += 0.05) { const p = M(Object.assign({}, base, { q })).metrics.profit; if (p > best.p) best = { q, p }; }
+        if (best.q <= 1.05 || best.q >= 18.95) return; // corner solution: no interior MR = MC
+        compared++;
+        ok(Math.abs(eqQ - best.q) <= 0.11, `Producer eq (market ${market}, price ${price}, cost ${cost}): MR = MC output ${eqQ.toFixed(2)} is the profit-maximising output ${best.q.toFixed(2)}`);
+    })));
+    ok(compared >= 20, `Producer eq: compared against brute-force profit maxima in ${compared} cases`);
+})();
+
+// ── Cost curves: the "minimum of AC" verdict must be reachable ─────
+// It used to need |MC − AC| < 0.15 at an output the 0.5-step slider can
+// land on — true in 110 of ~14,000 states, never at the defaults, and not
+// at the "Read cost at min AC" scenario either. For every cost condition,
+// exactly one reachable output must carry it: the one where AC is lowest.
+(function testCostMinimumIsReachable() {
+    const sim = findSim('gl-cost-curves');
+    const qv = sim.graphLab.vars.find(v => v.id === 'q');
+    let configs = 0;
+    for (let tfc = 20; tfc <= 160; tfc += 20) for (let eff = -6; eff <= 6; eff += 3) {
+        const grid = [];
+        for (let q = qv.min; q <= qv.max + 1e-9; q += qv.step) grid.push(sim.graphLab.model({ q, tfc, eff }, {}));
+        const flagged = grid.filter(m => m.metrics.atMinAC);
+        const lowest = grid.reduce((a, b) => (b.metrics.ac < a.metrics.ac ? b : a));
+        configs++;
+        ok(flagged.length === 1, `Cost curves (TFC ${tfc}, eff ${eff}): exactly one reachable output is named AC's minimum (found ${flagged.length})`);
+        ok(flagged.length === 1 && flagged[0].metrics.q === lowest.metrics.q, `Cost curves (TFC ${tfc}, eff ${eff}): it is the reachable output where AC is lowest`);
+        ok(flagged.length === 1 && /minimum point/.test(flagged[0].verdict.title), `Cost curves (TFC ${tfc}, eff ${eff}): the verdict there says so`);
+    }
+    const sc = sim.graphLab.scenarios.find(s => /min AC/.test(s.label));
+    const base = {}; sim.graphLab.vars.forEach(v => { base[v.id] = v.value; });
+    ok(/minimum point/.test(sim.graphLab.model(Object.assign(base, sc.set), {}).verdict.title), 'Cost curves: the "Read cost at min AC" scenario really lands on the minimum-point verdict');
+    ok(configs > 20, 'Cost curves: minimum checked across many cost conditions');
+})();
+
+// ── Effect-line labels in Hindi (js/transition-layer.js + js/i18n_hi_metrics.js) ──
+// The "⚡ परिणामी प्रभाव" line — and Mima, who reads it aloud — used to show
+// every metric name in English in Hindi mode (89 of 89). Every numeric metric
+// a simulator sim can produce must now resolve to a Devanagari label, and the
+// Hindi map must not carry keys that match no real metric (a stale entry would
+// mean a renamed metric silently fell back to English).
+(function testEffectLabelsAreTranslated() {
+    const metricLabel = vm.runInContext('metricLabel', context);
+    const hasDeva = t => /[ऀ-ॿ]/.test(t);
+    vm.runInContext('mergeSimTranslations(); currentLang = "hi";', context);
+    let total = 0;
+    try {
+        SIMS.filter(sim => (sim.mode || 'simulator') === 'simulator').forEach(sim => {
+            const keys = new Set();
+            const base = collectDefaults(sim);
+            const states = [base];
+            (sim.controls || []).filter(c => c.type === 'select').forEach(c => c.options.forEach(o => states.push(Object.assign({}, base, { [c.id]: o.value }))));
+            states.forEach(st => {
+                let r;
+                try { r = typeof sim.compute === 'function' ? sim.compute(st) : sim.customRender(stubEl(), st); } catch (e) { return; }
+                Object.entries((r && r.metrics) || {}).forEach(([k, v]) => { if (typeof v === 'number') keys.add(k); });
+            });
+            keys.forEach(k => {
+                total++;
+                const label = metricLabel(sim, k);
+                ok(hasDeva(label), `${sim.id}: effect label for "${k}" is Hindi in Hindi mode (got "${label}")`);
+            });
+            const hiMap = (SIM_I18N_HI[sim.id] && SIM_I18N_HI[sim.id].metricLabels) || {};
+            Object.keys(hiMap).forEach(k => ok(keys.has(k), `${sim.id}: Hindi metricLabels.${k} matches a real numeric metric`));
+        });
+    } finally {
+        vm.runInContext('currentLang = "en";', context);
+    }
+    ok(total > 80, `Effect labels: checked ${total} metric labels across simulator sims`);
+    // A Hindi effect line must also reach Mima as Hindi, not English.
+    const gb = findSim('macro-govt-budget');
+    vm.runInContext('currentLang = "hi";', context);
+    const fx = diffMetrics(gb, gb.compute({ rr: 150, re: 180, interest: 30 }).metrics, gb.compute({ rr: 150, re: 220, interest: 30 }).metrics, 3, ['re']);
+    vm.runInContext('currentLang = "en";', context);
+    ok(fx.length > 0 && fx.every(e => hasDeva(e.label)), 'Effect labels: diffMetrics hands Hindi labels to the readings panel and Mima in Hindi mode');
+})();
+
+// ── Graph Lab verdicts in Hindi ─────────────────────────────────────
+// Every verdict a Graph Lab can show must carry a Hindi twin built in the
+// same branch from the same numbers. Sweeps every variable pair, every
+// scenario and every story step. "Same numbers" is the honesty check: a
+// Hindi banner that states a different figure (or drops one) than the
+// English would be a second, disagreeing claim about the same model.
+(function testGraphLabVerdictsAreTranslated() {
+    const hasDeva = t => /[ऀ-ॿ]/.test(t);
+    const plain = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ');
+    const nums = t => (plain(t).match(/\d+(?:\.\d+)?/g) || []).sort().join(',');
+    // Three or more English words in a row = an untranslated sentence.
+    // Symbols such as MR, MC, IC₂, Qd, Px/Py, OP, D₁D₁ stay as they are.
+    const englishRun = t => (plain(t).match(/\b[A-Za-z]{2,}\b(?:[\s,'’-]+\b[A-Za-z]{2,}\b){2,}/) || [null])[0];
+    let checked = 0;
+    SIMS.filter(s => s.mode === 'graphlab').forEach(sim => {
+        const cfg = sim.graphLab;
+        const def = {}; cfg.vars.forEach(v => { def[v.id] = v.value; });
+        const vals = v => { const o = [v.value]; for (let i = 0; i <= 10; i++) o.push(+(v.min + (v.max - v.min) * i / 10).toFixed(4)); return o; };
+        const states = [def];
+        cfg.vars.forEach(a => vals(a).forEach(x => {
+            states.push(Object.assign({}, def, { [a.id]: x }));
+            cfg.vars.forEach(b => { if (b !== a) vals(b).forEach(y => states.push(Object.assign({}, def, { [a.id]: x, [b.id]: y }))); });
+        }));
+        (cfg.scenarios || []).forEach(sc => states.push(Object.assign({}, def, sc.set)));
+        (cfg.stories || []).forEach(st => st.steps.forEach(step => states.push(Object.assign({}, def, step.set || {}))));
+        const seen = new Set();
+        let bad = 0;
+        states.forEach(st => {
+            const vd = cfg.model(st, {}).verdict;
+            if (!vd) return;
+            const key = plain(vd.title) + '|' + plain(vd.detail);
+            if (seen.has(key)) return;
+            seen.add(key);
+            checked++;
+            const hi = vd.hi;
+            const where = `${sim.id} "${plain(vd.title).trim().slice(0, 60)}"`;
+            if (!hi) { bad++; ok(false, `${where}: verdict has a Hindi twin`); return; }
+            const fails = [];
+            if (!hasDeva(hi.title)) fails.push('title not Hindi');
+            if (vd.detail && !hasDeva(hi.detail)) fails.push('detail not Hindi');
+            const run = englishRun(hi.title) || englishRun(hi.detail);
+            if (run) fails.push(`English left: "${run}"`);
+            if (nums(hi.title) + '|' + nums(hi.detail) !== nums(vd.title) + '|' + nums(vd.detail)) fails.push(`numbers differ: EN ${nums(vd.title)}|${nums(vd.detail)} vs HI ${nums(hi.title)}|${nums(hi.detail)}`);
+            if ((vd.chips || []).length !== ((hi.chips || vd.chips) || []).length) fails.push('chip count differs');
+            if (vd.chips && vd.chips.length && !(hi.chips || []).every(hasDeva)) fails.push('chips not Hindi');
+            if (fails.length) { bad++; ok(false, `${where}: ${fails.join('; ')}`); }
+        });
+        ok(bad === 0, `${sim.id}: all ${seen.size} distinct verdicts have an honest Hindi twin`);
+    });
+    ok(checked > 100, `Graph Lab verdicts: checked ${checked} distinct verdict states`);
+    // ...and the engine actually shows it: banner and Mima snapshot in Hindi mode.
+    const demand = findSim('gl-demand-movement-shift');
+    const m = demand.graphLab.model(Object.assign({}, ...demand.graphLab.vars.map(v => ({ [v.id]: v.value })), { price: demand.graphLab.vars.find(v => v.id === 'price') ? 40 : undefined }), {});
+    vm.runInContext('currentLang = "hi";', context);
+    let html, local;
+    try {
+        html = vm.runInContext('glVerdictHTML', context)(m.verdict);
+        local = vm.runInContext('glLocalVerdict', context)(m.verdict);
+    } finally { vm.runInContext('currentLang = "en";', context); }
+    ok(hasDeva(plain(html)) && !englishRun(html.replace(/class="[^"]*"|style="[^"]*"/g, '')), 'Graph Lab verdicts: glVerdictHTML renders the Hindi banner in Hindi mode');
+    ok(local.kind === m.verdict.kind && hasDeva(local.title), 'Graph Lab verdicts: glLocalVerdict keeps verdict.kind (Mima/PREDICT read it) and swaps the text');
+    ok(vm.runInContext('glLocalVerdict', context)(m.verdict).title === m.verdict.title, 'Graph Lab verdicts: English mode is untouched');
+    const strip = vm.runInContext('mimaStripTags', context);
+    ok(strip('MC &lt; AC → <b>AC अभी घट रहा है</b>') === 'MC < AC → AC अभी घट रहा है', 'Mima: verdict entities are decoded before display/speech (no "&lt;" read aloud)');
+})();
+
+// ── Graph Lab diagram text in Hindi ─────────────────────────────────
+// Axis titles, curve/point/arrow labels, ticks and handle hints are drawn
+// inside the SVG from the model's own text; js/i18n_hi_diagram.js translates
+// them. Sweeps every lab: after translation no English word may remain, the
+// numbers in every label must survive unchanged, every pair must match some
+// text the lab really draws (no dead entries), and English mode is untouched.
+(function testGraphLabDiagramIsTranslated() {
+    const tr = vm.runInContext('glDiagramText', context);
+    const DIAG = vm.runInContext('GL_DIAGRAM_HI', context);
+    const hasDeva = t => /[ऀ-ॿ]/.test(t);
+    // A word with two or more lowercase letters is English prose; symbols
+    // such as DD, D₁D₁, AC, MRT, IC₂, Px, Qd, Y_F, OP stay as they are.
+    const englishWord = t => (String(t).match(/\b[A-Za-z][a-z]{2,}\b/) || [null])[0];
+    const nums = t => (String(t).match(/\d+(?:\.\d+)?/g) || []).join(',');
+    SIMS.filter(s => s.mode === 'graphlab').forEach(sim => {
+        const cfg = sim.graphLab;
+        const texts = new Set([cfg.x && cfg.x.label, cfg.y && cfg.y.label]);
+        const def = {}; cfg.vars.forEach(v => { def[v.id] = v.value; });
+        const vals = v => { const o = [v.value]; for (let i = 0; i <= 10; i++) o.push(+(v.min + (v.max - v.min) * i / 10).toFixed(4)); return o; };
+        const states = [def];
+        cfg.vars.forEach(a => vals(a).forEach(x => {
+            states.push(Object.assign({}, def, { [a.id]: x }));
+            cfg.vars.forEach(b => { if (b !== a) vals(b).forEach(y => states.push(Object.assign({}, def, { [a.id]: x, [b.id]: y }))); });
+        }));
+        (cfg.scenarios || []).forEach(sc => states.push(Object.assign({}, def, sc.set)));
+        (cfg.stories || []).forEach(st => st.steps.forEach(step => states.push(Object.assign({}, def, step.set || {}))));
+        states.forEach(st => {
+            const m = cfg.model(st, {});
+            (m.curves || []).forEach(c => texts.add(c.label));
+            (m.points || []).forEach(p => { texts.add(p.label); texts.add(p.sub); if (typeof p.xTick === 'string') texts.add(p.xTick); if (typeof p.yTick === 'string') texts.add(p.yTick); });
+            (m.arrows || []).forEach(a => texts.add(a.label));
+            (m.handles || []).forEach(h => texts.add(h.hint));
+        });
+        texts.delete(undefined); texts.delete(null); texts.delete('');
+        const pairs = DIAG[sim.id] || [];
+        const used = new Set();
+        vm.runInContext('currentLang = "hi";', context);
+        const bad = [];
+        try {
+            texts.forEach(t => {
+                pairs.forEach(([en]) => { if (String(t).includes(en)) used.add(en); });
+                const hi = tr(t, sim);
+                const w = englishWord(hi);
+                if (w) bad.push(`"${t}" → "${hi}" (English "${w}" left)`);
+                else if (nums(hi) !== nums(t)) bad.push(`"${t}" → "${hi}" (numbers changed)`);
+            });
+        } finally { vm.runInContext('currentLang = "en";', context); }
+        ok(bad.length === 0, `${sim.id}: all ${texts.size} diagram texts are Hindi in Hindi mode${bad.length ? ' — ' + bad.slice(0, 3).join('; ') : ''}`);
+        const dead = pairs.filter(([en]) => !used.has(en)).map(([en]) => en);
+        ok(dead.length === 0, `${sim.id}: every GL_DIAGRAM_HI pair matches a real diagram text${dead.length ? ' — dead: ' + dead.join(' | ') : ''}`);
+        ok(pairs.every(([, hi]) => hasDeva(hi)), `${sim.id}: every GL_DIAGRAM_HI translation is Devanagari`);
+        texts.forEach(t => { if (tr(t, sim) !== t) ok(false, `${sim.id}: English mode leaves "${t}" untouched`); });
+        // Chip tooltips: every English hint has a Hindi one.
+        cfg.vars.filter(v => v.hint).forEach(v => {
+            const h = SIM_I18N_HI[sim.id] && SIM_I18N_HI[sim.id].graphLab && SIM_I18N_HI[sim.id].graphLab.vars && SIM_I18N_HI[sim.id].graphLab.vars[v.id];
+            ok(h && hasDeva(h.hint || ''), `${sim.id}: chip "${v.id}" tooltip has a Hindi hint`);
+        });
+    });
+})();
+
+// ── No English left in Hindi mode: chapter tags, charts, readings ───
+// The older READINGS check only proves each DECLARED pattern disappears; it
+// cannot see a sentence nobody declared. This sweep looks at the output
+// itself: every sim's chapter tag, and — across each control's sampled
+// values and every select option — every chart text (trace names, axis and
+// chart titles, annotations, category labels), readings line and formula,
+// after translation. Any English word left fails. Chart translations must
+// keep every number, and no CHART_I18N_HI / chapter entry may be dead.
+(function testHindiHasNoEnglishResidue() {
+    const tc = vm.runInContext('translateChartText', context);
+    const rowsHi = vm.runInContext('localDefaultRows', context);
+    const CH = vm.runInContext('CHART_I18N_HI', context);
+    const UNITS = vm.runInContext('UNIT_TITLES_HI', context), TOPICS = vm.runInContext('TOPIC_LABELS_HI', context), PARTS = vm.runInContext('PART_TITLES_HI', context);
+    const chapter = vm.runInContext('chapterTagText', context);
+    // Symbols that are notation, not English: Yfe (full-employment income), Exy (cross elasticity).
+    const SYMBOLS = /\b(Yfe|Exy)\b/g;
+    const plain = t => String(t == null ? '' : t).replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(SYMBOLS, ' ');
+    const englishRun = t => (plain(t).match(/\b[A-Za-z][a-z]{2,}(?:[\s,'’:/()-]+[A-Za-z][a-z]{1,})*\b/) || [null])[0];
+    const nums = t => (String(t).match(/\d+(?:\.\d+)?/g) || []).join(',');
+    const used = {};
+    vm.runInContext('mergeSimTranslations(); currentLang = "hi";', context);
+    try {
+        SIMS.forEach(sim => {
+            const tag = chapter(sim);
+            ok(!englishRun(tag), `${sim.id}: chapter tag is Hindi in Hindi mode (got "${tag}")`);
+            const mode = sim.mode || 'simulator';
+            const results = [];
+            if (mode === 'simulator' && typeof sim.compute === 'function') {
+                const base = collectDefaults(sim);
+                (sim.controls || []).forEach(c => sampleValues(c).forEach(v => { try { results.push(sim.compute(Object.assign({}, base, { [c.id]: v }))); } catch (e) { /* NaN sweep covers crashes */ } }));
+            } else if (mode === 'datalab' && sim.dataLab) {
+                results.push(sim.dataLab.calculate(dataLabValidate(sim, rowsHi(sim))));
+            } else if (typeof sim.customRender === 'function') {
+                // Hand-built SVG (the circular flow): every <text> it draws.
+                const textsOf = () => {
+                    const out = [];
+                    const base = collectDefaults(sim);
+                    const states = [base];
+                    (sim.controls || []).filter(c => c.type === 'select').forEach(c => c.options.forEach(o => states.push(Object.assign({}, base, { [c.id]: o.value }))));
+                    states.forEach(st => { const el = stubEl(); sim.customRender(el, st); (el.innerHTML.match(/<text[^>]*>([^<]*)<\/text>/g) || []).forEach(t => out.push(t.replace(/<[^>]+>/g, ''))); });
+                    return out;
+                };
+                const hiTexts = textsOf();
+                vm.runInContext('currentLang = "en";', context);
+                const enTexts = textsOf();
+                vm.runInContext('currentLang = "hi";', context);
+                const bad = hiTexts.filter(t => englishRun(t));
+                ok(bad.length === 0, `${sim.id}: every SVG label is Hindi in Hindi mode${bad.length ? ' — ' + [...new Set(bad)].slice(0, 4).join(' | ') : ''}`);
+                (CH[sim.id] || []).forEach(([en]) => { if (enTexts.some(t => t.includes(en))) used[en + '@' + sim.id] = true; });
+            }
+            if (!results.length) return;
+            const texts = new Set(), lines = new Set();
+            results.forEach(r => {
+                (r.traces || []).forEach(t => {
+                    texts.add(t.name);
+                    [t.text, t.labels, t.x, t.y].forEach(a => { if (Array.isArray(a)) a.forEach(v => { if (typeof v === 'string') texts.add(v); }); else if (typeof a === 'string') texts.add(a); });
+                });
+                const L = r.layout || {}, title = x => (x && (x.text || x));
+                texts.add(title(L.title)); ['xaxis', 'yaxis', 'xaxis2', 'yaxis2'].forEach(k => L[k] && texts.add(title(L[k].title)));
+                (L.annotations || []).forEach(a => texts.add(a.text));
+                if (r.readings) lines.add(r.readings);
+                if (r.interpretation) lines.add(r.interpretation);
+                (r.stats || []).forEach(st => { lines.add(String(st.label)); lines.add(String(st.value)); });
+                (r.formulas || []).forEach(f => lines.add(f));
+            });
+            const pairs = (CH[sim.id] || []).map(p => p[0]);
+            const bad = [];
+            // A shape/annotation placed BY CATEGORY NAME must still name a drawn
+            // category after translation, or it silently loses its position.
+            const lc = vm.runInContext('localizeChart', context);
+            results.forEach(r => {
+                const shown = lc(sim, r.traces || [], r.layout || {});
+                const cats = new Set();
+                shown.traces.forEach(t => [t.x, t.y].forEach(a => Array.isArray(a) && a.forEach(v => typeof v === 'string' && cats.add(v))));
+                [...(shown.layout.annotations || []), ...(shown.layout.shapes || [])].forEach(o => ['x', 'y', 'x0', 'x1', 'y0', 'y1'].forEach(k => {
+                    if (typeof o[k] === 'string' && !/^(paper|x|y)\d*$/.test(o[k]) && !cats.has(o[k])) bad.push(`anchor ${k}="${o[k]}" names no drawn category`);
+                }));
+            });
+            texts.forEach(t => {
+                if (typeof t !== 'string' || !t) return;
+                pairs.concat(CH._common.map(p => p[0])).forEach(en => { if (new RegExp(`(?<![A-Za-z])${en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z])`).test(t)) used[en + '@' + (pairs.includes(en) ? sim.id : '_common')] = true; });
+                const hi = tc(sim, t);
+                const w = englishRun(hi);
+                if (w) bad.push(`chart "${t}" → "${hi}" ("${w}")`);
+                else if (nums(hi) !== nums(t)) bad.push(`chart "${t}" → "${hi}" (numbers changed)`);
+            });
+            lines.forEach(l => { const w = englishRun(translateReadings(sim, l)); if (w) bad.push(`text "${w}" in "${plain(l).replace(/\s+/g, ' ').trim().slice(0, 80)}"`); });
+            ok(bad.length === 0, `${sim.id}: no English left in charts/readings/formulas in Hindi mode${bad.length ? ' — ' + bad.slice(0, 3).join('; ') : ''}`);
+        });
+    } finally { vm.runInContext('currentLang = "en";', context); }
+    Object.keys(CH).forEach(id => {
+        if (id !== '_common') ok(!!findSim(id), `CHART_I18N_HI: "${id}" is a real sim`);
+        const dead = CH[id].filter(([en]) => !used[en + '@' + id]).map(([en]) => en);
+        ok(dead.length === 0, `CHART_I18N_HI["${id}"]: every pair matches real chart text${dead.length ? ' — dead: ' + dead.join(' | ') : ''}`);
+    });
+    const unitsUsed = new Set(SIMS.map(s => s.unitTitle)), topicsUsed = new Set(SIMS.map(s => s.topicLabel)), partsUsed = new Set(Object.values(vm.runInContext('PART_TITLES', context)).flatMap(o => Object.values(o)));
+    ok(Object.keys(UNITS).every(k => unitsUsed.has(k)) && Object.keys(TOPICS).every(k => topicsUsed.has(k)) && Object.keys(PARTS).every(k => partsUsed.has(k)), 'Chapter tags: every Hindi part/unit/topic entry names a real one (no dead entries)');
+})();
+
+// ── Quiz text in Hindi, and quiz pointers to real rows ─────────────
+// In Hindi mode a quiz question may keep an English exam term only as a
+// bracketed gloss after the Hindi ("मूल्यह्रास (depreciation)"). And when a
+// computed question says 'read the "X" row', X must be a row the sim really
+// shows — two explanations here named rows that did not exist.
+(function testQuizHindiAndRowPointers() {
+    const QB = vm.runInContext('QUIZ_BANK', context);
+    const QH = vm.runInContext('quizHindiLabels', context);
+    const quizRandomState = vm.runInContext('quizRandomState', context);
+    const rowsHi = vm.runInContext('localDefaultRows', context);
+    const bare = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/\([^()]*\)/g, ' ').replace(/\b(Yfe|Exy|kcal)\b/g, ' ');
+    const englishRun = t => (bare(t).match(/\b[A-Za-z][a-z]{2,}(?:[\s,'’:/-]+[A-Za-z][a-z]{1,})*\b/) || [null])[0];
+    const run = (sim, lang) => {
+        vm.runInContext(`currentLang = "${lang}";`, context);
+        try {
+            const def = collectDefaults(sim);
+            if (sim.mode === 'graphlab') { const st = {}; sim.graphLab.vars.forEach(v => { st[v.id] = v.value; }); return { st, out: sim.graphLab.model(st, {}) }; }
+            if (sim.mode === 'datalab') { const st = lang === 'hi' ? rowsHi(sim) : sim.dataLab.defaultRows; return { st, out: sim.dataLab.calculate(dataLabValidate(sim, st)) }; }
+            if (typeof sim.compute === 'function') return { st: def, out: sim.compute(def) };
+            return null;
+        } finally { vm.runInContext('currentLang = "en";', context); }
+    };
+    const bad = [];
+    let pointers = 0;
+    Object.keys(QB).forEach(id => {
+        const sim = findSim(id); if (!sim) return;
+        const b = QB[id];
+        const items = [];
+        (b.static || []).forEach((q, i) => items.push([`q${i}`, q]));
+        const en = run(sim, 'en');
+        (b.applyTemplates || []).forEach((tpl, i) => {
+            if (!en) return;
+            let q = null;
+            vm.runInContext('currentLang = "hi";', context);
+            try { const hi = run(sim, 'hi'); vm.runInContext('currentLang = "hi";', context); q = tpl.build(hi.st, (hi.out && hi.out.metrics) || {}); if (q) q = QH(sim, q); } catch (e) { q = null; } finally { vm.runInContext('currentLang = "en";', context); }
+            if (q) items.push([`t${i}`, q]);
+            // ...and at random states, as the real quiz builds them: some
+            // branches (e.g. "depreciation" vs "appreciation") only fire
+            // away from the defaults.
+            if (sim.mode !== 'datalab') {
+                for (let k = 0; k < 12; k++) {
+                    vm.runInContext('currentLang = "hi";', context);
+                    try {
+                        const st = quizRandomState(sim);
+                        const out = sim.mode === 'graphlab' ? sim.graphLab.model(st, { prev: st, base: st }) : (typeof sim.compute === 'function' ? sim.compute(st) : null);
+                        if (!out) break;
+                        const qr = tpl.build(st, out.metrics || {});
+                        if (qr) items.push([`t${i}@rand`, QH(sim, qr)]);
+                    } catch (e) { /* a state the template skips */ } finally { vm.runInContext('currentLang = "en";', context); }
+                }
+            }
+            // Row pointers, checked in English against the sim's own output.
+            let qe = null; try { qe = tpl.build(en.st, (en.out && en.out.metrics) || {}); } catch (e) { qe = null; }
+            const ex = qe && qe.explain && qe.explain.en;
+            (String(ex || '').match(/"([^"]+)" row/g) || []).forEach(m => {
+                const label = m.slice(1, m.lastIndexOf('"'));
+                pointers++;
+                const o = en.out || {};
+                const shown = [String(o.readings || ''), ...((Array.isArray(o.readings) ? o.readings : []).map(r => r.label)), ...((o.stats || []).map(st => st.label))].join(' | ');
+                if (!shown.includes(label)) bad.push(`${id} t${i}: points to a "${label}" row the sim does not show`);
+            });
+        });
+        items.forEach(([where, q]) => {
+            const texts = [q.question, q.explain, ...(q.options || []), ...Object.values(q.misconceptions || {})];
+            // Plain-string options (computed numbers) are shown as-is in both
+            // languages, so a template's plain strings were built in Hindi mode.
+            texts.forEach(v => {
+                const hiText = v && typeof v.hi === 'string' ? v.hi : (where[0] === 't' && typeof v === 'string' ? v : null);
+                if (hiText === null) return;
+                const w = englishRun(hiText); if (w) bad.push(`${id} ${where}: Hindi has bare English "${w}" — "${hiText.slice(0, 70)}"`);
+            });
+        });
+    });
+    ok(bad.length === 0, `Quiz: Hindi text glosses English only in brackets, and every "… row" pointer names a real row (${pointers} pointers checked)${bad.length ? ' — ' + bad.slice(0, 4).join('; ') : ''}`);
+})();
+
+// ── Explicit state machines (js/state-machine.js) ───────────────────
+// The primitive itself, then a STRUCTURAL audit of every machine the app
+// registers (no transition to a missing state, no unreachable state, no dead
+// end a user could get stuck in), then the quiz flow that used to let a
+// language toggle score one question twice. Browser-level regressions for the
+// app/PREDICT/voice machines live in tools/smoke.js. Map of every machine,
+// explicit or still implicit: docs/architecture/state-machines.md.
+(function testStateMachines() {
+    const create = vm.runInContext('createMachine', context);
+    const MS = vm.runInContext('ECONSIM_MACHINES', context);
+    const log = [];
+    const m = create({
+        id: '__test', initial: 'a', context: { n: 0 },
+        states: {
+            a: { on: { GO: 'b', GUARDED: { target: 'b', guard: (c, p) => !!(p && p.ok) } }, exit: () => log.push('exit a') },
+            b: { on: { BACK: { target: 'a', action: c => { c.n++; log.push('action'); } }, STAY: 'b' }, enter: () => log.push('enter b'), exit: () => log.push('exit b') }
+        }
+    });
+    const seen = [];
+    m.subscribe((to, from, ev) => seen.push(`${from}>${to}:${ev}`));
+    ok(m.state === 'a' && !m.can('BACK') && m.can('GO'), 'FSM: starts in its initial state; can() reflects the table');
+    ok(m.send('BACK') === false && m.state === 'a' && m.snapshot().lastRejected.event === 'BACK', 'FSM: an event not allowed in this state is refused, changes nothing, and is recorded');
+    ok(m.send('GUARDED', { ok: false }) === false && m.state === 'a', 'FSM: a failing guard refuses the transition');
+    ok(m.send('GUARDED', { ok: true }) && m.state === 'b', 'FSM: a passing guard allows it');
+    m.send('STAY');
+    ok(log.join(',') === 'exit a,enter b', 'FSM: exit runs before enter; a self-transition runs neither');
+    m.send('BACK');
+    ok(log.slice(2).join(',') === 'exit b,action' && m.context.n === 1, 'FSM: on a transition the order is exit → action → enter');
+    ok(seen.join(' ') === 'a>b:GUARDED b>b:STAY b>a:BACK', 'FSM: subscribers hear every accepted transition, never a refused one');
+    let threw = false; try { create({ id: 'bad', initial: 'nope', states: { a: {} } }); } catch { threw = true; }
+    ok(threw, 'FSM: a machine whose initial state does not exist is rejected at definition time');
+    delete MS.__test; delete MS.bad;
+
+    // Structural audit of every real machine.
+    const ids = Object.keys(MS);
+    ok(['quiz', 'predictGate', 'voice'].every(id => ids.includes(id)), `FSM: quiz, predictGate and voice machines are registered (got ${ids.join(', ')})`);
+    ids.forEach(id => {
+        const d = MS[id].definition();
+        const names = Object.keys(d.states);
+        const targets = s0 => Object.values(d.states[s0]).map(t => (typeof t === 'string' ? t : (t.target || s0)));
+        const missing = names.flatMap(s0 => targets(s0).filter(t => !names.includes(t)).map(t => `${s0}→${t}`));
+        ok(missing.length === 0, `FSM ${id}: every transition targets a real state${missing.length ? ' — ' + missing.join(', ') : ''}`);
+        const reach = new Set([d.initial]); let grew = true;
+        while (grew) { grew = false; [...reach].forEach(s0 => targets(s0).forEach(t => { if (!reach.has(t)) { reach.add(t); grew = true; } })); }
+        const unreachable = names.filter(n => !reach.has(n));
+        ok(unreachable.length === 0, `FSM ${id}: every state is reachable from "${d.initial}"${unreachable.length ? ' — unreachable: ' + unreachable.join(', ') : ''}`);
+        const deadEnds = names.filter(n => !targets(n).some(t => t !== n));
+        ok(deadEnds.length === 0, `FSM ${id}: no state is a dead end (each can be left)${deadEnds.length ? ' — ' + deadEnds.join(', ') : ''}`);
+    });
+
+    // The quiz flow, through its real functions.
+    const qm = MS.quiz;
+    const run = code => vm.runInContext(code, context);
+    const sim = findSim('micro-elasticity');
+    run('closeQuiz()');
+    context.__qsim = sim;
+    run('openQuiz(__qsim)');
+    const st = () => run('({ s: quizMachine.state, score: quizState.score, index: quizState.index, n: quizState.items.length })');
+    ok(st().s === 'asking' && st().n >= 10, 'quiz FSM: opening a quiz starts asking question 1');
+    const ci = run('quizView(quizState.items[0]).correctIndex');
+    run(`selectQuizAnswer(${ci})`);
+    ok(st().s === 'answered' && st().score === 1, 'quiz FSM: a correct answer moves to answered and scores 1');
+    run('currentLang = "hi"; renderQuizQuestion();');
+    const hiQ = run('quizState.questions[0].question');
+    run(`selectQuizAnswer(${ci})`);
+    run('currentLang = "en";');
+    ok(st().s === 'answered' && st().score === 1, 'quiz FSM: a re-render (language toggle) keeps the question answered — answering again scores nothing');
+    ok(/[ऀ-ॿ]/.test(hiQ), 'quiz FSM: the same question re-localizes to Hindi mid-quiz');
+    const total = st().n;
+    for (let i = 1; i < total; i++) { run('advanceQuiz()'); run('selectQuizAnswer(0)'); }
+    ok(st().index === total - 1 && st().s === 'answered', 'quiz FSM: NEXT steps through every question');
+    ok(qm.can('NEXT') === false && qm.can('FINISH') === true, 'quiz FSM: on the last question only FINISH is possible');
+    run('advanceQuiz()');
+    ok(st().s === 'results', 'quiz FSM: finishing the last question shows results');
+    run('closeQuiz()');
+    ok(st().s === 'closed', 'quiz FSM: closing returns to closed');
+    delete context.__qsim;
+})();
+
+// ── Economic-correctness audit regressions ──────────────────────────
+// Each block states the economic RULE (not the current number) behind one
+// of the 14 audit findings, so the error cannot quietly come back. See
+// docs/economics/validation/audit-2026-11.md for the finding behind each.
+(function testAuditRegressions() {
+    const sweep = (c) => { const out = []; for (let x = c.min; x <= c.max + 1e-9; x += c.step) out.push(+x.toFixed(6)); return out; };
+    const ctl = (sim, id) => sim.controls.find(c => c.id === id);
+
+    // 1. Inflation/deflationary gap: measured VERTICALLY at Yfe; output never exceeds Yfe.
+    const gapSim = findSim('macro-inflation-gap');
+    const g0 = { dc: 0, di: 0, dg: 0, dnx: 0 };
+    const up = gapSim.compute(Object.assign({}, g0, { dc: 10 })).metrics;
+    ok(up.gapType === 'Inflationary Gap' && Math.abs(up.gapSize - 10) < 1e-9, 'Gap: +₹10 cr autonomous spending at full employment = an inflationary gap of exactly ₹10 cr, measured at Yfe');
+    ok(Math.abs(up.gapSize - (up.adAtYfe - up.Yfe)) < 1e-9, 'Gap: size = AD at Yfe − Yfe (vertical), not Y* − Yfe (horizontal)');
+    const down = gapSim.compute({ dc: -10, di: -10, dg: -10, dnx: -10 }).metrics;
+    ok(down.gapType === 'Deflationary Gap' && Math.abs((down.Yfe - down.Ystar) - down.gapSize * 2.5) < 1e-6, 'Gap: deflationary — income falls by gap × multiplier (k = 2.5)');
+    let outputOk = true;
+    [-10, -5, 0, 5, 10].forEach(a => [-10, 0, 10].forEach(b => { const m = gapSim.compute({ dc: a, di: b, dg: a, dnx: b }).metrics; if (m.output > m.Yfe + 1e-9) outputOk = false; }));
+    ok(outputOk, 'Gap: output never exceeds full-employment income');
+
+    // 2. Single-good consumer equilibrium: MUx = Px, so Q* = 20 − P, and price matters.
+    const ce = findSim('micro-consumer-equilibrium');
+    sweep(ctl(ce, 'price')).forEach(P => {
+        const m = ce.compute({ view: 'single', q: 5, price: P }).metrics;
+        ok(Math.abs(m.Qstar - (20 - P)) < 1e-9, `Consumer eq (single good) at P = ₹${P}: Q* = 20 − P`);
+        ok(Math.abs(ce.compute({ view: 'single', q: m.Qstar, price: P }).metrics.MU - P) < 1e-9, `Consumer eq at P = ₹${P}: at Q*, MU equals the price`);
+    });
+    ok(!/consumer stops at MU = 0/.test(ce.formulas.join(' ')), 'Consumer eq: no formula claims the consumer stops at MU = 0');
+
+    // 3. Elasticity of supply: market < short < long at every price; long run elastic, short run inelastic.
+    const es = findSim('micro-elasticity-supply');
+    sweep(ctl(es, 'price')).forEach(P => {
+        const [m, sh, lg] = ['market', 'short', 'long'].map(per => es.compute({ period: per, price: P }).metrics.Es);
+        ok(m < sh && sh < lg, `Es at ₹${P}: market (${m.toFixed(2)}) < short (${sh.toFixed(2)}) < long (${lg.toFixed(2)})`);
+        ok(lg > 1 && sh < 1, `Es at ₹${P}: long run elastic (>1), short run inelastic (<1)`);
+    });
+
+    // 4. Returns to a factor: Phase I exactly while MP is rising.
+    const pc = findSim('micro-producer-costs');
+    for (let L = 2; L <= 24; L++) {
+        const m = pc.compute({ view: 'product', labor: L }).metrics;
+        const prevMP = pc.compute({ view: 'product', labor: L - 1 }).metrics.MP;
+        const nextMP = pc.compute({ view: 'product', labor: Math.min(24, L + 1) }).metrics.MP;
+        const rising = nextMP > m.MP && m.MP > prevMP;
+        if (rising) ok(m.phase === 1, `LVP at L = ${L}: MP rising ⇒ Phase I`);
+        if (m.MP < prevMP && m.MP >= 0) ok(m.phase === 2, `LVP at L = ${L}: MP falling but positive ⇒ Phase II`);
+        if (m.MP < 0) ok(m.phase === 3, `LVP at L = ${L}: MP negative ⇒ Phase III`);
+    }
+
+    // 5. Market structures: a homogeneous-product model never claims monopolistic competition.
+    const ms = findSim('micro-market-structures');
+    let mono = false;
+    sweep(ctl(ms, 'n')).forEach(n => { if (/Monopolistic/.test(ms.compute({ mc: 20, n }).metrics.structure)) mono = true; });
+    ok(!mono, 'Market structures: no number of firms is labelled "monopolistic competition"');
+
+    // 6. Producer equilibrium (simulator): MR = MC exactly at Q*, wherever Q* is — no chart cap.
+    const rp = findSim('micro-revenue-producer-equilibrium');
+    let rpOk = true, rpCount = 0;
+    ['perfect', 'downward'].forEach(mt => sweep(ctl(rp, 'price')).forEach(price => [2, 10, 40].forEach(mcBase => [0.5, 2, 5].forEach(mcSlope => {
+        const m = rp.compute({ marketType: mt, price, mcBase, mcSlope, fc: 20 }).metrics;
+        if (m.Qstar > 0) { rpCount++; if (Math.abs(m.MRatQstar - m.MCatQstar) > 1e-6) rpOk = false; }
+        else if (m.shutdown !== true) rpOk = false;
+    }))));
+    ok(rpOk && rpCount > 50, `Producer eq (simulator): MR = MC at every positive Q* (${rpCount} cases), and Q* = 0 is flagged as no MR = MC point`);
+
+    // 7. Budget: interest ≤ revenue expenditure; no "deficit explained by interest" text when there is no deficit.
+    const gb = findSim('macro-govt-budget');
+    let gbOk = true;
+    [[300, 50, 80], [150, 180, 30], [150, 180, 80], [50, 300, 0]].forEach(([rr, re, interest]) => {
+        const r = gb.compute({ rr, re, interest });
+        const fd = (re + 90) - (rr + 60);
+        if (Math.abs(r.metrics.fiscalDeficit - fd) > 1e-9) gbOk = false;
+        if (fd <= 0 && /fiscal deficit is entirely/.test(r.readings)) gbOk = false;
+        if (Math.abs(r.metrics.primaryDeficit - (fd - Math.min(interest, re))) > 1e-9) gbOk = false;
+    });
+    ok(gbOk, 'Budget: FD = TE − (RR + non-debt CR); PD uses interest capped at revenue expenditure; surplus text is honest');
+
+    // 8. PPF: inside points strictly inside, outside points strictly outside — at EVERY X, including X = C.
+    const ppf = findSim('micro-ppf');
+    let ppfOk = true;
+    sweep(ctl(ppf, 'resources')).forEach(C => sweep(ctl(ppf, 'x')).forEach(x => {
+        const fr = X => (X > C ? -Infinity : C - (X * X) / C);
+        const inn = ppf.compute({ resources: C, x, pointType: 'inefficient' }).metrics;
+        const out = ppf.compute({ resources: C, x, pointType: 'unattainable' }).metrics;
+        if (!(inn.Y < fr(inn.X) - 1e-9 || (inn.X === 0 && inn.Y < C))) ppfOk = false;
+        if (!(out.X > C || out.Y > fr(out.X) + 1e-9)) ppfOk = false;
+        if (inn.oppCost !== 0) ppfOk = false;
+    }));
+    ok(ppfOk, 'PPF: "inside" is always strictly inside and "outside" strictly outside the frontier; opportunity cost at an inside point is 0');
+
+    // 9. Elasticity of demand: never a giant fake number above the choke price.
+    const el = findSim('micro-elasticity');
+    let elOk = true;
+    sweep(ctl(el, 'price')).forEach(price => sweep(ctl(el, 'substitutes')).forEach(substitutes => {
+        const m = el.compute({ type: 'price', price, substitutes, income: 40, pricey: 40 }).metrics;
+        if (m.Ed !== null && (Math.abs(m.Ed) > 1000 || !isFinite(m.Ed))) elOk = false;
+    }));
+    ok(elOk, 'Elasticity: Ed is a real value or honestly "not defined" (Q = 0) — never a clamped −7600');
+
+    // 10. Dispersion: quartiles by the CBSE (N+1)/4 method.
+    const dsp = findSim('stats-dispersion');
+    const sorted = [45, 52, 48, 60, 55, 50, 58].sort((a, b) => a - b);
+    approx(dsp.compute({ spread: 4 }).metrics.qd, (sorted[5] - sorted[1]) / 2, 1e-9, 'Dispersion: QD from the 2nd and 6th items of 7 (CBSE (N+1)/4 method)');
+
+    // 11–12. No supply dead zones: every step of a supply-raising control moves the price.
+    const sd = findSim('micro-supply-demand');
+    let sdOk = true, prevP = Infinity;
+    sweep(ctl(sd, 'tech')).forEach(tech => { const P = sd.compute({ income: 0, priceSub: 0, priceComp: 0, tastes: 0, inputCost: -10, tech, govt: -10 }).metrics.equilibriumPrice; if (!(P < prevP)) sdOk = false; prevP = P; });
+    ok(sdOk, 'Supply & demand: with cheap inputs and a subsidy, every technology step still lowers the price (no dead zone)');
+    const fx = findSim('macro-forex');
+    let fxOk = true, prevR = Infinity;
+    sweep(ctl(fx, 'exports')).forEach(exports => { const P = fx.compute({ imports: 0, exports, capOut: 0, capIn: 20 }).metrics.P; if (!(P < prevR)) fxOk = false; prevR = P; });
+    ok(fxOk, 'Forex: with strong capital inflow, every rise in exports still appreciates the rupee (no dead zone)');
+
+    // 13. Human capital: an illustrative projection must not wear real calendar years.
+    const hc = findSim('india-human-capital');
+    ok(!/20[0-2]\d/.test(JSON.stringify(hc.compute({ edu: 4, health: 2 }).traces.map(t => t.x))), 'Human capital: no calendar years on an illustrative projection');
+
+    // 14. Quiz templates never print false arithmetic for clamped/edge states.
+    const tpl = id => (QUIZ_BANK[id].applyTemplates || [])[0];
+    ok(tpl('macro-govt-budget').build({ rr: 300, re: 50, interest: 30 }, gb.compute({ rr: 300, re: 50, interest: 30 }).metrics) === null, 'Quiz (budget): no fiscal-deficit question when there is a surplus');
+    ok(tpl('micro-ppf').build({ resources: 20, x: 25, pointType: 'on' }, ppf.compute({ resources: 20, x: 25, pointType: 'on' }).metrics) === null, 'Quiz (PPF): no "2×x/C" question when x exceeds C');
+    const shut = { marketType: 'perfect', price: 10, mcBase: 20, mcSlope: 2, fc: 20 };
+    ok(tpl('micro-revenue-producer-equilibrium').build(shut, rp.compute(shut).metrics) === null, 'Quiz (producer): no "where MR = MC" question when Q* = 0');
+    const pq = { marketType: 'perfect', price: 50, mcBase: 10, mcSlope: 2, fc: 20 };
+    ok(/market price of ₹50/.test(tpl('micro-revenue-producer-equilibrium').build(pq, rp.compute(pq).metrics).question.en), 'Quiz (producer): the perfect-competition question states the market price it depends on');
+})();
+
+// ── Story Mode (js/story-mode.js) ──────────────────────────────────
+// The honesty contract: a story may only CLAIM what its lab's model()
+// actually produces. Each step restates its claim as check(); this runs
+// every one against the real model, plus the answer key and narration.
+(function testStoriesMatchTheirModels() {
+    const hasDeva = s => /[\u0900-\u097F]/.test(s);
+    let stories = 0;
+    SIMS.filter(sim => sim.graphLab && sim.graphLab.stories).forEach(sim => {
+        sim.graphLab.stories.forEach(story => {
+            stories++;
+            const tag = `${sim.id} story "${story.id}"`;
+            ok(story.title && story.title.en && hasDeva(story.title.hi || ''), `${tag}: bilingual title`);
+            ok(story.intro && hasDeva(story.intro.hi || '') && story.outro && hasDeva(story.outro.hi || ''), `${tag}: bilingual intro + outro`);
+            ok(Array.isArray(story.steps) && story.steps.length >= 2, `${tag}: has at least two steps`);
+            ok(!story.steps[0].ask, `${tag}: step 1 sets the scene before asking anything`);
+            story.steps.forEach(step => Object.keys(step.set || {}).forEach(k => {
+                const v = sim.graphLab.vars.find(x => x.id === k);
+                ok(!!v && step.set[k] >= v.min && step.set[k] <= v.max, `${tag}: set.${k} is a real var inside its range`);
+            }));
+            let ctxs;
+            try { ctxs = storyContexts(sim, story); } catch (e) { ok(false, `${tag}: storyContexts threw — ${e.message}`); return; }
+            ctxs.forEach((c, i) => {
+                const step = story.steps[i];
+                let claim = false;
+                try { claim = step.check(c); } catch (e) { ok(false, `${tag} step ${i + 1}: check() threw — ${e.message}`); }
+                ok(claim === true, `${tag} step ${i + 1}: its economic claim holds in the real model`);
+                ['en', 'hi'].forEach(lang => {
+                    const text = step.say(c, lang === 'hi');
+                    ok(typeof text === 'string' && text.length > 30 && !/NaN|undefined|Infinity|—\s*cr/.test(text), `${tag} step ${i + 1}: clean ${lang} narration`);
+                    if (lang === 'hi') ok(hasDeva(text), `${tag} step ${i + 1}: Hindi narration is actually Hindi`);
+                });
+                if (step.ask) {
+                    const opts = typeof step.ask.options === 'function' ? step.ask.options(c) : step.ask.options;
+                    ok(Array.isArray(opts) && opts.length >= 2, `${tag} step ${i + 1}: offers at least two choices`);
+                    ok(opts.every(o => o.en && hasDeva(o.hi || '') && !/NaN|undefined/.test(o.en)), `${tag} step ${i + 1}: every choice is bilingual and clean`);
+                    ok(new Set(opts.map(o => o.en)).size === opts.length, `${tag} step ${i + 1}: no two choices read the same`);
+                    const right = step.ask.correct(c);
+                    ok(Number.isInteger(right) && right >= 0 && right < opts.length, `${tag} step ${i + 1}: answer key points at a real choice`);
+                    ok(step.ask.q && step.ask.q.en && hasDeva(step.ask.q.hi || ''), `${tag} step ${i + 1}: bilingual question`);
+                }
+            });
+        });
+    });
+    ok(stories >= 3, `Story Mode: at least three stories exist (found ${stories})`);
 })();
 
 // ── AI Tutor (js/ai-tutor.js) config on macro-multiplier ──────────

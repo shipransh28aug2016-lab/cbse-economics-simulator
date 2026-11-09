@@ -41,7 +41,7 @@ const CURRICULUM_NODES = [
     { id: 'XI-B-U4-BRANCHES', class: 'XI', part: 'B', unit: 4, unitTitle: 'Introduction', topic: 'Micro vs Macro; Positive vs Normative Economics', microContent: ['Microeconomics', 'Macroeconomics', 'Positive economics', 'Normative economics'], learningObjective: 'Classify an economic statement as positive or normative, and a question as micro or macro.', suggestedMode: 'explorer' },
     { id: 'XI-B-U4-CENTRAL-PROBLEMS', class: 'XI', part: 'B', unit: 4, unitTitle: 'Introduction', topic: 'Central Problems of an Economy: What, How, For Whom to Produce', microContent: ['Scarcity', 'Choice', 'Resource allocation'], learningObjective: 'Explain why every economy must answer what/how/for whom to produce.', suggestedMode: 'simulator' },
     { id: 'XI-B-U4-PPF-OC', class: 'XI', part: 'B', unit: 4, unitTitle: 'Introduction', topic: 'Production Possibility Frontier (PPF) & Opportunity Cost', microContent: ['PPF', 'Opportunity cost', 'Trade-offs', 'Alternative production possibilities'], learningObjective: 'Read a PPF, identify efficient/inefficient/unattainable points, and compute opportunity cost along it.', suggestedMode: 'simulator' },
-    { id: 'XI-B-U5-UTILITY', class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topic: 'Utility, Marginal Utility, Law of Diminishing MU, Consumer Equilibrium (MU Analysis)', microContent: ['Utility', 'Marginal utility', 'Law of diminishing marginal utility', 'Consumer equilibrium (MU=0 / MUx/Px=MUy/Py)'], learningObjective: "Derive a consumer's equilibrium condition using marginal-utility analysis.", suggestedMode: 'simulator' },
+    { id: 'XI-B-U5-UTILITY', class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topic: 'Utility, Marginal Utility, Law of Diminishing MU, Consumer Equilibrium (MU Analysis)', microContent: ['Utility', 'Marginal utility', 'Law of diminishing marginal utility', 'Consumer equilibrium (single good: MUx = Px; two goods: MUx/Px = MUy/Py)'], learningObjective: "Derive a consumer's equilibrium condition using marginal-utility analysis.", suggestedMode: 'simulator' },
     { id: 'XI-B-U5-IC', class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topic: "Indifference Curve Analysis: Budget Line, Indifference Curve/Map, Consumer Equilibrium (MRS)", microContent: ['Budget set', 'Budget line', 'Indifference curve', 'Indifference map', 'Consumer equilibrium (MRS = price ratio)'], learningObjective: 'Locate consumer equilibrium as the tangency of the budget line and the highest attainable indifference curve.', suggestedMode: 'simulator' },
     { id: 'XI-B-U5-DEMAND', class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topic: 'Demand: Determinants, Schedule, Curve, Movements & Shifts', microContent: ['Demand', 'Market demand', 'Determinants of demand', 'Demand schedule', 'Demand curve', 'Movement vs shift'], learningObjective: 'Distinguish a movement along the demand curve from a shift in it, and name the determinant behind each shift.', suggestedMode: 'simulator' },
     { id: 'XI-B-U5-ELASTICITY', class: 'XI', part: 'B', unit: 5, unitTitle: "Consumer's Equilibrium and Demand", topic: 'Price Elasticity of Demand: Meaning, Determinants, Measurement', microContent: ['Price elasticity of demand', 'Percentage-change method', 'Total expenditure method'], learningObjective: 'Measure price elasticity of demand and classify it as elastic/inelastic/unit elastic.', suggestedMode: 'simulator' },
@@ -106,6 +106,14 @@ function partTitle(cls, part) {
 function chapterTagText(sim) {
     if (!sim || !sim.class || !sim.part || !sim.unit) return sim && sim.chapter || '';
     const pt = partTitle(sim.class, sim.part);
+    // Hindi mode: names from js/i18n_hi_chapters.js, keyed by the English
+    // text (which stays the source of truth for where the sim sits).
+    if (typeof currentLang !== 'undefined' && currentLang === 'hi' && typeof UNIT_TITLES_HI !== 'undefined') {
+        const unitHi = UNIT_TITLES_HI[sim.unitTitle] || sim.unitTitle || '';
+        let hi = `कक्षा ${sim.class} · भाग ${sim.part}: ${PART_TITLES_HI[pt] || pt} · इकाई ${sim.unit}: ${unitHi}`;
+        if (sim.topicLabel) hi += ` — ${TOPIC_LABELS_HI[sim.topicLabel] || sim.topicLabel}`;
+        return hi;
+    }
     let text = `Class ${sim.class} · Part ${sim.part}: ${pt} · Unit ${sim.unit}: ${sim.unitTitle || ''}`;
     if (sim.topicLabel) text += ` — ${sim.topicLabel}`;
     return text;

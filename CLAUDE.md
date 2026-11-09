@@ -35,6 +35,14 @@ client-side from `file://` or any static file server.
    - A sim is not done when `npm run verify` is green. It is done when it is ALSO
      economically correct and pedagogically honest about what it teaches (see
      `docs/economics/validation/README.md`).
+   - The worked example of doing this properly is the November 2026 audit
+     (`docs/economics/validation/audit-2026-11.md`). It stated each model's rule in one
+     sentence, tested it numerically, and ran a dead-zone scan for controls that move while
+     outputs stay frozen. It found 14 errors that a green `verify` had hidden: gaps measured
+     horizontally, single-good equilibrium taught as MU = 0, long-run supply always shown
+     inelastic, and others. Each has a test (`testAuditRegressions`) that states the rule,
+     not the current number. A clamp added "to keep a curve on the chart" is the most common
+     source of silent errors here, so remove clamps or say what they do.
 3. **Definition of done** for any sim change: economic correctness + syllabus fidelity
    (`enrichment`/`enrichmentNote` used honestly, see Working Convention 3) + the model
    actually drives the visual (never a `customRender`/`graphLab` picture that implies a
@@ -163,6 +171,92 @@ Three points that are load-bearing rather than stylistic:
    mean — every other lab must say what *its* two groups of variables really are, or the
    headings become confidently wrong.
 
+4. **Discrete jumps glide; continuous input never does.** A scenario preset or Reset
+   calls `glRender(sim, true, { glideFrom })`, and `glGlideSvg()` animates the diagram
+   over ~560 ms (ease-out) — but every frame is **`cfg.model()` itself, run at variable
+   values part-way between the old and new state**, never a geometric morph of two
+   pictures, so each in-between curve is a position the model could genuinely draw.
+   Handle drags and chip scrubs stay instant (the curve must stay under the finger);
+   readings, verdict and Mima update immediately and only the diagram travels. A new
+   jump mid-glide starts from the **displayed** state (`glDisplayedState()`), any other
+   render cancels a glide in flight, a press on the diagram lands it at once, and
+   `prefers-reduced-motion` skips it entirely. Because glide frames hit off-step values
+   with several variables moving at once, `testGraphLabGlidePathsStayFinite` walks the
+   exact glide path of every scenario of every Graph Lab.
+
+### Story Mode (`js/story-mode.js`) — live through a classic exam situation
+
+`graphLab.stories` turns a lab into a guided, predict-first walkthrough: a real situation
+(Ramu's tea stall, a bad monsoon hitting onion prices, a recession and its fiscal fix)
+unfolds step by step; the student predicts each step **before** it applies, the diagram
+glides to the new state (rule 4 above), and the narration explains it. Launched from the
+controls panel and from a `🎬 Story` button on the diagram's own toolbar. **Every one of the
+10 Graph Labs has one**, each built around that chapter's specific exam trap (e.g. "MC rising
+≠ AC rising", "a price change swivels the budget line, an income change shifts it", "a
+bigger ₹/$ number means a weaker rupee", "APC falls while MPC stays constant").
+
+**The honesty contract (enforced by `testStoriesMatchTheirModels`, not by convention):**
+every number in a narration is read from the model's output at that step (`ctx.m`), the
+graded answer is computed from `ctx.m`, and every claim the narration makes is restated as
+the step's `check(ctx)` — which the test suite runs against the real model. A story whose
+words drift from its model fails the build (verified by planting a false claim). Step
+states are absolute (`set` on top of the lab's defaults), so Back/Next always land on the
+same state. Options are shown in a shuffled order per run and graded by original index, so
+"always click the first one" scores at chance. A language toggle re-opens the sim, so the
+story's position, answers and option order are stashed on the toggle click and resumed in
+the new language (a 3-second window, so a later toggle never resurrects a closed story).
+
+Writing these stories surfaced two real model bugs, both now fixed and tested:
+`gl-revenue-producer-eq` used "MC rising" as the second-order condition, which is only
+equivalent to "MC cuts MR from below" under perfect competition — under monopoly it
+misplaced equilibrium (see `docs/economics/models/producer-equilibrium.md`,
+`testProducerEquilibriumIsProfitMax`); and `gl-cost-curves` could almost never show its
+"minimum point of AC" verdict on the 0.5-step output slider (`testCostMinimumIsReachable`).
+Lesson worth keeping: authoring a story forces a precise claim about the model, and a
+precise claim is what exposes a model that is only approximately right.
+
+### Holo Mode (`js/holo-mode.js`) — the immersive skin over every Graph Lab
+
+A presentation-only layer, ON by default, toggled per viewer (`🛸 Holo`, persisted in
+`localStorage` as `econsim-holo`): dark holographic theme, touch ripples, a pointer-following
+3D parallax tilt, a live HUD strip above the diagram, and a fullscreen stage. Hooked in by two
+calls in `glRender()` (`holoAttach` once per shell, `holoUpdate` per render); all CSS is scoped
+under `.gl-holo`. It contains **no economics**: the HUD shows the model's own `verdict` and
+`readings`. One rule is load-bearing: the tilt is **flattened in a capture-phase `pointerdown`
+before any handle's drag begins**, because `glPointerToData()` maps pointer → data through
+`svg.getScreenCTM()`, a 2D matrix that would mis-map a drag on a 3D-tilted surface. Any change
+to the tilt must keep that ordering.
+
+The app is also an installable PWA: `manifest.webmanifest` + `sw.js`, registered only over
+http(s). The service worker is deliberately **network-first** (cache is only an offline
+fallback) so the `?v=N` cache-busting in `index.html` keeps working — bump `?v=` on any
+changed CSS/JS as before.
+
+## State machines (`js/state-machine.js`) — one owner per piece of state
+
+Every interactive part of the app is a state machine. Four of them are **explicit**
+(`createMachine`), because their implicit versions had bugs where copies of one state
+drifted apart. Those were: a language toggle on Home re-opening the last sim, a quiz
+question scored twice across a toggle, a PREDICT answer left on screen after Reset, and a
+story or voice outliving its sim.
+
+- `app` (`home`·`sim`·`profile`, js/app.js) is the only thing that sets or clears
+  `currentSim`. Use `showScreen()`/`openSim()`, and never paint screens yourself. Leaving a
+  sim runs every engine's `onSimLeave(fn)` teardown, and **a new engine that starts
+  something (timer, voice, animation) must register one**.
+- `quiz` (`closed`·`asking`·`answered`·`results`), `predictGate`
+  (`hidden`·`asking`·`revealed`, with a `STALE` check in `glRender()`) and `voice`
+  (`idle`·`speaking`+owner).
+- The other machines (Graph Lab drag/glide, Story, simulator PREDICT card, Data Lab,
+  Explorer, Holo, Mima panel, AI tutor) still work implicitly, and are exposed read-only
+  through `registerStateObserver`.
+- **Agents and tests: read `econsim.state()`** (one JSON snapshot) and
+  `<body data-screen|quiz|predict-gate|voice>`, instead of reverse-engineering globals.
+- `testStateMachines` audits every registered machine (no missing target, no unreachable
+  state, no dead end). `tools/smoke.js` holds a browser regression for each fixed bug.
+- The full map of all 14 machines, and the rule for when to convert one, is in
+  `docs/architecture/state-machines.md`.
+
 ## The transition layer (`js/transition-layer.js`) — cause → effect
 
 `renderSimChart()` used to retain only the previous **control** state and discard the
@@ -183,7 +277,39 @@ per-sim code**:
   even if some other control shares its name, because a model forcing wages to follow
   consumption (the `Y = C` identity) is a real effect and one of the more interesting
   ones. Labels come from `sim.metricLabels`, then a shared glossary of standard
-  economics abbreviations, then camelCase humanisation.
+  economics abbreviations, then camelCase humanisation. In Hindi mode they come from the
+  sim's `SIM_I18N_HI[id].metricLabels` (all sim-specific ones live in
+  `js/i18n_hi_metrics.js`), then the Hindi glossary `ECON_METRIC_LABELS_HI`.
+  `testEffectLabelsAreTranslated` fails the build if any numeric metric of a simulator sim
+  lacks a Hindi label, or if a Hindi key matches no real metric. So **a new metric needs a
+  Hindi label in the same change**; Mima reads these labels aloud.
+- **Graph Lab verdicts in Hindi** — every `graphLab.model()` verdict carries a `hi: {title,
+  detail, chips}` twin built in the same branch from the same numbers; `glLocalVerdict()`
+  (graph-lab-engine.js) is the one switch the banner, PREDICT reveal, Holo HUD and Mima all
+  read. `testGraphLabVerdictsAreTranslated` sweeps every lab and fails on a missing twin,
+  leftover English, or **a Hindi verdict whose numbers differ from the English** — so a new
+  verdict branch needs its Hindi in the same change.
+- **Graph Lab diagram text in Hindi** — axis titles, curve/point/arrow labels, ticks and
+  handle hints are translated by `glDiagramText()` from `GL_DIAGRAM_HI[simId]`
+  (`js/i18n_hi_diagram.js`): `[en, hi]` substring pairs applied longest-first to the
+  model's own text, so numbers inside labels pass through. Chip tooltips/units go through
+  `hiPath()` like chip labels. `testGraphLabDiagramIsTranslated` fails on any English word
+  left in the drawn text, a label whose numbers change, or a dead pair — so a new label in a
+  `model()` needs its pair in the same change.
+- **Everything else in Hindi** — chart text (`CHART_I18N_HI` in `js/i18n_hi_charts.js`, via
+  `translateChartText`/`localizeChart` in sim-engine.js, used by both chart engines and the
+  circular-flow SVG; whole-word matching; annotations/shapes anchored to a category are
+  translated with it so they keep their position), Data Lab default rows
+  (`DATALAB_ROWS_HI` → `localDefaultRows`, shared with the quiz), chapter tags
+  (`js/i18n_hi_chapters.js`), PREDICT cards, units (`localUnit`) and quiz numeric suffixes.
+  `testHindiHasNoEnglishResidue` reads the OUTPUT in Hindi mode — chapter tags, every chart
+  text, readings line, formula and SVG label across the control sweep — and fails on any
+  English word (a bracketed gloss after the Hindi, "मूल्यह्रास (depreciation)", is allowed
+  in authored text), a number changed by translation, a dead pair, or a category anchor that
+  no longer names a drawn bar. `testQuizHindiAndRowPointers` does the same for quiz text and
+  fails if an explanation points to a `"…" row` the sim does not show. Terminology:
+  मूल्यह्रास = depreciation (market), अवमूल्यन = devaluation (government), मूल्यवृद्धि =
+  appreciation, पुनर्मूल्यन = revaluation — the old Hindi text had these swapped.
 - **Auto-ghosting** (`buildGhostTraces`) — the previous positions of **only the curves
   that actually moved**, drawn dimmed beneath the live ones. This is the
   movement-vs-shift distinction generalised to every simulator-mode sim, derived from

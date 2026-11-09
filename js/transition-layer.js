@@ -73,6 +73,38 @@ const ECON_METRIC_LABELS = {
     spearmanR: "Spearman's Rank r"
 };
 
+// Hindi for the same shared glossary — the effect line (and Mima, who reads
+// it aloud) used to stay in English in Hindi mode. Sim-specific Hindi labels
+// live in js/i18n_hi_metrics.js, read through hiPath().
+const ECON_METRIC_LABELS_HI = {
+    Ed: 'माँग की कीमत लोच (Ed)',
+    Ey: 'आय लोच (Ey)',
+    Exy: 'क्रॉस लोच (Exy)',
+    Es: 'आपूर्ति की कीमत लोच (Es)',
+    mrt: 'अवसर लागत (MRT)',
+    mrs: 'सीमांत प्रतिस्थापन दर (MRS)',
+    MU: 'सीमांत उपयोगिता (MU)',
+    TU: 'कुल उपयोगिता (TU)',
+    AC: 'औसत लागत (AC)',
+    MC: 'सीमांत लागत (MC)',
+    TP: 'कुल उत्पाद (TP)',
+    AP: 'औसत उत्पाद (AP)',
+    MP: 'सीमांत उत्पाद (MP)',
+    TR: 'कुल आगम (TR)',
+    TC: 'कुल लागत (TC)',
+    sd: 'मानक विचलन',
+    cv: 'विचरण गुणांक',
+    qd: 'चतुर्थक विचलन',
+    gini: 'गिनी गुणांक',
+    headcount: 'हेडकाउंट अनुपात',
+    Ystar: 'संतुलन आय (Y*)',
+    Yfe: 'पूर्ण रोज़गार आय (Yfe)',
+    gapSize: 'अंतराल का आकार',
+    multiplier: 'मुद्रा गुणक',
+    pearsonR: 'कार्ल पियर्सन का r',
+    spearmanR: 'स्पीयरमैन का कोटि r'
+};
+
 // `equilibriumPrice` → `Equilibrium Price`. Deliberately the last resort,
 // after a sim's own `metricLabels` and the shared glossary above, so the
 // layer still works on every simulator-mode sim with zero per-sim
@@ -86,9 +118,12 @@ function humaniseMetricKey(key) {
 }
 
 function metricLabel(sim, key) {
+    if (typeof currentLang !== 'undefined' && currentLang === 'hi') {
+        const hi = (typeof hiPath === 'function' && hiPath(sim, `metricLabels.${key}`)) || ECON_METRIC_LABELS_HI[key];
+        if (hi) return hi;
+    }
     const declared = sim && sim.metricLabels && sim.metricLabels[key];
-    if (declared) return hiPath(sim, `metricLabels.${key}`) || declared;
-    return ECON_METRIC_LABELS[key] || humaniseMetricKey(key);
+    return declared || ECON_METRIC_LABELS[key] || humaniseMetricKey(key);
 }
 
 // Relative move, used only to rank which effects are worth showing when a

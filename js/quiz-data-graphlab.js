@@ -592,13 +592,13 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 level: 'analyse',
                 question: { en: 'The two conditions for producer\'s equilibrium are…', hi: 'उत्पादक संतुलन की दो शर्तें हैं…' },
                 options: [
-                    { en: 'MR = MC, and MC must be rising (cutting MR from below)', hi: 'MR = MC, और MC बढ़ता हुआ हो (MR को नीचे से काटता)' },
+                    { en: 'MR = MC, and MC cuts MR from below (MC > MR beyond that output)', hi: 'MR = MC, और MC, MR को नीचे से काटे (उसके बाद MC > MR)' },
                     { en: 'MR = MC alone is sufficient', hi: 'केवल MR = MC पर्याप्त है' },
                     { en: 'AR = AC, and AC must be falling', hi: 'AR = AC, और AC घटती हुई हो' },
                     { en: 'TR must be at its maximum', hi: 'TR अधिकतम पर हो' }
                 ],
                 correctIndex: 0,
-                explain: { en: 'MR = MC can also occur on the FALLING branch of MC, where producing more still adds to profit. Only where MC is rising is profit actually maximised.', hi: 'MR = MC, MC की गिरती शाखा पर भी हो सकता है, जहाँ और उत्पादन अब भी लाभ बढ़ाता है। लाभ वास्तव में तभी अधिकतम है जब MC बढ़ता हो।' },
+                explain: { en: 'MR = MC can also occur where MC cuts MR from ABOVE, where producing more still adds to profit. Profit is maximised only where MC cuts MR from below (MC > MR beyond that output) — under perfect competition, that means where MC is rising.', hi: 'MR = MC वहाँ भी हो सकता है जहाँ MC, MR को ऊपर से काटता है, जहाँ और उत्पादन अब भी लाभ बढ़ाता है। लाभ तभी अधिकतम है जब MC, MR को नीचे से काटे (उसके बाद MC > MR) — पूर्ण प्रतियोगिता में इसका अर्थ है जहाँ MC बढ़ता हो।' },
                 syllabusId: 'XI-B-U6-PRODUCER-EQ'
             },
             {
@@ -997,13 +997,13 @@ if (typeof QUIZ_BANK !== 'undefined') {
                 level: 'understand',
                 question: { en: 'The rupee moves from ₹75/$ to ₹82/$. This is…', hi: 'रुपया ₹75/$ से ₹82/$ पर जाता है। यह है…' },
                 options: [
-                    { en: 'Depreciation of the rupee — each dollar now costs more rupees', hi: 'रुपये का अवमूल्यन (depreciation) — अब हर डॉलर अधिक रुपये माँगता है' },
-                    { en: 'Appreciation of the rupee', hi: 'रुपये का मूल्यवर्धन' },
-                    { en: 'Revaluation of the rupee', hi: 'रुपये का पुनर्मूल्यांकन' },
+                    { en: 'Depreciation of the rupee — each dollar now costs more rupees', hi: 'रुपये का मूल्यह्रास (depreciation) — अब हर डॉलर अधिक रुपये माँगता है' },
+                    { en: 'Appreciation of the rupee', hi: 'रुपये की मूल्यवृद्धि (appreciation)' },
+                    { en: 'Revaluation of the rupee', hi: 'रुपये का पुनर्मूल्यन (revaluation)' },
                     { en: 'No change in value', hi: 'मूल्य में कोई परिवर्तन नहीं' }
                 ],
                 correctIndex: 0,
-                explain: { en: 'A higher ₹/$ figure means the rupee buys fewer dollars — it has lost value. Under a flexible system that is depreciation, not devaluation.', hi: 'अधिक ₹/$ का अर्थ है रुपया कम डॉलर ख़रीदता है — इसका मूल्य घटा। लचीली प्रणाली में यह depreciation है, devaluation नहीं।' },
+                explain: { en: 'A higher ₹/$ figure means the rupee buys fewer dollars — it has lost value. Under a flexible system that is depreciation, not devaluation.', hi: 'अधिक ₹/$ का अर्थ है रुपया कम डॉलर ख़रीदता है — इसका मूल्य घटा। लचीली प्रणाली में यह मूल्यह्रास (depreciation) है, अवमूल्यन (devaluation) नहीं।' },
                 syllabusId: 'XII-A-U5-EXRATE'
             },
             {
@@ -1021,12 +1021,12 @@ if (typeof QUIZ_BANK !== 'undefined') {
             },
             {
                 level: 'evaluate',
-                question: { en: 'What is the difference between depreciation and devaluation?', hi: 'Depreciation और devaluation में क्या अंतर है?' },
+                question: { en: 'What is the difference between depreciation and devaluation?', hi: 'मूल्यह्रास (depreciation) और अवमूल्यन (devaluation) में क्या अंतर है?' },
                 options: [
-                    { en: 'Depreciation is market-driven under a flexible system; devaluation is a deliberate government decision under a fixed system', hi: 'Depreciation लचीली प्रणाली में बाज़ार-चालित है; devaluation स्थिर प्रणाली में सरकार का जानबूझकर लिया निर्णय है' },
+                    { en: 'Depreciation is market-driven under a flexible system; devaluation is a deliberate government decision under a fixed system', hi: 'मूल्यह्रास लचीली प्रणाली में बाज़ार-चालित है; अवमूल्यन स्थिर प्रणाली में सरकार का जानबूझकर लिया निर्णय है' },
                     { en: 'They are the same thing', hi: 'दोनों एक ही हैं' },
-                    { en: 'Depreciation raises the currency\'s value', hi: 'Depreciation मुद्रा का मूल्य बढ़ाता है' },
-                    { en: 'Devaluation only happens to the dollar', hi: 'Devaluation केवल डॉलर के साथ होता है' }
+                    { en: 'Depreciation raises the currency\'s value', hi: 'मूल्यह्रास मुद्रा का मूल्य बढ़ाता है' },
+                    { en: 'Devaluation only happens to the dollar', hi: 'अवमूल्यन केवल डॉलर के साथ होता है' }
                 ],
                 correctIndex: 0,
                 explain: { en: 'Both mean the domestic currency loses value against a foreign one; only the MECHANISM differs — market forces versus an official announcement.', hi: 'दोनों का अर्थ है घरेलू मुद्रा का विदेशी मुद्रा के मुक़ाबले मूल्य घटना; केवल तंत्र अलग है — बाज़ार शक्तियाँ बनाम आधिकारिक घोषणा।' },
@@ -1068,7 +1068,7 @@ if (typeof QUIZ_BANK !== 'undefined') {
                         question: { en: `With a forex demand shift of ${state.demandShift >= 0 ? '+' : ''}${Math.round(state.demandShift)} and a supply shift of ${state.supplyShift >= 0 ? '+' : ''}${Math.round(state.supplyShift)}, what is the equilibrium exchange rate?`, hi: `${state.demandShift >= 0 ? '+' : ''}${Math.round(state.demandShift)} माँग खिसकाव और ${state.supplyShift >= 0 ? '+' : ''}${Math.round(state.supplyShift)} पूर्ति खिसकाव पर संतुलन विनिमय दर क्या है?` },
                         options: quizNumericOptions(m.rate, [6, -5, 11], { round: 1, prefix: '₹', suffix: '/$' }),
                         correctIndex: 0,
-                        explain: { en: `Equilibrium is where forex demand cuts forex supply: ₹${m.rate.toFixed(1)} per $. That is ${m.dRate > 0 ? 'a depreciation' : m.dRate < 0 ? 'an appreciation' : 'unchanged'} against the original ₹50/$ baseline.`, hi: `संतुलन वहाँ है जहाँ विदेशी मुद्रा की माँग पूर्ति को काटती है: ₹${m.rate.toFixed(1)} प्रति $। यह मूल स्तर के मुक़ाबले ${m.dRate > 0 ? 'depreciation' : m.dRate < 0 ? 'appreciation' : 'अपरिवर्तित'} है।` },
+                        explain: { en: `Equilibrium is where forex demand cuts forex supply: ₹${m.rate.toFixed(1)} per $. That is ${m.dRate > 0 ? 'a depreciation' : m.dRate < 0 ? 'an appreciation' : 'unchanged'} against the original ₹50/$ baseline.`, hi: `संतुलन वहाँ है जहाँ विदेशी मुद्रा की माँग पूर्ति को काटती है: ₹${m.rate.toFixed(1)} प्रति $। मूल स्तर के मुक़ाबले ${m.dRate > 0 ? 'यह रुपये का मूल्यह्रास (depreciation) है' : m.dRate < 0 ? 'यह रुपये की मूल्यवृद्धि (appreciation) है' : 'दर अपरिवर्तित है'}।` },
                         syllabusId: 'XII-A-U5-DETERMINATION'
                     };
                 }

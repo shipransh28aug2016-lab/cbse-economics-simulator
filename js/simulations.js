@@ -25,6 +25,7 @@ const _corrNoise = range(30).map(() => _corrRandN());
 const SIMS = [
     {
         id: 'micro-supply-demand',
+        metricLabels: { demandShift: 'Net demand shift', supplyShift: 'Net supply shift (+ = supply decreased)' },
         // Draws its own baseline ("original") curves, which are
         // all-determinants-zero relative rather than previous-step
         // relative. Two different "before" references on one chart would
@@ -56,8 +57,12 @@ const SIMS = [
         compute(v) {
             const demandShift = v.income + v.priceSub - v.priceComp + v.tastes;
             const supplyShift = v.inputCost - v.tech + v.govt;
-            const a = Math.max(20, 100 + demandShift), b = 1.2;
-            const c = Math.max(5, 20 + supplyShift), d = 0.8;
+            // No clamps: they used to freeze supply once net shift passed −15
+            // (half the subsidy/technology range did nothing). A negative
+            // price-intercept is still a valid supply line — it simply cuts
+            // the quantity axis instead of the price axis.
+            const a = 100 + demandShift, b = 1.2;
+            const c = 20 + supplyShift, d = 0.8;
             const { Q, P } = lineIntersect(a, b, c, d);
             const qs = range(81);
             const demand = qs.map(q => a - b * q);
@@ -99,7 +104,7 @@ const SIMS = [
                 layout: { xaxis: { title: 'Quantity', range: [0, 80] }, yaxis: { title: 'Price (₹)', range: [0, 160] } },
                 metrics: { equilibriumPrice: P, equilibriumQuantity: Q, demandShift, supplyShift },
                 readings: `<div class="reading-row"><span>Net Demand Shift</span><b>${demandShift >= 0 ? '+' : ''}${demandShift}</b></div>
-                           <div class="reading-row"><span>Net Supply Shift</span><b>${supplyShift >= 0 ? '+' : ''}${supplyShift}</b></div>
+                           <div class="reading-row"><span>Net Supply Shift</span><b>${-supplyShift >= 0 ? '+' : ''}${-supplyShift} (${supplyShift < 0 ? 'increase' : supplyShift > 0 ? 'decrease' : 'none'})</b></div>
                            <div class="reading-row"><span>Equilibrium Price</span><b>₹${fmt(P)}</b></div>
                            <div class="reading-row"><span>Equilibrium Quantity</span><b>${fmt(Q)} units</b></div>
                            <div class="reading-row insight-row">💡 ${biggest
@@ -118,6 +123,7 @@ const SIMS = [
     },
     {
         id: 'micro-elasticity',
+        metricLabels: { substitutes: 'Number of Close Substitutes' },
         module: 'micro',
         title: 'Elasticity of Demand (Price / Income / Cross)',
         desc: 'The CBSE-named Price Elasticity of Demand, plus Income and Cross elasticity as extra contrast.',
@@ -203,12 +209,19 @@ const SIMS = [
             // price elasticity: more substitutes → more elastic demand.
             // Modeled by scaling the demand slope directly with it.
             const bEff = 0.3 + 0.1 * subs;
-            const Q = Math.max(0.01, 50 - bEff * P);
-            const Ed = -bEff * (P / Q);
+            // At or above the choke price nobody buys (Q = 0) and point Ed is
+            // undefined (|Ed| → ∞ as Q → 0). It used to clamp Q to 0.01 and
+            // print figures like Ed = −7600 — say what is true instead.
+            const choke = 50 / bEff;
+            const aboveChoke = P >= choke;
+            const Q = aboveChoke ? 0 : 50 - bEff * P;
+            const Ed = aboveChoke ? null : -bEff * (P / Q);
             const ps = range(20).map(i => i * 5);
             const qs = ps.map(p => 50 - bEff * p);
-            const label = Math.abs(Ed) > 1 ? 'Elastic' : Math.abs(Ed) < 1 ? 'Inelastic' : 'Unit Elastic';
-            const insight = Math.abs(Ed) > 1
+            const label = aboveChoke ? 'Not defined (Q = 0)' : Math.abs(Ed) > 1 ? 'Elastic' : Math.abs(Ed) < 1 ? 'Inelastic' : 'Unit Elastic';
+            const insight = aboveChoke
+                ? `At ₹${P} the price is at or above the choke price (₹${fmt(choke, 1)}), so quantity demanded is zero and point elasticity is not defined — |Ed| grows without limit as the point approaches the price axis. Lower the price, or remove substitutes, to bring buyers back.`
+                : Math.abs(Ed) > 1
                 ? 'Demand is elastic here — a price change causes a proportionally larger change in quantity demanded, so total revenue moves opposite to price.'
                 : Math.abs(Ed) < 1
                     ? 'Demand is inelastic here — quantity barely responds to the price change, so total revenue moves with price.'
@@ -219,10 +232,10 @@ const SIMS = [
                     { x: [Q], y: [P], mode: 'markers', name: 'Current Point', marker: { color: '#ef4444', size: 10 } }
                 ],
                 layout: { xaxis: { title: 'Quantity', range: [0, 55] }, yaxis: { title: 'Price (₹)', range: [0, 100] } },
-                formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', `Demand: Q = 50 − ${fmt(bEff, 1)}P (steeper slope with more substitutes)`, 'Determinants of Ed: substitutes, necessity vs luxury, share of income, time period'],
+                formulas: ['Ed = (%ΔQ) / (%ΔP)', 'Point elasticity: Ed = (dQ/dP) × (P/Q)', `Demand: Q = 50 − ${fmt(bEff, 1)}P (more substitutes ⇒ quantity reacts more ⇒ a FLATTER curve with price on the vertical axis)`, 'Determinants of Ed: substitutes, necessity vs luxury, share of income, time period'],
                 metrics: { Ed, mode: 'price', substitutes: subs },
                 readings: `<div class="reading-row"><span>Quantity Demanded</span><b>${fmt(Q)}</b></div>
-                           <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${fmt(Ed)}</b></div>
+                           <div class="reading-row"><span>Point Elasticity (Ed)</span><b>${aboveChoke ? 'not defined (|Ed| → ∞)' : fmt(Ed)}</b></div>
                            <div class="reading-row"><span>Classification</span><b>${label}</b></div>
                            <div class="reading-row insight-row">💡 ${insight}</div>`
             };
@@ -265,7 +278,7 @@ const SIMS = [
     },
     {
         id: 'macro-gdp',
-        metricLabels: { gdpExp: 'GDP (Expenditure Method)', totalInjections: 'Total Injections', totalLeakages: 'Total Leakages', wages: 'Factor Payments', consumption: 'Consumption Expenditure', investment: 'Investment (I)', saving: 'Savings (S)', taxes: 'Taxes (T)', exportsVal: 'Exports (X)', imports: 'Imports (M)' },
+        metricLabels: { gdpExp: 'GDP (Expenditure Method)', totalInjections: 'Total Injections', totalLeakages: 'Total Leakages', wages: 'Factor Payments', consumption: 'Consumption Expenditure', investment: 'Investment (I)', saving: 'Savings (S)', taxes: 'Taxes (T)', exportsVal: 'Exports (X)', imports: 'Imports (M)', g: 'Government Spending (G)', nx: 'Net Exports (X − M)' },
         module: 'macro',
         title: 'GDP & Circular Flow (2-Sector / 3-Sector / 4-Sector + Financial Market)',
         desc: 'Choose 2-Sector, 3-Sector or 4-Sector, and optionally switch on the Financial Market (Banks) — the diagram draws ONLY the sectors and flows that exist in your choice, correctly split into injections and leakages.',
@@ -367,6 +380,9 @@ const SIMS = [
             // guarding against — verified by screenshot, not just by reading
             // the code, since a "close enough" hard-coded number is exactly
             // the kind of thing that reads fine and renders wrong.
+            // Every label below is drawn through translateChartText (Hindi in
+            // Hindi mode, from CHART_I18N_HI['macro-gdp']); English otherwise.
+            const L = t => (typeof translateChartText === 'function' ? translateChartText({ id: 'macro-gdp' }, t) : t);
             const hh = { x: 50, y: 195, label: 'Households', icon: '🏠', color: '#6366f1' };
             const firm = { x: 450, y: 195, label: 'Firms', icon: '🏭', color: '#10b981' };
             const gov = { x: 250, y: 26, label: 'Government', icon: '🏛️', color: '#f59e0b' };
@@ -446,7 +462,7 @@ const SIMS = [
                     const ratio = Math.max(0, Math.min(1, f.value / maxValue));
                     const duration = Math.max(1.1, 3.4 - 2.1 * ratio);
                     const pos = curveOffsetPoint(f.from.x, f.from.y, f.to.x, f.to.y, f.bend + f.labelOffset);
-                    return flowLabelSVG(pos.x, pos.y, f.label, f.color, duration);
+                    return flowLabelSVG(pos.x, pos.y, L(f.label), f.color, duration);
                 })
                 .join('');
 
@@ -455,16 +471,16 @@ const SIMS = [
                     <g>
                         <circle cx="${n.x}" cy="${n.y}" r="26" fill="${n.color}26" stroke="${n.color}" stroke-width="2"></circle>
                         <text x="${n.x}" y="${n.y - 1}" text-anchor="middle" font-size="16">${n.icon}</text>
-                        <text x="${n.x}" y="${n.y + 17}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e1b3a">${n.label}</text>
+                        <text x="${n.x}" y="${n.y + 17}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e1b3a">${L(n.label)}</text>
                     </g>`)
                 .join('');
 
             const legendSVG = `
                 <g font-family="Inter, sans-serif">
                     <line x1="8" y1="9" x2="26" y2="9" stroke="#8b5cf6" stroke-width="2.5"></line>
-                    <text x="30" y="12" font-size="8" fill="#4b4470">Money Flow (payments)</text>
+                    <text x="30" y="12" font-size="8" fill="#4b4470">${L('Money Flow (payments)')}</text>
                     <line x1="8" y1="20" x2="26" y2="20" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="5 4"></line>
-                    <text x="30" y="23" font-size="8" fill="#4b4470">Real Flow (factors / goods)</text>
+                    <text x="30" y="23" font-size="8" fill="#4b4470">${L('Real Flow (factors / goods)')}</text>
                 </g>`;
 
             const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');

@@ -29,6 +29,9 @@
     let activeSim = null;
     let history = []; // { id, dir: 1 | -1, at }
     let completedMissions = new Set();
+    if (typeof registerStateObserver === 'function') registerStateObserver('aiTutor', () => ({
+        simId: activeSim ? activeSim.id : null, sessionXP, completedMissions: [...completedMissions], touched: history.slice(-5).map(h => h.id)
+    }));
     let sessionXP = 0;
     // The metrics from the render currently on screen. NOT read from
     // sim-engine.js's `prevSimResult` — by the time aiTutorOnRender runs,
