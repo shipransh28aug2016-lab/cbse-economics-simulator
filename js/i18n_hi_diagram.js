@@ -161,3 +161,22 @@ const GL_DIAGRAM_HI = (function () {
         Object.keys(VARS[id]).forEach(v => { hi.graphLab.vars[v] = Object.assign({}, hi.graphLab.vars[v], VARS[id][v]); });
     });
 })();
+
+// A lab's OWN PREDICT choices (graphLab.predictChoices), read by
+// glOpenPredictGate through hiPath(). Only the market lab declares its own;
+// the others use the engine's GL_PREDICT_CHOICES, already in I18N_HI.
+(function () {
+    if (typeof SIM_I18N_HI === 'undefined') return;
+    const CHOICES = {
+        'gl-market-equilibrium-shifts': {
+            0: { label: '✔️ बाज़ार पहले से संतुलित है (Qd = Qs)' },
+            1: { label: '⚖️ असंतुलन — कीमत संतुलन से दूर है (अधिमाँग/अधिपूर्ति)' },
+            2: { label: '↗️ एक वक्र खिसकता है — संतुलन स्वयं बदलता है' }
+        }
+    };
+    Object.keys(CHOICES).forEach(id => {
+        const hi = SIM_I18N_HI[id] = SIM_I18N_HI[id] || {};
+        hi.graphLab = hi.graphLab || {};
+        hi.graphLab.predictChoices = Object.assign({}, hi.graphLab.predictChoices, CHOICES[id]);
+    });
+})();

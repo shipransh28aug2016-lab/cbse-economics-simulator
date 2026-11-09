@@ -36,11 +36,13 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const FILES = [
+    'js/state-machine.js',
     'js/curriculum-data.js',
     'js/panel-collapse.js',
     'js/transition-layer.js',
     'js/mima-context.js',
     'js/mima-explain.js',
+    'js/mima-voice.js',
     'js/sim-engine.js',
     'js/datalab-engine.js',
     'js/explorer-engine.js',
@@ -102,12 +104,13 @@ const sandbox = {
     Plotly: { react: () => Promise.resolve(), purge: noop },
     Set, Map, Math, Array, Object, JSON, isFinite, isNaN, parseFloat, parseInt, String, Number,
     // Quiz engine's quizLocalize() looks these up at call-time — stub the
-    // same English-fallback localize() app.js provides in the browser.
+    // same localize() app.js provides in the browser (Hindi when
+    // currentLang is 'hi', English otherwise).
     currentLang: 'en',
     localize(val) {
         if (val === undefined || val === null) return '';
         if (typeof val === 'string') return val;
-        if (typeof val === 'object') return val.en !== undefined ? val.en : '';
+        if (typeof val === 'object') return (sandbox.currentLang === 'hi' && val.hi) ? val.hi : (val.en !== undefined ? val.en : '');
         return String(val);
     }
 };
@@ -1057,6 +1060,85 @@ function extractNodePos(html, label) {
         });
     });
     ok(bad.length === 0, `Quiz: Hindi text glosses English only in brackets, and every "… row" pointer names a real row (${pointers} pointers checked)${bad.length ? ' — ' + bad.slice(0, 4).join('; ') : ''}`);
+})();
+
+// ── Explicit state machines (js/state-machine.js) ───────────────────
+// The primitive itself, then a STRUCTURAL audit of every machine the app
+// registers (no transition to a missing state, no unreachable state, no dead
+// end a user could get stuck in), then the quiz flow that used to let a
+// language toggle score one question twice. Browser-level regressions for the
+// app/PREDICT/voice machines live in tools/smoke.js. Map of every machine,
+// explicit or still implicit: docs/architecture/state-machines.md.
+(function testStateMachines() {
+    const create = vm.runInContext('createMachine', context);
+    const MS = vm.runInContext('ECONSIM_MACHINES', context);
+    const log = [];
+    const m = create({
+        id: '__test', initial: 'a', context: { n: 0 },
+        states: {
+            a: { on: { GO: 'b', GUARDED: { target: 'b', guard: (c, p) => !!(p && p.ok) } }, exit: () => log.push('exit a') },
+            b: { on: { BACK: { target: 'a', action: c => { c.n++; log.push('action'); } }, STAY: 'b' }, enter: () => log.push('enter b'), exit: () => log.push('exit b') }
+        }
+    });
+    const seen = [];
+    m.subscribe((to, from, ev) => seen.push(`${from}>${to}:${ev}`));
+    ok(m.state === 'a' && !m.can('BACK') && m.can('GO'), 'FSM: starts in its initial state; can() reflects the table');
+    ok(m.send('BACK') === false && m.state === 'a' && m.snapshot().lastRejected.event === 'BACK', 'FSM: an event not allowed in this state is refused, changes nothing, and is recorded');
+    ok(m.send('GUARDED', { ok: false }) === false && m.state === 'a', 'FSM: a failing guard refuses the transition');
+    ok(m.send('GUARDED', { ok: true }) && m.state === 'b', 'FSM: a passing guard allows it');
+    m.send('STAY');
+    ok(log.join(',') === 'exit a,enter b', 'FSM: exit runs before enter; a self-transition runs neither');
+    m.send('BACK');
+    ok(log.slice(2).join(',') === 'exit b,action' && m.context.n === 1, 'FSM: on a transition the order is exit → action → enter');
+    ok(seen.join(' ') === 'a>b:GUARDED b>b:STAY b>a:BACK', 'FSM: subscribers hear every accepted transition, never a refused one');
+    let threw = false; try { create({ id: 'bad', initial: 'nope', states: { a: {} } }); } catch { threw = true; }
+    ok(threw, 'FSM: a machine whose initial state does not exist is rejected at definition time');
+    delete MS.__test; delete MS.bad;
+
+    // Structural audit of every real machine.
+    const ids = Object.keys(MS);
+    ok(['quiz', 'predictGate', 'voice'].every(id => ids.includes(id)), `FSM: quiz, predictGate and voice machines are registered (got ${ids.join(', ')})`);
+    ids.forEach(id => {
+        const d = MS[id].definition();
+        const names = Object.keys(d.states);
+        const targets = s0 => Object.values(d.states[s0]).map(t => (typeof t === 'string' ? t : (t.target || s0)));
+        const missing = names.flatMap(s0 => targets(s0).filter(t => !names.includes(t)).map(t => `${s0}→${t}`));
+        ok(missing.length === 0, `FSM ${id}: every transition targets a real state${missing.length ? ' — ' + missing.join(', ') : ''}`);
+        const reach = new Set([d.initial]); let grew = true;
+        while (grew) { grew = false; [...reach].forEach(s0 => targets(s0).forEach(t => { if (!reach.has(t)) { reach.add(t); grew = true; } })); }
+        const unreachable = names.filter(n => !reach.has(n));
+        ok(unreachable.length === 0, `FSM ${id}: every state is reachable from "${d.initial}"${unreachable.length ? ' — unreachable: ' + unreachable.join(', ') : ''}`);
+        const deadEnds = names.filter(n => !targets(n).some(t => t !== n));
+        ok(deadEnds.length === 0, `FSM ${id}: no state is a dead end (each can be left)${deadEnds.length ? ' — ' + deadEnds.join(', ') : ''}`);
+    });
+
+    // The quiz flow, through its real functions.
+    const qm = MS.quiz;
+    const run = code => vm.runInContext(code, context);
+    const sim = findSim('micro-elasticity');
+    run('closeQuiz()');
+    context.__qsim = sim;
+    run('openQuiz(__qsim)');
+    const st = () => run('({ s: quizMachine.state, score: quizState.score, index: quizState.index, n: quizState.items.length })');
+    ok(st().s === 'asking' && st().n >= 10, 'quiz FSM: opening a quiz starts asking question 1');
+    const ci = run('quizView(quizState.items[0]).correctIndex');
+    run(`selectQuizAnswer(${ci})`);
+    ok(st().s === 'answered' && st().score === 1, 'quiz FSM: a correct answer moves to answered and scores 1');
+    run('currentLang = "hi"; renderQuizQuestion();');
+    const hiQ = run('quizState.questions[0].question');
+    run(`selectQuizAnswer(${ci})`);
+    run('currentLang = "en";');
+    ok(st().s === 'answered' && st().score === 1, 'quiz FSM: a re-render (language toggle) keeps the question answered — answering again scores nothing');
+    ok(/[ऀ-ॿ]/.test(hiQ), 'quiz FSM: the same question re-localizes to Hindi mid-quiz');
+    const total = st().n;
+    for (let i = 1; i < total; i++) { run('advanceQuiz()'); run('selectQuizAnswer(0)'); }
+    ok(st().index === total - 1 && st().s === 'answered', 'quiz FSM: NEXT steps through every question');
+    ok(qm.can('NEXT') === false && qm.can('FINISH') === true, 'quiz FSM: on the last question only FINISH is possible');
+    run('advanceQuiz()');
+    ok(st().s === 'results', 'quiz FSM: finishing the last question shows results');
+    run('closeQuiz()');
+    ok(st().s === 'closed', 'quiz FSM: closing returns to closed');
+    delete context.__qsim;
 })();
 
 // ── Economic-correctness audit regressions ──────────────────────────

@@ -23,6 +23,7 @@
 
 let dataLabRows = [];
 let dataLabPrevRows = null;
+if (typeof registerStateObserver === 'function') registerStateObserver('dataLab', () => ({ rows: dataLabRows.map(r => Object.assign({}, r)) }));
 
 function cloneRows(rows) {
     return (rows || []).map(r => Object.assign({}, r));

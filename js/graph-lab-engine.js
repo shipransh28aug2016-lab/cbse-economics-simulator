@@ -475,6 +475,14 @@ function glSvgBody(m, s, cfg) {
 // the diagram travels.
 const GL_GLIDE_MS = 560;
 let glGlide = null; // { raf, svg, vars, finish, stop }
+if (typeof onSimLeave === 'function') onSimLeave(() => { glStopGlide(); glDrag = null; });
+// Read-only view for econsimState(): the Graph Lab's implicit machine
+// (idle / dragging / gliding) and the values the diagram is drawn from.
+if (typeof registerStateObserver === 'function') registerStateObserver('graphLab', () => glSim ? {
+    simId: glSim.id, vars: Object.assign({}, glState),
+    phase: glDrag ? 'dragging' : glGlide ? 'gliding' : 'idle',
+    dragging: glDrag ? glDrag.handle.id : null, ghostCurve: glShowGhost
+} : null);
 
 function glMotionOK() {
     return !(typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
@@ -576,6 +584,12 @@ function glRender(sim, syncChips, opts) {
         }, true);
     }
 
+    // A revealed PREDICT answer is withdrawn the moment the diagram stops
+    // showing the scenario it was about (drag, chip, Reset, story step…).
+    if (predictGateMachine.state === 'revealed' && JSON.stringify(glState) !== predictGateMachine.context.revealedFor) {
+        predictGateMachine.send('STALE');
+    }
+
     const svg = host.querySelector('.gl-svg');
     // Any render supersedes a glide still in flight — otherwise its next
     // frame would paint over this one.
@@ -648,6 +662,7 @@ function glRender(sim, syncChips, opts) {
 // Entry point called by sim-engine.js's renderSim() for `mode: 'graphlab'`.
 function renderGraphLab(sim) {
     glStopGlide();
+    predictGateMachine.send('RESET');
     glSim = sim;
     glDrag = null;
     glShowGhost = true;
@@ -756,6 +771,46 @@ const GL_PREDICT_CHOICES = [
     { kind: 'both', key: 'gl.predictBoth', fallback: '↔️⇄ Both — movement AND shift' }
 ];
 
+// ── The PREDICT gate machine ─────────────────────────────────────
+//   hidden ─OPEN→ asking ─RESOLVE→ revealed ─STALE→ hidden
+//                  │ └SKIP→ hidden          └OPEN→ asking
+//   any ─RESET→ hidden   (a new lab is opened)
+// Its one load-bearing rule: a revealed "✅ It really was: …" is shown ONLY
+// while the diagram still shows that scenario. It used to stay up after a
+// Reset or a drag, naming a verdict the diagram no longer showed — the app
+// contradicting itself. glRender() sends STALE whenever the live state stops
+// matching the state the answer was revealed for.
+const predictGateMachine = createMachine({
+    id: 'predictGate', initial: 'hidden', reflect: 'predictGate',
+    context: { scenario: null, revealedFor: null, correct: null },
+    describe: ctx => ({ scenario: ctx.scenario, correct: ctx.correct }),
+    states: {
+        hidden: {
+            on: { OPEN: { target: 'asking', action: (ctx, p) => { ctx.scenario = p.label; ctx.correct = null; } }, RESET: 'hidden' },
+            enter: ctx => {
+                ctx.scenario = null; ctx.revealedFor = null; ctx.correct = null;
+                const gate = document.getElementById('gl-predict-gate');
+                if (gate) { gate.classList.add('hidden'); gate.innerHTML = ''; }
+            }
+        },
+        asking: {
+            on: {
+                OPEN: { target: 'asking', action: (ctx, p) => { ctx.scenario = p.label; } },
+                RESOLVE: { target: 'revealed', action: (ctx, p) => { ctx.correct = p.correct; ctx.revealedFor = JSON.stringify(glState); } },
+                SKIP: 'hidden',
+                RESET: 'hidden'
+            }
+        },
+        revealed: {
+            on: {
+                OPEN: { target: 'asking', action: (ctx, p) => { ctx.scenario = p.label; ctx.correct = null; ctx.revealedFor = null; } },
+                STALE: 'hidden',
+                RESET: 'hidden'
+            }
+        }
+    }
+});
+
 // PREDICT-before-REVEAL gate for a scenario preset (see the `predict` doc
 // above `graphLab`'s contract). If the model throws while computing the
 // trial verdict, this fails open — applies the scenario immediately rather
@@ -767,23 +822,29 @@ function glOpenPredictGate(sim, sc, applyScenario) {
     if (!answerVerdict) { applyScenario(); return; }
 
     const choices = sim.graphLab.predictChoices || GL_PREDICT_CHOICES;
-    const choiceLabel = c => c.label || tEngine(c.key, c.fallback);
+    // A lab's own choices have Hindi in SIM_I18N_HI (graphLab.predictChoices).
+    const choiceLabel = (c, i) => (sim.graphLab.predictChoices && hiPath(sim, `graphLab.predictChoices.${i}.label`)) || c.label || tEngine(c.key, c.fallback);
+    const scLabel = hiPath(sim, `graphLab.scenarios.${(sim.graphLab.scenarios || []).indexOf(sc)}.label`) || sc.label;
+    predictGateMachine.send('OPEN', { label: scLabel });
 
     gate.classList.remove('hidden');
     gate.innerHTML = `
         <p class="gl-predict-prompt">${tEngine('gl.predictPrompt', '🤔 Before this applies — predict: what will it cause?')}</p>
         <div class="gl-predict-choices">
-            ${choices.map(c => `<button type="button" class="gl-predict-btn" data-kind="${c.kind}">${choiceLabel(c)}</button>`).join('')}
+            ${choices.map((c, i) => `<button type="button" class="gl-predict-btn" data-kind="${c.kind}">${choiceLabel(c, i)}</button>`).join('')}
         </div>
         <button type="button" class="gl-predict-skip">${tEngine('gl.predictSkip', 'Skip prediction →')}</button>
         <div class="gl-predict-result hidden" id="gl-predict-result"></div>
     `;
 
     const finish = (chosenKind) => {
+        if (predictGateMachine.state !== 'asking') return; // already answered or withdrawn
         applyScenario();
+        if (!chosenKind) { predictGateMachine.send('SKIP'); return; }
+        const correct = chosenKind === answerVerdict.kind;
+        predictGateMachine.send('RESOLVE', { correct });
         const resultEl = document.getElementById('gl-predict-result');
-        if (chosenKind && resultEl) {
-            const correct = chosenKind === answerVerdict.kind;
+        if (resultEl) {
             resultEl.classList.remove('hidden');
             resultEl.classList.toggle('gl-predict-result--correct', correct);
             resultEl.classList.toggle('gl-predict-result--wrong', !correct);
