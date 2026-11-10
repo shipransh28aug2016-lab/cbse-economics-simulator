@@ -6,6 +6,11 @@ const js = require('@eslint/js');
 
 const appGlobals = {
     // Shared across js/*.js via plain <script> tags, in load order.
+    // js/state-machine.js — explicit state machines (loaded first).
+    createMachine: 'readonly', registerStateObserver: 'readonly', econsimState: 'readonly',
+    onSimLeave: 'readonly', runSimLeaveHooks: 'readonly',
+    appMachine: 'readonly', quizMachine: 'readonly', closeQuiz: 'readonly', quizView: 'readonly',
+    paintScreen: 'readonly', predictGateMachine: 'readonly',
     PART_TITLES: 'readonly', CURRICULUM_NODES: 'readonly', partTitle: 'readonly',
     chapterTagText: 'readonly', findNode: 'readonly', validateCurriculum: 'readonly',
     Plotly: 'readonly',
@@ -34,6 +39,14 @@ const appGlobals = {
     renderGraphLab: 'readonly', glShowGhost: 'writable', glState: 'writable',
     glSetVar: 'readonly', glVar: 'readonly', glRender: 'readonly',
     glLineSeg: 'readonly', GL_TERMS: 'readonly', glMoveShiftVerdict: 'readonly',
+    glEsc: 'readonly', glSim: 'writable',
+    // js/holo-mode.js — the immersive presentation layer over Graph Labs.
+    holoAttach: 'readonly', holoUpdate: 'readonly',
+    glLocalVerdict: 'readonly', glDiagramText: 'readonly', GL_DIAGRAM_HI: 'readonly', PART_TITLES_HI: 'readonly', UNIT_TITLES_HI: 'readonly', TOPIC_LABELS_HI: 'readonly', CHART_I18N_HI: 'readonly', DATALAB_ROWS_HI: 'readonly', translateChartText: 'readonly', localizeChart: 'readonly', localDefaultRows: 'readonly', localUnit: 'readonly', quizHindiLabels: 'readonly', predictChoiceLabel: 'readonly', glDisplayedState: 'readonly',
+    // js/story-mode.js + the story answer keys in js/simulations_graphlab.js.
+    storyRenderLauncher: 'readonly', storyContexts: 'readonly',
+    GL_DEMAND_STORY_OPTIONS: 'readonly', glDemandStoryAnswer: 'readonly',
+    GL_MARKET_STORY_OPTIONS: 'readonly', glMarketStoryAnswer: 'readonly',
     initPanelCollapse: 'readonly', initStaticPanelCollapse: 'readonly', wireCollapseAllToggle: 'readonly',
     loadPanelCollapsed: 'readonly', savePanelCollapsed: 'readonly', setPanelCollapsed: 'readonly',
     SIMS: 'writable',
@@ -57,6 +70,7 @@ module.exports = [
         ignores: ['js/plotly.min.js']
     },
     {
+        files: ['js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
         files: ['js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
@@ -69,18 +83,20 @@ module.exports = [
         },
         rules: {
             'no-unused-vars': 'off'
+            'no-unused-vars': ['warn', { args: 'none', varsIgnorePattern: '^_' }]
         }
     },
     {
         files: ['js/**/*.js'],
         ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
+        ignores: ['js/plotly.min.js', 'js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',
             globals: {
                 window: 'readonly', document: 'readonly', console: 'readonly',
                 localStorage: 'readonly', sessionStorage: 'readonly', fetch: 'readonly', setTimeout: 'readonly',
-                performance: 'readonly', requestAnimationFrame: 'readonly',
+                performance: 'readonly', requestAnimationFrame: 'readonly', cancelAnimationFrame: 'readonly', DOMParser: 'readonly',
                 module: 'writable', require: 'readonly',
                 ...appGlobals
             }

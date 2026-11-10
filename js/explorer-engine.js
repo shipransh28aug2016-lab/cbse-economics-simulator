@@ -15,6 +15,7 @@
 // ══════════════════════════════════════════════════════════════
 
 let explorerState = { timelineIndex: 0, scenarioId: null, cardAnswers: {} };
+if (typeof registerStateObserver === 'function') registerStateObserver('explorer', () => explorerState);
 
 function renderExplorer(sim) {
     const panel = document.getElementById('controls-panel');

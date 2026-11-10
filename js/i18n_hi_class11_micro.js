@@ -114,7 +114,7 @@ if (typeof SIM_I18N_HI !== 'undefined') {
             title: 'आपूर्ति की मूल्य लोच',
             desc: 'देखें कि एक उत्पादक के पास प्रतिक्रिया देने के लिए कितना समय है, यह आपूर्ति की लोच को कैसे बदलता है।',
             concept: '<p><b>आपूर्ति की मूल्य लोच (Es)</b> मापती है कि आपूर्ति की गई मात्रा कीमत परिवर्तन के प्रति कितनी अनुक्रिया करती है। इसका सबसे बड़ा निर्धारक वह <b>समय अवधि</b> है जो एक उत्पादक के पास समायोजित करने के लिए है: बहुत छोटी <b>बाजार अवधि</b> में उत्पादन लगभग स्थिर होता है (आपूर्ति अत्यधिक बेलोचदार होती है — एक मछली बाजार के बारे में सोचें जहाँ आज की पकड़ पहले से तय है); <b>अल्पकाल</b> में फर्में कुछ इनपुट बदल सकती हैं (मध्यम रूप से लोचदार); <b>दीर्घकाल</b> में फर्में पूरी तरह नई क्षमता बना सकती हैं (अत्यधिक लोचदार)।</p>',
-            formulas: ['Es = (%ΔQs) / (%ΔP)', 'बिंदु लोच: Es = (dQ/dP) × (P/Q)', 'आपूर्ति: Q = 5 + d·P, जहाँ d समय अवधि पर निर्भर करता है'],
+            formulas: ['Es = (%ΔQs) / (%ΔP)', 'बिंदु लोच: Es = (dQ/dP) × (P/Q)', 'आपूर्ति: Q = c + d·P — बाज़ार अवधि Q = 20 + 0.05P, अल्पकाल Q = 5 + 0.5P, दीर्घकाल Q = −8 + 2P', 'सीधी आपूर्ति रेखा मात्रा-अक्ष को काटे ⇒ Es < 1; मूल बिंदु से गुज़रे ⇒ Es = 1; कीमत-अक्ष को काटे ⇒ Es > 1'],
             controls: {
                 period: {
                     label: 'समय अवधि',
@@ -140,6 +140,13 @@ if (typeof READINGS_I18N_HI !== 'undefined') {
         'micro-ppf': [
             ['Point Status', 'बिंदु स्थिति'],
             ['Good Y at this point', 'इस बिंदु पर वस्तु Y'],
+            ['Point (X, Y)', 'बिंदु (X, Y)'],
+            ['0 — idle resources: more X costs no Y', '0 — बेकार संसाधन: अधिक X के लिए कोई Y नहीं छोड़ना पड़ता'],
+            ['not defined — this point cannot be produced', 'परिभाषित नहीं — यह बिंदु उत्पादित नहीं हो सकता'],
+            ['Note', 'टिप्पणी'],
+            [' is more than this economy can make — with all resources in X it makes at most ', ' इस अर्थव्यवस्था की क्षमता से अधिक है — सारे संसाधन X में लगाने पर भी अधिकतम '],
+            [', so X is taken as ', ' बनता है, इसलिए X को यह माना गया: '],
+            [' ON the frontier at X=', ' सीमा पर X='],
             ['Opportunity Cost of 1 more X (in Y)', '1 अधिक X की अवसर लागत (Y में)'],
             ['Inside the PPF — Inefficient', 'PPF के भीतर — अकुशल'],
             ['Outside the PPF — Unattainable', 'PPF के बाहर — अप्राप्य'],
@@ -165,6 +172,9 @@ if (typeof READINGS_I18N_HI !== 'undefined') {
             ['MC at Q*', 'Q* पर MC'],
             ['Total Revenue at Q*', 'Q* पर कुल आगम'],
             ['Profit (TR − TC)', 'लाभ (TR − TC)'],
+            ['Even the very first unit costs more (MC ', 'पहली ही इकाई की लागत (MC '],
+            [') than it earns (MR ', ') उसकी कमाई (MR '],
+            ['), so MR never rises to meet MC — the firm produces nothing (Q* = 0). There is no MR = MC point here.', ') से अधिक है, इसलिए MR कभी MC तक नहीं पहुँचता — फ़र्म कुछ भी उत्पादन नहीं करती (Q* = 0)। यहाँ कोई MR = MC बिंदु नहीं है।'],
             ['The red point marks where MR = MC — the profit-maximising output.', 'लाल बिंदु वह चिह्नित करता है जहाँ MR = MC है — लाभ-अधिकतमकारी उत्पादन।'],
             ['Because this firm is a price-taker, AR and MR sit on the same flat line at the market price.', 'क्योंकि यह फर्म एक मूल्य-स्वीकर्ता है, AR और MR बाजार कीमत पर एक ही सपाट रेखा पर बैठते हैं।'],
             ['With a downward-sloping demand curve, MR falls twice as fast as AR/Price — a standard contrast case, shown here to make the perfect-competition AR=MR result easier to recognise.', 'नीचे की ओर झुकती माँग वक्र के साथ, MR, AR/कीमत से दोगुनी तेज़ी से गिरता है — एक मानक तुलना मामला, यहाँ पूर्ण-प्रतिस्पर्धा AR=MR परिणाम को पहचानना आसान बनाने के लिए दिखाया गया है।']

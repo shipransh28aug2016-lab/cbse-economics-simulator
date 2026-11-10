@@ -67,7 +67,7 @@ if (typeof QUIZ_BANK !== 'undefined') {
                     return {
                         question: {
                             en: `With Income=${state.income}, Price of Substitute=${state.priceSub}, Price of Complement=${state.priceComp}, Tastes=${state.tastes}, Input Cost=${state.inputCost}, Technology=${state.tech}, Govt=${state.govt} — what is the Equilibrium Price (to the nearest ₹)?`,
-                            hi: `Income=${state.income}, Price of Substitute=${state.priceSub}, Price of Complement=${state.priceComp}, Tastes=${state.tastes}, Input Cost=${state.inputCost}, Technology=${state.tech}, Govt=${state.govt} के साथ — संतुलन कीमत (निकटतम ₹ तक) क्या है?`
+                            hi: `उपभोक्ता आय=${state.income}, स्थानापन्न वस्तु की कीमत=${state.priceSub}, पूरक वस्तु की कीमत=${state.priceComp}, रुचियाँ=${state.tastes}, इनपुट लागत=${state.inputCost}, प्रौद्योगिकी=${state.tech}, सरकारी कर/सब्सिडी=${state.govt} के साथ — संतुलन कीमत (निकटतम ₹ तक) क्या है?`
                         },
                         options,
                         correctIndex: 0,

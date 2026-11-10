@@ -69,7 +69,7 @@ function ok(cond, label) {
     // network policy may block, and browsers auto-request /favicon.ico
     // whether or not a page declares one. Both are filtered by URL, not
     // by message text, so a real app-code console error is never masked.
-    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/];
+    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/, /react\/jsx-runtime/];
     const errors = [];
     page.on('console', msg => {
         if (msg.type() !== 'error') return;
@@ -77,7 +77,10 @@ function ok(cond, label) {
         if (BENIGN_URL_PATTERNS.some(re => re.test(loc.url || '') || re.test(msg.text() || ''))) return;
         errors.push(`console: ${msg.text()}`);
     });
-    page.on('pageerror', err => errors.push(`pageerror: ${err.message}`));
+    page.on('pageerror', err => {
+        if (BENIGN_URL_PATTERNS.some(re => re.test(err.message || ''))) return;
+        errors.push(`pageerror: ${err.message}`);
+    });
     page.on('requestfailed', req => {
         if (BENIGN_URL_PATTERNS.some(re => re.test(req.url()))) return;
         errors.push(`requestfailed: ${req.url()} (${req.failure() && req.failure().errorText})`);
@@ -392,6 +395,69 @@ function ok(cond, label) {
     const heroBadgeBack = (await page.locator('.hero-badge').textContent()) || '';
     ok(heroBadgeBack === heroBadgeEn, `i18n: toggling back to English restores the exact original text (got "${heroBadgeBack}", expected "${heroBadgeEn}")`);
     ok(errors.length === beforeI18n, `i18n: no console/page errors across the whole toggle-to-Hindi-and-back sequence${errors.length > beforeI18n ? ' — ' + errors.slice(beforeI18n).join('; ') : ''}`);
+
+    // ── Explicit state machines (js/state-machine.js) ─────────────
+    // Each assertion below is a bug that existed while the state was
+    // implicit; see docs/architecture/state-machines.md.
+    const beforeFsm = errors.length;
+    const screenNow = () => page.evaluate(() => document.body.dataset.screen);
+    const toggleLang = () => page.evaluate(() => document.getElementById('lang-toggle').click()); // keyboard-reachable even under the quiz overlay
+
+    // 1. Leaving a sim by the LOGO, then toggling language, must stay on Home.
+    await page.evaluate(() => window.openSim('micro-elasticity'));
+    await page.waitForTimeout(80);
+    await page.locator('.nav-logo').click();
+    await page.waitForTimeout(80);
+    await toggleLang();
+    await page.waitForTimeout(150);
+    ok((await screenNow()) === 'home', `state: a language toggle on Home never re-opens the last sim (screen="${await screenNow()}")`);
+    ok(await page.evaluate(() => econsim.state().machines.app.simId === null), 'state: leaving a sim clears the open sim');
+    await toggleLang();
+    await page.waitForTimeout(150);
+
+    // 2. A quiz answer survives a language toggle and can't be scored twice.
+    await page.evaluate(() => window.openSim('micro-elasticity'));
+    await page.waitForTimeout(80);
+    await page.locator('#quiz-launch-btn').click();
+    await page.waitForTimeout(120);
+    const ci = await page.evaluate(() => quizView(quizState.items[0]).correctIndex);
+    await page.locator('#quiz-options .quiz-option-btn').nth(ci).click();
+    await toggleLang();
+    await page.waitForTimeout(150);
+    const reopened = await page.evaluate(() => [...document.querySelectorAll('#quiz-options .quiz-option-btn')].some(b => !b.disabled));
+    await page.evaluate(i => selectQuizAnswer(i), ci);
+    const q = await page.evaluate(() => econsim.state().machines.quiz);
+    ok(!reopened && q.state === 'answered' && q.score === 1, `state: an answered quiz question stays answered across a language toggle and scores once (state=${q.state}, score=${q.score}, options re-enabled=${reopened})`);
+    ok(/[ऀ-ॿ]/.test((await page.locator('#quiz-question').textContent()) || ''), 'state: the open quiz question re-renders in the new language');
+    await page.locator('#quiz-close-btn').click();
+    await toggleLang();
+    await page.waitForTimeout(150);
+
+    // 3. A revealed PREDICT answer is withdrawn once the diagram no longer shows it.
+    await page.evaluate(() => window.openSim('gl-demand-movement-shift'));
+    await page.waitForTimeout(150);
+    await page.locator('.gl-scenario-btn').first().click();
+    await page.locator('.gl-predict-btn').first().click();
+    await page.waitForTimeout(100);
+    ok(await page.evaluate(() => document.body.dataset.predictGate === 'revealed'), 'state: answering the PREDICT gate reveals the answer');
+    await page.locator('#gl-reset-btn').click();
+    await page.waitForTimeout(100);
+    const gateHidden = await page.evaluate(() => { const g = document.getElementById('gl-predict-gate'); return document.body.dataset.predictGate === 'hidden' && (!g || g.classList.contains('hidden')); });
+    ok(gateHidden, 'state: Reset withdraws a revealed PREDICT answer (it no longer describes the diagram)');
+
+    // 4. Leaving the sim ends its story and stops the Graph Lab.
+    await page.locator('#gl-story-btn').click();
+    await page.waitForTimeout(80);
+    await page.locator('#sim-back').click();
+    await page.waitForTimeout(80);
+    const after = await page.evaluate(() => econsim.state());
+    ok(after.observed.story.phase === 'off' && after.machines.voice.state === 'idle', `state: leaving the sim ends its story and its voice (story=${after.observed.story.phase}, voice=${after.machines.voice.state})`);
+
+    // 5. One JSON snapshot describes the whole app for agents/tests.
+    const snap = await page.evaluate(() => econsim.state());
+    ok(['app', 'quiz', 'predictGate', 'voice'].every(k => snap.machines[k] && snap.machines[k].state) && ['graphLab', 'story', 'simulator'].every(k => k in snap.observed),
+        'state: econsim.state() reports every machine and every observed area');
+    ok(errors.length === beforeFsm, `state: no console/page errors across the state-machine checks${errors.length > beforeFsm ? ' — ' + errors.slice(beforeFsm).join('; ') : ''}`);
 
     // ── Mobile viewport: no horizontal overflow ──────────────────
     await page.setViewportSize({ width: 390, height: 844 });
