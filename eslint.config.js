@@ -70,6 +70,7 @@ module.exports = [
         ignores: ['js/plotly.min.js']
     },
     {
+        files: ['js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
         files: ['js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
@@ -79,11 +80,14 @@ module.exports = [
                 setTimeout: 'readonly', performance: 'readonly', requestAnimationFrame: 'readonly',
                 Float32Array: 'readonly'
             }
+        },
+        rules: {
+            'no-unused-vars': ['warn', { args: 'none', varsIgnorePattern: '^_' }]
         }
     },
     {
         files: ['js/**/*.js'],
-        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
+        ignores: ['js/plotly.min.js', 'js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',
