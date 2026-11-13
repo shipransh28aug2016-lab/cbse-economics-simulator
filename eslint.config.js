@@ -82,11 +82,13 @@ module.exports = [
             }
         },
         rules: {
+            'no-unused-vars': 'off'
             'no-unused-vars': ['warn', { args: 'none', varsIgnorePattern: '^_' }]
         }
     },
     {
         files: ['js/**/*.js'],
+        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
         ignores: ['js/plotly.min.js', 'js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
