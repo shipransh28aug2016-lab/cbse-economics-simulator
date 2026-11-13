@@ -2,15 +2,21 @@
 
 Sim: `js/simulations_extended.js` (`mode: 'simulator'`). Syllabus: `XI-B-U5-UTILITY`,
 whose taxonomy micro-content explicitly names **both** halves of this topic —
-`Consumer equilibrium (MU=0 / MUx/Px=MUy/Py)` — which is why this sim carries two
-views rather than one.
+`Consumer equilibrium (single good: MUx = Px; two goods: MUx/Px = MUy/Py)` — which is why
+this sim carries two views rather than one. (The registry used to paraphrase the single-good
+condition as "MU = 0"; the taxonomy itself says only "conditions of equilibrium".)
 
 ## What
 
 Two views of the same Law of Diminishing Marginal Utility, switched via a `view`
 control:
 
-1. **Single Good** (pre-existing): one good, free disposal, equilibrium at `MU = 0`.
+1. **Single Good**: utility measured in rupees (so the MU of money is 1); equilibrium where
+   **MUx = Px**, i.e. `Q* = 20 − P`. Buy more while MU > P, less once MU < P. **Corrected in
+   the Nov 2026 audit**: it used to stop at `MU = 0`, which is only right for a *free* good
+   (it is where *total* utility peaks), and the price slider changed nothing. The quiz used
+   to mark "MU = 0" as the correct answer; it now marks MUx = Px, with a misconception note on
+   the MU = 0 option.
 2. **Two Goods (Equi-Marginal)** (added this pass): a fixed money income `M` split
    between two goods X and Y, equilibrium at `MUx/Px = MUy/Py`.
 

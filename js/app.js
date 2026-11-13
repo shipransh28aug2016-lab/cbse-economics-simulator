@@ -1,5 +1,6 @@
-// Polyfill / utility to safely toggle screens based on id
-function showScreen(screenId) {
+// Paints one screen. Only the app machine below calls this for the three
+// real screens; everything else asks the machine (showScreen / openSim).
+function paintScreen(screenId) {
     const screens = document.querySelectorAll('.screen, .view');
     screens.forEach(s => {
         s.classList.remove('active');
@@ -22,6 +23,51 @@ let currentLang = localStorage.getItem('econsim-lang') || 'en';
 // profile screens). Needed so the Quiz button and a language-toggle
 // re-render both know what to act on without re-deriving it from the DOM.
 let currentSim = null;
+
+// ── The app lifecycle machine: which screen, which sim ─────────────
+// This used to be implicit — the active screen lived in DOM classes and the
+// open sim in `currentSim`, and only the Back button kept them in step. The
+// logo and Profile buttons painted Home without clearing `currentSim`, so a
+// later language toggle "re-rendered" a sim nobody was looking at and jumped
+// the student back into it (with its story resumed). Now the screen has one
+// owner, `currentSim` is set and cleared only by its transitions, and leaving
+// a sim runs every engine's teardown (runSimLeaveHooks).
+const appMachine = createMachine({
+    id: 'app', initial: 'home', reflect: 'screen', context: { simId: null },
+    describe: ctx => ({ simId: ctx.simId, lang: typeof currentLang !== 'undefined' ? currentLang : 'en' }),
+    states: (function () {
+        const open = {
+            target: 'sim',
+            action: (ctx, payload) => {
+                // Switching to a DIFFERENT sim leaves the old one.
+                if (ctx.simId && ctx.simId !== payload.sim.id) runSimLeaveHooks(ctx.simId);
+                ctx.simId = payload.sim.id;
+                currentSim = payload.sim;
+            }
+        };
+        return {
+            home: { on: { OPEN_SIM: open, GO_HOME: 'home', GO_PROFILE: 'profile' }, enter: () => paintScreen('home') },
+            profile: { on: { OPEN_SIM: open, GO_HOME: 'home', GO_PROFILE: 'profile' }, enter: () => paintScreen('profile') },
+            sim: {
+                on: { OPEN_SIM: open, GO_HOME: 'home', GO_PROFILE: 'profile' },
+                enter: () => paintScreen('sim'),
+                exit: ctx => {
+                    const left = ctx.simId;
+                    ctx.simId = null;
+                    currentSim = null;
+                    runSimLeaveHooks(left);
+                }
+            }
+        };
+    })()
+});
+
+// The public way to change screen (index.html's logo/Profile/Back buttons).
+function showScreen(screenId) {
+    if (screenId === 'home') appMachine.send('GO_HOME');
+    else if (screenId === 'profile') appMachine.send('GO_PROFILE');
+    else paintScreen(screenId); // 'sim' is entered only through openSim()
+}
 
 // Resolves a value that may be a plain string (English-only, never
 // translated) or a `{en, hi}` pair (see js/i18n_hi.js) to the text for
@@ -74,12 +120,14 @@ function applyLanguage(lang) {
     // with no reload and no lost slider/table/quiz state beyond what a
     // normal re-render already resets.
     if (typeof rebuildHomeGrids === 'function') rebuildHomeGrids();
-    if (currentSim && typeof renderSim === 'function') {
+    // Only a sim that is ON SCREEN is re-rendered — never one left behind.
+    if (appMachine.state === 'sim' && currentSim && typeof renderSim === 'function') {
         openSim(currentSim.id); // re-runs the title/tag/renderSim wiring below
     }
-    const quizOverlay = document.getElementById('quiz-overlay');
-    if (typeof quizState !== 'undefined' && quizState && quizState.sim && quizOverlay && !quizOverlay.classList.contains('hidden')) {
-        if (typeof renderQuizQuestion === 'function') renderQuizQuestion();
+    // An open quiz is redrawn in the new language in the SAME state — an
+    // answered question stays answered (see quizMachine).
+    if (typeof quizMachine !== 'undefined' && quizMachine.state !== 'closed' && typeof renderQuizQuestion === 'function') {
+        renderQuizQuestion();
     }
 }
 
@@ -90,8 +138,7 @@ function toggleLanguage() {
 function openSim(simId) {
     const sim = typeof SIMS !== 'undefined' ? SIMS.find(s => s.id === simId) : null;
     if (sim) {
-        currentSim = sim;
-        showScreen('sim');
+        appMachine.send('OPEN_SIM', { sim }); // sets currentSim, paints the screen
         const titleElIndex = document.getElementById('sim-title-nav');
         const titleElSys = document.getElementById('sim-title');
         const title = simField(sim, 'title');
@@ -170,7 +217,6 @@ function wireQuizModal() {
 
     const closeBtn = document.getElementById('quiz-close-btn');
     const overlay = document.getElementById('quiz-overlay');
-    const closeQuiz = () => { if (overlay) overlay.classList.add('hidden'); };
     if (closeBtn) closeBtn.addEventListener('click', closeQuiz);
     if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeQuiz(); });
 
@@ -188,6 +234,10 @@ function wireQuizModal() {
 // not fabricated data, so this is purely a motion touch. Respects
 // prefers-reduced-motion by snapping straight to the final value.
 function animateHeroStats() {
+    // The lab count is the real number of sims, not a hand-typed one that
+    // goes stale every time a lab is added (it read 34 when there were 44).
+    const labCount = document.getElementById('hero-lab-count');
+    if (labCount && typeof SIMS !== 'undefined') labCount.textContent = String(SIMS.length);
     const nums = document.querySelectorAll('.hero-stats-strip b');
     if (!nums.length) return;
     const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -226,10 +276,7 @@ function initApp() {
     // Attach back button behaviors
     const backBtnIndex = document.getElementById('sim-back');
     if (backBtnIndex) {
-        backBtnIndex.addEventListener('click', () => {
-            currentSim = null;
-            showScreen('home');
-        });
+        backBtnIndex.addEventListener('click', () => showScreen('home'));
     }
 
     const backBtnSys = document.getElementById('back-btn');

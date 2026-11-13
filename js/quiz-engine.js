@@ -19,7 +19,10 @@
 //     answer (the correct option is always computed, never authored).
 // ══════════════════════════════════════════════════════════════
 
-let quizState = { sim: null, questions: [], index: 0, score: 0, answered: false };
+// quizState is the quiz machine's context (see quizMachine below). Kept as a
+// global of the same name and shape so existing readers keep working;
+// `answered` is now DERIVED from the machine's state, never set by hand.
+let quizState = { sim: null, items: [], questions: [], index: 0, score: 0, chosen: null, answered: false };
 
 // Populated by js/quiz-data*.js, one property per sim id: { static: [...],
 // applyTemplates: [...] } — see the file header above for the shape of
@@ -75,7 +78,10 @@ function quizRandomState(sim) {
 }
 
 function quizLocalize(val) {
-    return typeof localize === 'function' ? localize(val) : (val && val.en) || val || '';
+    if (typeof localize === 'function') return localize(val);
+    // Standalone (no app.js, e.g. the test harness): same rule as localize().
+    if (val && typeof val === 'object') return (typeof currentLang !== 'undefined' && currentLang === 'hi' && val.hi) || val.en || '';
+    return val || '';
 }
 
 // Builds a 4-option (or however many `deltas` + 1) numeric MCQ options
@@ -102,7 +108,25 @@ function quizNumericOptions(correctValue, deltas, opts) {
         seen.add(fmtNum(v));
         finalValues.push(v);
     });
-    return finalValues.map(v => `${prefix}${fmtNum(v)}${suffix}`);
+    const sfx = suffix;
+    // A unit word is language-specific, so those options carry both forms
+    // and re-localize with the rest of the question on a language toggle.
+    const SUFFIX_EN_HI = { ' units': ' इकाई', ' cr': ' करोड़' };
+    if (SUFFIX_EN_HI[suffix]) {
+        return finalValues.map(v => ({ en: `${prefix}${fmtNum(v)}${suffix}`, hi: `${prefix}${fmtNum(v)}${SUFFIX_EN_HI[suffix]}` }));
+    }
+    return finalValues.map(v => `${prefix}${fmtNum(v)}${sfx}`);
+}
+
+// A template's Hindi text names readings rows ("Karl Pearson's r") as they
+// read in English, but in Hindi mode the panel shows them in Hindi. Run the
+// Hindi through the SAME translateReadings() the panel uses, so the quiz
+// names exactly the label the student sees. No-op in English mode.
+function quizHindiLabels(sim, built) {
+    if (typeof currentLang === 'undefined' || currentLang !== 'hi' || typeof translateReadings !== 'function') return built;
+    const fix = v => (v && typeof v === 'object' && typeof v.hi === 'string')
+        ? Object.assign({}, v, { hi: translateReadings(sim, v.hi.replace(/Live Readings(\/Stats)?/g, 'लाइव रीडिंग्स')) }) : v;
+    return Object.assign({}, built, { question: fix(built.question), explain: fix(built.explain), options: (built.options || []).map(fix) });
 }
 
 // Resolves a raw bank entry (English/Hindi option objects, etc.) to a
@@ -154,7 +178,9 @@ function shuffleQuizOptions(q) {
 function generateQuiz(sim, count) {
     count = count || 10;
     const bank = (typeof QUIZ_BANK !== 'undefined' && QUIZ_BANK[sim.id]) || { static: [], applyTemplates: [] };
-    const pool = (bank.static || []).map(q => normalizeQuizQuestion(q));
+    // Each pool entry keeps its RAW bilingual source (not a localized copy),
+    // so the question can be re-rendered in the other language mid-quiz.
+    const pool = (bank.static || []).map(q => ({ raw: q }));
 
     const templates = bank.applyTemplates || [];
     let guard = 0;
@@ -168,7 +194,8 @@ function generateQuiz(sim, count) {
                     const result = sim.graphLab.model(state, { prev: state, base: state });
                     built = tpl.build(state, (result && result.metrics) || {});
                 } else if (sim.mode === 'datalab' && sim.dataLab) {
-                    const rows = sim.dataLab.defaultRows;
+                    // The same rows the table shows (Hindi names in Hindi mode).
+                    const rows = typeof localDefaultRows === 'function' ? localDefaultRows(sim) : sim.dataLab.defaultRows;
                     const result = sim.dataLab.calculate(rows);
                     built = tpl.build(rows, (result && result.metrics) || {});
                 } else if (typeof sim.compute === 'function') {
@@ -184,7 +211,7 @@ function generateQuiz(sim, count) {
                     const result = sim.customRender(scratch, state);
                     built = tpl.build(state, (result && result.metrics) || {});
                 }
-                if (built) pool.push(normalizeQuizQuestion(Object.assign({ level: tpl.level || 'apply' }, built)));
+                if (built) pool.push({ raw: Object.assign({ level: tpl.level || 'apply' }, built) });
             } catch (e) {
                 // Skip — this random state didn't produce a well-formed
                 // question (e.g. a metric was undefined); try again.
@@ -193,15 +220,77 @@ function generateQuiz(sim, count) {
         guard++;
     }
 
-    const shuffledPool = quizShuffle(pool).map(shuffleQuizOptions);
-    return shuffledPool.slice(0, count);
+    // Fix each question's option order ONCE (as original indices), so a
+    // re-render in another language shows the same options in the same places.
+    const items = quizShuffle(pool).slice(0, count).map(it => Object.assign(it, {
+        sim, order: quizShuffle((it.raw.options || []).map((_, i) => i))
+    }));
+    return items.map(quizView);
 }
+
+// One question, in the CURRENT language, with its options in the item's
+// fixed order: { level, question, options, correctIndex, explain,
+// syllabusId, misconceptions, item }. `item` is the raw source, for re-use.
+function quizView(item) {
+    const q = normalizeQuizQuestion(quizHindiLabels(item.sim, item.raw));
+    const order = item.order && item.order.length === q.options.length ? item.order : q.options.map((_, i) => i);
+    const options = order.map(i => q.options[i]);
+    return Object.assign({}, q, { options, correctIndex: order.indexOf(q.correctIndex), item });
+}
+
+// ── The quiz machine ─────────────────────────────────────────────
+//   closed ─OPEN→ asking ─ANSWER→ answered ─NEXT→ asking (more questions)
+//                                          └FINISH→ results
+//   any state ─CLOSE→ closed
+// It used to be a boolean `answered` that every re-render reset — so a
+// language toggle on an answered question let the student answer it again
+// and score it twice. Now only ANSWER and NEXT move between the two, and a
+// re-render (renderQuizQuestion) just redraws whatever state it finds.
+const quizMachine = createMachine({
+    id: 'quiz', initial: 'closed', reflect: 'quiz', context: quizState,
+    describe: ctx => ({ simId: ctx.sim ? ctx.sim.id : null, index: ctx.index, total: ctx.items.length, score: ctx.score }),
+    states: {
+        closed: {
+            on: { OPEN: { target: 'asking', action: (ctx, p) => Object.assign(ctx, { sim: p.sim, items: p.items, index: 0, score: 0, chosen: null }) } },
+            enter: () => { const o = document.getElementById('quiz-overlay'); if (o) o.classList.add('hidden'); }
+        },
+        asking: {
+            on: {
+                ANSWER: {
+                    target: 'answered',
+                    guard: (ctx, p) => Number.isInteger(p && p.i) && p.i >= 0,
+                    action: (ctx, p) => {
+                        ctx.chosen = p.i;
+                        if (p.i === quizView(ctx.items[ctx.index]).correctIndex) ctx.score++;
+                    }
+                },
+                CLOSE: 'closed'
+            }
+        },
+        answered: {
+            on: {
+                NEXT: { target: 'asking', guard: ctx => ctx.index < ctx.items.length - 1, action: ctx => { ctx.index++; ctx.chosen = null; } },
+                FINISH: { target: 'results', guard: ctx => ctx.index >= ctx.items.length - 1 },
+                CLOSE: 'closed'
+            }
+        },
+        results: { on: { CLOSE: 'closed', OPEN: { target: 'asking', action: (ctx, p) => Object.assign(ctx, { sim: p.sim, items: p.items, index: 0, score: 0, chosen: null }) } } }
+    }
+});
+// Keep the legacy derived fields true after every transition.
+quizMachine.subscribe(state => { quizState.answered = state === 'answered' || state === 'results'; });
+
+// Leaving the sim closes its quiz.
+if (typeof onSimLeave === 'function') onSimLeave(() => closeQuiz());
+
+function closeQuiz() { if (quizMachine.state !== 'closed') quizMachine.send('CLOSE'); }
 
 function openQuiz(sim) {
     const overlay = document.getElementById('quiz-overlay');
     if (!overlay) return;
     const questions = generateQuiz(sim, 10);
-    quizState = { sim, questions, index: 0, score: 0, answered: false };
+    if (quizMachine.state !== 'closed') quizMachine.send('CLOSE');
+    quizMachine.send('OPEN', { sim, items: questions.map(q => q.item) });
 
     const iconEl = document.getElementById('qm-icon');
     const moduleIcons = { micro: 'μ', macro: 'M', stats: 'σ', india: '🇮🇳' };
@@ -209,15 +298,28 @@ function openQuiz(sim) {
     const headingEl = document.getElementById('qm-heading');
     if (headingEl) headingEl.textContent = (typeof simField === 'function' ? simField(sim, 'title') : sim.title);
 
-    document.getElementById('quiz-result').classList.add('hidden');
-    document.getElementById('quiz-question-area').classList.remove('hidden');
     overlay.classList.remove('hidden');
     renderQuizQuestion();
 }
 
+// Draws whatever state the quiz machine is in, in the current language.
+// Safe to call any time (a language toggle does): it never changes state.
 function renderQuizQuestion() {
+    const st = quizMachine.state;
+    if (st === 'closed' || !quizState.items.length) return;
+    const qArea = document.getElementById('quiz-question-area');
+    const rArea = document.getElementById('quiz-result');
+    if (st === 'results') {
+        if (qArea) qArea.classList.add('hidden');
+        if (rArea) rArea.classList.remove('hidden');
+        showQuizResult();
+        return;
+    }
+    if (qArea) qArea.classList.remove('hidden');
+    if (rArea) rArea.classList.add('hidden');
+
+    quizState.questions = quizState.items.map(quizView);
     const { questions, index } = quizState;
-    if (!questions.length) return;
     const q = questions[index];
 
     const counterEl = document.getElementById('quiz-q-counter');
@@ -251,25 +353,21 @@ function renderQuizQuestion() {
     const feedbackEl = document.getElementById('quiz-feedback');
     if (feedbackEl) { feedbackEl.classList.add('hidden'); feedbackEl.textContent = ''; }
     const nextBtn = document.getElementById('quiz-next-btn');
-    if (nextBtn) nextBtn.classList.add('hidden');
-    quizState.answered = false;
-}
+    if (st !== 'answered') {
+        if (feedbackEl) { feedbackEl.classList.add('hidden'); feedbackEl.innerHTML = ''; }
+        if (nextBtn) nextBtn.classList.add('hidden');
+        return;
+    }
 
-function selectQuizAnswer(i) {
-    if (quizState.answered) return;
-    quizState.answered = true;
-    const q = quizState.questions[quizState.index];
+    // answered: lock the options, mark them, explain — from the stored choice.
+    const i = quizState.chosen;
     const correct = i === q.correctIndex;
-    if (correct) quizState.score++;
-
     const btns = document.querySelectorAll('#quiz-options .quiz-option-btn');
     btns.forEach((b, bi) => {
         b.disabled = true;
         if (bi === q.correctIndex) b.classList.add('correct');
         else if (bi === i) b.classList.add('incorrect');
     });
-
-    const feedbackEl = document.getElementById('quiz-feedback');
     if (feedbackEl) {
         feedbackEl.classList.remove('hidden');
         feedbackEl.textContent = '';
@@ -285,6 +383,8 @@ function selectQuizAnswer(i) {
 
         feedbackEl.appendChild(document.createTextNode(q.explain || ''));
 
+        const correctText = quizLocalize({ en: '✅ Correct!', hi: '✅ सही जवाब!' });
+        const incorrectText = quizLocalize({ en: '❌ Not quite.', hi: '❌ यह सही नहीं है।' });
         // A wrong option can carry its OWN targeted misconception text
         // (q.misconceptions, see normalizeQuizQuestion) — distinct from
         // `explain`'s general "here's the right answer" — naming exactly
@@ -299,24 +399,27 @@ function selectQuizAnswer(i) {
             miscDiv.textContent = `⚠️ ${labelText} ${misconception}`;
             feedbackEl.appendChild(miscDiv);
         }
+        const misconceptionHTML = misconception
+            ? `<div class="quiz-misconception">⚠️ ${quizLocalize({ en: 'Common mistake:', hi: 'सामान्य भूल:' })} ${misconception}</div>`
+            : '';
+        feedbackEl.innerHTML = `<b>${correct ? correctText : incorrectText}</b> ${q.explain}${misconceptionHTML}`;
     }
-    const nextBtn = document.getElementById('quiz-next-btn');
     if (nextBtn) {
         nextBtn.classList.remove('hidden');
-        nextBtn.textContent = quizState.index < quizState.questions.length - 1
+        nextBtn.textContent = index < questions.length - 1
             ? quizLocalize({ en: 'Next Question →', hi: 'अगला प्रश्न →' })
             : quizLocalize({ en: 'See Results →', hi: 'परिणाम देखें →' });
     }
 }
 
+// A click on option i. Ignored unless the machine is asking (a second click,
+// or a click after a re-render, cannot score the same question twice).
+function selectQuizAnswer(i) {
+    if (quizMachine.send('ANSWER', { i })) renderQuizQuestion();
+}
+
 function advanceQuiz() {
-    if (!quizState.answered) return;
-    if (quizState.index < quizState.questions.length - 1) {
-        quizState.index++;
-        renderQuizQuestion();
-    } else {
-        showQuizResult();
-    }
+    if (quizMachine.send('NEXT') || quizMachine.send('FINISH')) renderQuizQuestion();
 }
 
 function showQuizResult() {
