@@ -19,6 +19,26 @@ const MimaVoice = (function () {
     let currentUtterance = null;
     let cachedVoices = null;
 
+    // idle ─SPEAK→ speaking ─END/STOP→ idle   (SPEAK while speaking = a new
+    // owner/utterance takes over). One global voice, two speakers (Mima's
+    // panel and the Story card): the owner says whose words are playing, and
+    // subscribers keep BOTH speak buttons true without polling.
+    const machine = typeof createMachine === 'function' ? createMachine({
+        id: 'voice', initial: 'idle', reflect: 'voice', context: { owner: null, lang: null },
+        describe: ctx => ({ owner: ctx.owner, lang: ctx.lang }),
+        states: {
+            idle: { on: { SPEAK: { target: 'speaking', action: (ctx, p) => { ctx.owner = p.owner; ctx.lang = p.lang; } }, STOP: 'idle', END: 'idle' } },
+            speaking: {
+                on: {
+                    SPEAK: { target: 'speaking', action: (ctx, p) => { ctx.owner = p.owner; ctx.lang = p.lang; } },
+                    END: { target: 'idle', action: ctx => { ctx.owner = null; ctx.lang = null; } },
+                    STOP: { target: 'idle', action: ctx => { ctx.owner = null; ctx.lang = null; } }
+                }
+            }
+        }
+    }) : null;
+    const send = (e, p) => { if (machine) machine.send(e, p); };
+
     function isSupported() {
         return typeof window !== 'undefined' && !!window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function';
     }
@@ -44,13 +64,15 @@ const MimaVoice = (function () {
     }
 
     function stop() {
+        currentUtterance = null; // first: the cancelled utterance's late onerror must not count
         if (isSupported()) window.speechSynthesis.cancel();
-        currentUtterance = null;
+        send('STOP');
     }
 
     // lang: 'en' | 'hi'. onEnd/onError are optional callbacks so the UI
     // can flip its Speak/Stop button back without polling.
-    function speak(text, lang, onEnd, onError) {
+    // owner: 'mima' | 'story' | … — whose words these are (for the buttons).
+    function speak(text, lang, onEnd, onError, owner) {
         if (!isSupported() || !text) return false;
         stop();
         const utter = new window.SpeechSynthesisUtterance(text);
@@ -59,16 +81,26 @@ const MimaVoice = (function () {
         if (voice) utter.voice = voice;
         utter.rate = 0.95;
         utter.pitch = 1.0;
-        utter.onend = () => { currentUtterance = null; if (typeof onEnd === 'function') onEnd(); };
-        utter.onerror = () => { currentUtterance = null; if (typeof onError === 'function') onError(); };
+        // Only the CURRENT utterance may end the speaking state: cancel()
+        // fires the previous one's onerror after a new one has started.
+        utter.onend = () => { if (currentUtterance !== utter) return; currentUtterance = null; send('END'); if (typeof onEnd === 'function') onEnd(); };
+        utter.onerror = () => { if (currentUtterance !== utter) return; currentUtterance = null; send('END'); if (typeof onError === 'function') onError(); };
         currentUtterance = utter;
         window.speechSynthesis.speak(utter);
+        send('SPEAK', { owner: owner || 'mima', lang });
         return true;
     }
 
     function isSpeaking() {
         return isSupported() && window.speechSynthesis.speaking;
     }
+
+    // fn(state, owner) on every change — keeps a speak button honest.
+    function subscribe(fn) {
+        if (!machine) return () => {};
+        return machine.subscribe(st => fn(st, machine.context.owner));
+    }
+    function owner() { return machine && machine.state === 'speaking' ? machine.context.owner : null; }
 
     // Some browsers (notably Chrome) load the voice list asynchronously
     // after page load; refresh the cache when it fires so pickVoice()
@@ -77,5 +109,7 @@ const MimaVoice = (function () {
         window.speechSynthesis.addEventListener('voiceschanged', () => { cachedVoices = null; });
     }
 
-    return { speak, stop, isSpeaking, isSupported };
+    if (typeof onSimLeave === 'function') onSimLeave(() => stop());
+
+    return { speak, stop, isSpeaking, isSupported, subscribe, owner };
 })();

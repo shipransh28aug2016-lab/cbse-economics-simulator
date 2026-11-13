@@ -66,7 +66,8 @@ if (typeof QUIZ_BANK !== 'undefined') {
             {
                 level: 'apply',
                 build(state, metrics) {
-                    if (!metrics || state.pointType !== 'on' || typeof metrics.mrt !== 'number') return null;
+                    // x above C is capped by the model, so 2×x/C would print false arithmetic.
+                    if (!metrics || state.pointType !== 'on' || typeof metrics.mrt !== 'number' || state.x > state.resources) return null;
                     const correct = Math.round(metrics.mrt * 100) / 100;
                     const options = quizNumericOptions(correct, [0.4, -0.4, 0.8], { round: 2 });
                     return {
@@ -337,11 +338,11 @@ if (typeof QUIZ_BANK !== 'undefined') {
             {
                 level: 'apply',
                 build(state, metrics) {
-                    if (!metrics || typeof metrics.Qstar !== 'number') return null;
+                    if (!metrics || typeof metrics.Qstar !== 'number' || metrics.Qstar <= 0) return null;
                     const correct = Math.round(metrics.Qstar * 10) / 10;
                     const options = quizNumericOptions(correct, [3, -3, 6], { round: 1, suffix: ' units' });
                     return {
-                        question: { en: `In ${state.marketType === 'perfect' ? 'Perfect Competition' : 'the downward-sloping demand'} mode, with MC Base=₹${state.mcBase} and MC Slope=${state.mcSlope}, what is the Producer's Equilibrium Output?`, hi: `${state.marketType === 'perfect' ? 'पूर्ण प्रतिस्पर्धा' : 'नीचे की ओर ढलान वाली माँग'} मोड में, MC आधार=₹${state.mcBase} और MC ढलान=${state.mcSlope} के साथ, उत्पादक का संतुलन उत्पादन क्या है?` },
+                        question: { en: `In ${state.marketType === 'perfect' ? 'Perfect Competition' : 'the downward-sloping demand'} mode${state.marketType === 'perfect' ? `, at a market price of ₹${state.price}` : ''}, with MC Base=₹${state.mcBase} and MC Slope=${state.mcSlope}, what is the Producer's Equilibrium Output?`, hi: `${state.marketType === 'perfect' ? 'पूर्ण प्रतिस्पर्धा' : 'नीचे की ओर ढलान वाली माँग'} मोड में${state.marketType === 'perfect' ? `, ₹${state.price} की बाज़ार कीमत पर` : ''}, MC आधार=₹${state.mcBase} और MC ढलान=${state.mcSlope} के साथ, उत्पादक का संतुलन उत्पादन क्या है?` },
                         options,
                         correctIndex: 0,
                         explain: { en: `The red marker on the chart (where MR=MC) sits at Q ≈ ${correct}.`, hi: `चार्ट पर लाल चिह्न (जहाँ MR=MC) Q ≈ ${correct} पर स्थित है।` }

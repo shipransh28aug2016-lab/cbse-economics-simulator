@@ -128,7 +128,8 @@
 
     function updateSpeakButton() {
         if (!speakBtnEl) return;
-        speakBtnEl.classList.toggle('mima-voice-btn--active', MimaVoice.isSpeaking());
+        // Active only while MIMA's words are playing, not a story's.
+        speakBtnEl.classList.toggle('mima-voice-btn--active', MimaVoice.isSpeaking() && (!MimaVoice.owner || MimaVoice.owner() === 'mima'));
     }
 
     function runIntent(intent) {
@@ -138,7 +139,15 @@
         return result;
     }
 
+    if (typeof registerStateObserver === 'function') registerStateObserver('mima', () => ({
+        panel: !panelEl ? 'none' : panelEl.classList.contains('hidden') ? 'closed' : panelEl.classList.contains('mima-minimized') ? 'minimized' : 'open',
+        lastIntentText: lastResult ? lastResult.text.slice(0, 120) : null
+    }));
+
     function wireEvents() {
+        // The voice machine tells us when ANY speech starts or stops (a story's
+        // too, or a teardown on leaving the sim), so the button never lies.
+        if (typeof MimaVoice.subscribe === 'function') MimaVoice.subscribe(updateSpeakButton);
         bubbleEl.addEventListener('click', () => {
             if (panelEl.classList.contains('hidden')) openPanel();
             else closePanel();

@@ -274,7 +274,7 @@ if (typeof SIMS !== 'undefined') {
                         id: 'primary-secondary', label: 'Primary vs Secondary Data', summary: 'Primary data is collected first-hand, directly for the investigator\'s own purpose. Secondary data was already collected by someone else for a different purpose, and is reused.',
                         sections: [
                             { heading: 'Primary Data', items: ['Collected directly — e.g. a survey, interview, or personal observation', 'More relevant and current, but more expensive and time-consuming to collect'] },
-                            { heading: 'Secondary Data', items: ['Reused from an existing source — e.g. government reports, published statistics', 'Named official sources: Census of India, National Sample Survey Organisation (NSSO)', 'Cheaper and faster, but may not exactly fit the current question'] }
+                            { heading: 'Secondary Data', items: ['Reused from an existing source — e.g. government reports, published statistics', 'Named official sources: Census of India, National Sample Survey Office (NSSO — since 2019 part of the National Statistical Office, NSO)', 'Cheaper and faster, but may not exactly fit the current question'] }
                         ],
                         insight: 'Every Data Lab in this app lets you enter your own numbers — that\'s primary data, collected by you, for your own investigation.'
                     },
@@ -282,7 +282,7 @@ if (typeof SIMS !== 'undefined') {
                         id: 'sampling', label: 'Sampling vs Census', summary: 'A census studies every single unit in the population. Sampling studies a representative subset and infers conclusions about the whole population from it.',
                         sections: [
                             { heading: 'Census (Complete Enumeration)', items: ['Covers every unit — most accurate, but expensive and slow', 'India\'s Census of India is conducted once every 10 years'] },
-                            { heading: 'Sampling', items: ['Studies a smaller, representative subset', 'Much faster and cheaper — used for most economic surveys', 'NSSO conducts large-scale nationwide sample surveys between Census years'] }
+                            { heading: 'Sampling', items: ['Studies a smaller, representative subset', 'Much faster and cheaper — used for most economic surveys', 'NSSO (now within the NSO) conducts large-scale nationwide sample surveys, such as the Periodic Labour Force Survey, between Census years'] }
                         ],
                         insight: 'The 8–20 rows you can enter in this app\'s Data Labs are a small sample, not a census — exactly the trade-off (speed & cost vs completeness) this topic is about.'
                     }
