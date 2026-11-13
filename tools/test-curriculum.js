@@ -91,14 +91,23 @@ function stubEl() {
         offsetWidth: 100
     };
 }
+const elementsMap = new Map();
+function getOrCreateElement(id) {
+    if (!elementsMap.has(id)) {
+        elementsMap.set(id, stubEl());
+    }
+    return elementsMap.get(id);
+}
+
 const sandbox = {
     console,
     window: {},
     document: {
-        getElementById: () => stubEl(),
+        getElementById: (id) => getOrCreateElement(id),
         querySelectorAll: () => [],
         querySelector: () => null,
         createElement: () => stubEl(),
+        createTextNode: (text) => ({ textContent: String(text) }),
         addEventListener: noop,
         documentElement: { lang: 'en' }
     },
@@ -1571,6 +1580,43 @@ function extractNodePos(html, label) {
     ok(ceiling.metrics.isCeiling === true && ceiling.metrics.gap > 0, 'Price Controls: a control below equilibrium is a ceiling and creates a shortage');
     const floor = sim.compute({ ctrl: 90, demandShift: 0 });
     ok(floor.metrics.isCeiling === false && floor.metrics.gap > 0, 'Price Controls: a control above equilibrium is a floor and creates a surplus');
+})();
+
+(function testQuizSecurity() {
+    const renderQuizQuestion = context.renderQuizQuestion;
+    const selectQuizAnswer = context.selectQuizAnswer;
+    const renderQuestionEl = sandbox.document.getElementById('quiz-question');
+    const feedbackEl = sandbox.document.getElementById('quiz-feedback');
+
+    // Set up mock quizState with malicious script tags / unescaped HTML characters in question, explain, and misconception
+    vm.runInContext(`
+        quizState = {
+            sim: SIMS[0],
+            questions: [{
+                level: 'apply',
+                question: 'What happens if <script>alert("xss")</script> & |Ed| < 1?',
+                options: ['Option 1', 'Option 2'],
+                correctIndex: 0,
+                explain: 'Explanation with <img src=x onerror=alert(1)> & text',
+                misconceptions: { 'Option 2': 'Misconception with <svg onload=alert(2)> & text' }
+            }],
+            index: 0,
+            score: 0,
+            answered: false
+        };
+    `, context);
+
+    renderQuizQuestion();
+
+    ok(!renderQuestionEl.innerHTML.includes('<script>'), 'Quiz question rendering does not inject raw HTML tags from question string');
+    ok(renderQuestionEl.textContent.includes('<script>alert("xss")</script>'), 'Quiz question text content preserves literal special characters safely');
+
+    // Simulate choosing incorrect answer (Option 2)
+    selectQuizAnswer(1);
+
+    ok(!feedbackEl.innerHTML.includes('<img') && !feedbackEl.innerHTML.includes('<svg'), 'Quiz feedback rendering does not inject raw HTML tags from explanation/misconception');
+    ok(feedbackEl.textContent.includes('<img src=x onerror=alert(1)>'), 'Quiz feedback text content preserves literal explanation safely');
+    ok(feedbackEl.textContent.includes('<svg onload=alert(2)>'), 'Quiz misconception text content preserves literal misconception safely');
 })();
 
 // ── 5. Quiz bank coverage + structural validation ────────────────
