@@ -7,22 +7,10 @@
   <meta name="description" content="Live gamified economics simulations for CBSE Class XI and XII students. Understand Supply & Demand, GDP, Multiplier, Correlation, and more through interactive learning experiences." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=6" />
+  <link rel="stylesheet" href="css/styles.css?v=7" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
   <meta name="theme-color" content="#0b2545" />
-  <script type="importmap">
-  {
-    "imports": {
-      "react": "https://esm.sh/react@18.3.1",
-      "react/": "https://esm.sh/react@18.3.1/",
-      "react-dom": "https://esm.sh/react-dom@18.3.1",
-      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-      "three": "https://esm.sh/three@0.168.0",
-      "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.8?external=react,react-dom,three"
-    }
-  }
-  </script>
   <script>
     window.addEventListener('error', function(e) {
       const errorDiv = document.createElement('div');
@@ -96,6 +84,9 @@
   </section>
 
   <section class="modules-section">
+    <!-- Living Economy hub — built by js/life-engine.js (lifeBuildHub) -->
+    <section class="life-hub" id="life-hub" aria-live="off"></section>
+
     <div class="panel-toolbar">
       <button type="button" class="panel-toolbar-btn" id="home-collapse-toggle">🗂️ Collapse All</button>
     </div>
@@ -284,6 +275,31 @@
 
 </div><!-- end screen-sim -->
 
+<!-- ══════════════════════════════════════════════
+     SCREEN: LIVING ECONOMY (js/life-engine.js builds everything inside)
+══════════════════════════════════════════════ -->
+<div id="screen-life" class="screen">
+  <div class="life-topbar">
+    <button type="button" class="back-btn" id="life-back">← All lives</button>
+    <div class="life-title" id="life-title"></div>
+    <div class="life-round" id="life-round"></div>
+  </div>
+  <div class="life-progress-track"><div class="life-progress" id="life-progress"></div></div>
+  <div class="life-layout">
+    <div class="life-main">
+      <div class="life-stage" id="life-stage"></div>
+      <div class="life-panel" id="life-panel"></div>
+    </div>
+    <aside class="life-side">
+      <div class="life-side-card" id="life-ledger"></div>
+      <div class="life-side-card">
+        <h3 class="life-side-title" id="life-chart-title"></h3>
+        <div class="life-chart" id="life-chart"></div>
+      </div>
+    </aside>
+  </div>
+</div><!-- end screen-life -->
+
 <div id="screen-profile" class="screen">
   <div class="sim-topbar">
     <button class="back-btn" onclick="showScreen('home')" data-i18n="common.back">← Back</button>
@@ -353,36 +369,19 @@
   </div>
 </div>
 
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-    "three": "https://esm.sh/three@0.160.0",
-    "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12?external=react,react-dom,three"
-  }
-}
-</script>
-<script type="module">
-  import { render3DCircularFlow } from './js/circular-flow-3d.js';
-  window.render3DCircularFlow = render3DCircularFlow;
-  window.renderCircularFlow3D = render3DCircularFlow;
-</script>
 <script src="js/state-machine.js?v=1"></script>
 <script src="js/curriculum-data.js?v=3"></script>
 <script src="js/panel-collapse.js?v=1"></script>
 <script src="js/plotly.min.js?v=2"></script>
 <script src="js/transition-layer.js?v=2"></script>
 <script src="js/mima-context.js?v=1"></script>
-<script src="js/sim-engine.js?v=5"></script>
+<script src="js/sim-engine.js?v=6"></script>
 <script src="js/datalab-engine.js?v=3"></script>
 <script src="js/explorer-engine.js?v=2"></script>
 <script src="js/graph-lab-engine.js?v=7"></script>
 <script src="js/holo-mode.js?v=3"></script>
 <script src="js/story-mode.js?v=4"></script>
-<script type="module" src="js/circular-flow-3d.js?v=1"></script>
-<script src="js/simulations.js?v=7"></script>
+<script src="js/simulations.js?v=8"></script>
 <script src="js/simulations_extended.js?v=10"></script>
 <script src="js/simulations_class11_micro.js?v=3"></script>
 <script src="js/simulations_statistics_datalab.js?v=2"></script>
@@ -414,7 +413,10 @@
 <script src="js/mima-voice.js?v=2"></script>
 <script src="js/mima-ui.js?v=2"></script>
 <script src="js/ai-tutor.js?v=2"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/life-engine.js?v=1"></script>
+<script src="js/life-worlds-micro.js?v=1"></script>
+<script src="js/life-worlds-macro.js?v=1"></script>
+<script src="js/app.js?v=9"></script>
 <script>
   // Installable, offline-capable web app (see sw.js). Service workers only
   // run over http(s), never file://, so opening index.html directly still works.

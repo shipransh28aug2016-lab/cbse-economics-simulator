@@ -22,6 +22,60 @@ const _corrRandN = makeRandN(42);
 const _corrX = range(30).map(() => _corrRandN());
 const _corrNoise = range(30).map(() => _corrRandN());
 
+// ── Circular Flow: the opt-in 3D view ─────────────────────────────
+// The 3D engine (three.js + React Three Fiber, vendored in
+// js/vendor/circular-flow-3d.bundle.js — no CDN, works offline) is loaded
+// only when a student asks for it, so it costs nothing on page load. It is
+// a second VIEW of macro-gdp's flow list, never a second model.
+const CF3D_KEY = 'econsim-cf3d';
+let cf3dModule = null;
+function cf3dWanted() {
+    try { return typeof localStorage !== 'undefined' && localStorage.getItem(CF3D_KEY) === '1'; } catch { return false; }
+}
+function cf3dToggleHTML(is3D) {
+    const hi = typeof currentLang !== 'undefined' && currentLang === 'hi';
+    const label = is3D ? (hi ? '📐 2D आरेख' : '📐 2D diagram') : (hi ? '🧊 3D दृश्य' : '🧊 3D view');
+    return `<button type="button" class="cf-3d-toggle" data-cf3d-toggle aria-pressed="${is3D}">${label}</button>`;
+}
+// Draws the 3D view if it is wanted AND loaded; returns false so the caller
+// draws the 2D diagram otherwise (and frees the WebGL scene if one was up).
+function cf3dRender(container, spec) {
+    if (!cf3dModule || !cf3dWanted() || !container || typeof container.querySelector !== 'function') {
+        if (cf3dModule) cf3dModule.unmount3DCircularFlow();
+        return false;
+    }
+    if (!cf3dModule.render3DCircularFlow(container, spec)) return false;
+    const old = container.querySelector('[data-cf3d-toggle]');
+    if (old) old.remove();
+    container.insertAdjacentHTML('beforeend', cf3dToggleHTML(true));
+    return true;
+}
+function cf3dRedraw() {
+    if (typeof currentSim !== 'undefined' && currentSim && currentSim.id === 'macro-gdp' && typeof renderSimChart === 'function') {
+        suppressNextWhatChanged = true; // a change of VIEW is not a change in the economy
+        renderSimChart(currentSim);
+    }
+}
+function cf3dToggle() {
+    const turnOn = !cf3dWanted();
+    try { localStorage.setItem(CF3D_KEY, turnOn ? '1' : '0'); } catch { /* private mode: view just won't persist */ }
+    if (!turnOn || cf3dModule) { cf3dRedraw(); return Promise.resolve(); }
+    return import('./vendor/circular-flow-3d.bundle.js')
+        .then(mod => { cf3dModule = mod; cf3dRedraw(); })
+        .catch(() => {
+            // No WebGL / file:// module block: stay on the 2D diagram, say so.
+            try { localStorage.setItem(CF3D_KEY, '0'); } catch { /* ignore */ }
+            const btn = document.querySelector('[data-cf3d-toggle]');
+            if (btn) btn.textContent = (typeof currentLang !== 'undefined' && currentLang === 'hi') ? '3D दृश्य यहाँ उपलब्ध नहीं' : '3D view unavailable here';
+        });
+}
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    document.addEventListener('click', e => {
+        if (e.target && typeof e.target.closest === 'function' && e.target.closest('[data-cf3d-toggle]')) cf3dToggle();
+    });
+}
+if (typeof onSimLeave === 'function') onSimLeave(() => { if (cf3dModule) cf3dModule.unmount3DCircularFlow(); });
+
 const SIMS = [
     {
         id: 'micro-supply-demand',
@@ -485,18 +539,28 @@ const SIMS = [
 
             const sectorLabel = sector === '2' ? '2-Sector' : (sector === '3' ? '3-Sector' : '4-Sector');
 
-            // Delegate 3D Isometric rendering to circular_flow_3d module if available
-            if (typeof window.render3DCircularFlow === 'function') {
-                window.render3DCircularFlow(container, v);
-            } else {
+            // Two views of ONE flow list. The validated 2D diagram is the
+            // default; the 3D view (js/circular-flow-3d.js) is opt-in and is
+            // handed the SAME nodes/flows the SVG above was built from, so
+            // it cannot show a sector or a direction the model does not have.
+            // (It used to be handed the raw control values, read fields that
+            // do not exist, and so drew a 2-sector economy whatever was set.)
+            const ariaLabel = `${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure`;
+            const keyOf = n => Object.keys(nodes).find(k => nodes[k] === n);
+            const spec3D = {
+                ariaLabel,
+                nodes: Object.keys(nodes).map(key => ({ key, label: L(nodes[key].label) })),
+                flows: flows.map(f => ({ id: f.id, from: keyOf(f.from), to: keyOf(f.to), value: f.value, color: f.color, kind: f.kind, label: `${L(f.label).replace(/&amp;/g, '&')} · ₹${fmt(f.value, 0)}B` }))
+            };
+            if (!cf3dRender(container, spec3D)) {
                 container.innerHTML = `
                     <svg viewBox="0 0 500 390" class="flow-diagram" preserveAspectRatio="xMidYMid meet" role="img"
-                         aria-label="${sectorLabel} circular flow of income${hasBank ? ' with the Financial Market' : ''}, showing only the sectors and flows that belong to this model, with the real flow of factor services and goods moving opposite to the money flow of payments and expenditure">
+                         aria-label="${ariaLabel}">
                         ${flowsSVG}
                         ${nodesSVG}
                         ${labelsSVG}
                         ${legendSVG}
-                    </svg>`;
+                    </svg>${cf3dToggleHTML(false)}`;
             }
 
             // Injections vs Leakages — the actual CBSE-taught rule for

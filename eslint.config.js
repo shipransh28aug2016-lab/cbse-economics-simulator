@@ -5,6 +5,10 @@
 const js = require('@eslint/js');
 
 const appGlobals = {
+    // The Living Economy (js/life-engine.js, js/life-worlds-*.js)
+    LIFE_WORLDS: 'writable', B2: 'readonly', rupee: 'readonly', lifeT: 'readonly', lifeSvg: 'readonly', lifeCrowd: 'readonly',
+    LIFE_INK: 'readonly', LIFE_MUTE: 'readonly', lifeRender: 'readonly', lifeBuildHub: 'readonly', lifeClose: 'readonly', lifeOpen: 'readonly',
+    appMachine: 'readonly', suppressNextWhatChanged: 'writable',
     // Shared across js/*.js via plain <script> tags, in load order.
     // js/state-machine.js — explicit state machines (loaded first).
     createMachine: 'readonly', registerStateObserver: 'readonly', econsimState: 'readonly',
@@ -70,8 +74,7 @@ module.exports = [
         ignores: ['js/plotly.min.js']
     },
     {
-        files: ['js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
-        files: ['js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
+        files: ['js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
@@ -82,14 +85,12 @@ module.exports = [
             }
         },
         rules: {
-            'no-unused-vars': 'off'
             'no-unused-vars': ['warn', { args: 'none', varsIgnorePattern: '^_' }]
         }
     },
     {
         files: ['js/**/*.js'],
-        ignores: ['js/plotly.min.js', 'js/circular_flow_3d.js', 'js/circular-flow-3d.js'],
-        ignores: ['js/plotly.min.js', 'js/circular-flow-3d.js', 'js/circular_flow_3d.js'],
+        ignores: ['js/plotly.min.js', 'js/circular-flow-3d.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'script',

@@ -9,10 +9,16 @@
     "test": "node tools/test-curriculum.js",
     "smoke": "node tools/smoke.js",
     "build": "node tools/build-check.js",
+    "vendor:3d": "esbuild js/circular-flow-3d.js --bundle --format=esm --minify --target=es2020 --define:process.env.NODE_ENV=\\\"production\\\" --legal-comments=linked --outfile=js/vendor/circular-flow-3d.bundle.js",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run smoke"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "playwright": "^1.62.1"
+    "@react-three/fiber": "^8.17.8",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.62.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.168.0"
   }
 }
