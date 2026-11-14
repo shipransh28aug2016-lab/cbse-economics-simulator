@@ -166,6 +166,9 @@ function lifeJournalRecord(worldId, score, livedCount, totalCount) {
     e.of = totalCount;
     j[worldId] = e;
     try { localStorage.setItem(LIFE_JOURNAL_KEY, JSON.stringify(j)); } catch { /* private mode: nothing kept */ }
+    // The hub cards show the best score; they are otherwise only rebuilt on a
+    // language change, so a finished run would not appear until then.
+    if (typeof document !== 'undefined') lifeBuildHub();
 }
 
 // ── UI state ──────────────────────────────────────────────────────

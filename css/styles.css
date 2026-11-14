@@ -2901,6 +2901,9 @@ header, .sim-topbar {
   .life-layout { grid-template-columns: minmax(0, 1fr); }
   #screen-life { padding: 0 12px 32px; }
   .life-hub { padding: 16px 14px 18px; }
+  /* The scene is a fixed-ratio drawing: give it every pixel of width. */
+  .life-stage { padding: 6px; }
+  .life-stage .life-brief, .life-stage .life-debrief-head, .life-reveal-note { padding-left: 8px; padding-right: 8px; }
   .life-title { font-size: 17px; }
   .life-go { align-self: stretch; text-align: center; }
   .life-actions .life-go { flex: 1 1 auto; }

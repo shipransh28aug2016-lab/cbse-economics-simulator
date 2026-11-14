@@ -139,6 +139,47 @@ Class XII — Part A: Introductory Macroeconomics (Units 1–5)
   ≥10 well-formed questions. XP/Badges/Profile remain UI-only — those are still
   placeholders and should not be described as curriculum-mapped.
 
+## The Living Economy (`js/life-engine.js`) — live it first, name it after
+
+Every other mode starts from the diagram. A **Living World** starts from a role: the student
+runs a chai stall, sells in a mandi, spends pocket money, surveys a town, manages a bank,
+presents five Budgets. They decide, people react, and only in the debrief is the idea named,
+with **their own rounds as the evidence**. This is the experiential cycle NEP 2020 asks for:
+live → see → notice → name → apply. Six worlds, both classes; the home screen lists them
+first. Worked models: `docs/economics/models/living-worlds.md`.
+
+- **A separate registry, not a `sim.mode`.** `LIFE_WORLDS` (js/life-worlds-micro.js,
+  js/life-worlds-macro.js) is not part of `SIMS`: a world has no controls, quiz bank or
+  `SIM_I18N_HI` entry, so it does not count toward the coverage matrix. It still carries
+  `class`/`part`/`unit`/`syllabusIds`, checked against `CURRICULUM_NODES`, and `labs` — the
+  real sims its debrief hands on to.
+- **A world is a pure model.** `step(state, decision, round, rng)` plus the functions on
+  `world.truth`. Scene, ledger, chart, narration and debrief only read its output. Randomness
+  is seeded (`lifeRng`), so a seed and a list of decisions replay the same life.
+- **The reveal is the generating function.** The curve drawn over the student's dots is
+  `world.truth`, the thing that produced them. It is never a tidier second model.
+- **An insight must be earned.** Each debrief insight has `holds`, computed from the
+  student's history. Not earned ⇒ shown as "not yet lived" with something to try. Every
+  world has a test with a run that must *not* earn an insight, so a new insight needs one.
+- **A gut call is graded by the model.** Fix any counterfactual *before* returning from
+  `predict()`: `answer()` runs after `step()` has changed `state`.
+- **Text is `B2(en, hi)` pairs written in the same branch from the same numbers.**
+  `tools/test-life.js` fails on an English word in any Hindi text, on a number that differs
+  between the two, and on any `NaN`/`undefined` reaching the screen.
+- **Rendering is a pure function of (run, machine state, language)** — `lifeRender()`. A
+  language toggle redraws the same round. Never keep world state in the DOM.
+- The journal (`localStorage` `econsim-life-journal`) keeps a best score per world on the
+  student's own device. It is not the Profile/XP system, which is still a placeholder.
+
+**Circular Flow 3D view (`js/circular-flow-3d.js`).** An opt-in second *view* of
+`macro-gdp`, behind a `🧊 3D view` button. It is handed the same `nodes`/`flows` arrays the
+SVG is drawn from, so it cannot show a sector or a direction the model lacks. three.js +
+React Three Fiber are vendored in `js/vendor/circular-flow-3d.bundle.js` and loaded only on
+request (no CDN; rebuild with `npm run vendor:3d` after editing the source). The earlier
+version replaced the validated diagram whenever its CDN loaded and read fields the sim never
+passed, so it drew a 2-sector economy whatever the controls said — the same class of mistake
+as the Export/Import bug in Operating Principle 1.
+
 ## Graph Labs (`mode: 'graphlab'`) — why they exist and how they work
 
 Several things the syllabus names explicitly are distinctions about **motion**, and a
@@ -240,10 +281,12 @@ drifted apart. Those were: a language toggle on Home re-opening the last sim, a 
 question scored twice across a toggle, a PREDICT answer left on screen after Reset, and a
 story or voice outliving its sim.
 
-- `app` (`home`·`sim`·`profile`, js/app.js) is the only thing that sets or clears
+- `app` (`home`·`sim`·`life`·`profile`, js/app.js) is the only thing that sets or clears
   `currentSim`. Use `showScreen()`/`openSim()`, and never paint screens yourself. Leaving a
   sim runs every engine's `onSimLeave(fn)` teardown, and **a new engine that starts
   something (timer, voice, animation) must register one**.
+- `life` (`closed`·`brief`·`deciding`·`outcome`·`debrief`, js/life-engine.js) — one Living
+  World run; leaving the `life` screen closes it.
 - `quiz` (`closed`·`asking`·`answered`·`results`), `predictGate`
   (`hidden`·`asking`·`revealed`, with a `STALE` check in `glRender()`) and `voice`
   (`idle`·`speaking`+owner).
@@ -254,7 +297,7 @@ story or voice outliving its sim.
   `<body data-screen|quiz|predict-gate|voice>`, instead of reverse-engineering globals.
 - `testStateMachines` audits every registered machine (no missing target, no unreachable
   state, no dead end). `tools/smoke.js` holds a browser regression for each fixed bug.
-- The full map of all 14 machines, and the rule for when to convert one, is in
+- The full map of all 15 machines, and the rule for when to convert one, is in
   `docs/architecture/state-machines.md`.
 
 ## The transition layer (`js/transition-layer.js`) — cause → effect
@@ -444,6 +487,8 @@ a framework the project never had:
   correctness (mean/median/mode, Karl Pearson r, Spearman's rank, GDP three-method
   equality, elasticity signs, etc.) plus curriculum-registry integrity (no duplicate
   `syllabusId`, no sim mapped to a class/part/unit absent from `CURRICULUM_NODES`).
+- **Test** also runs `tools/test-life.js` (required by the file above): the Living Worlds'
+  economics, expert and must-not-earn runs, determinism, and the bilingual sweep.
 - **Build** → there is nothing to bundle; "build" means `tools/smoke.js` (a Playwright
   headless pass) serves the static files, opens every simulation, exercises its
   controls, and asserts zero console/page errors, at both a desktop and a mobile

@@ -69,7 +69,7 @@ function ok(cond, label) {
     // network policy may block, and browsers auto-request /favicon.ico
     // whether or not a page declares one. Both are filtered by URL, not
     // by message text, so a real app-code console error is never masked.
-    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/, /react\/jsx-runtime/];
+    const BENIGN_URL_PATTERNS = [/fonts\.googleapis\.com/, /fonts\.gstatic\.com/, /\/favicon\.ico$/];
     const errors = [];
     page.on('console', msg => {
         if (msg.type() !== 'error') return;
@@ -459,6 +459,147 @@ function ok(cond, label) {
         'state: econsim.state() reports every machine and every observed area');
     ok(errors.length === beforeFsm, `state: no console/page errors across the state-machine checks${errors.length > beforeFsm ? ' — ' + errors.slice(beforeFsm).join('; ') : ''}`);
 
+    // ── Circular Flow: the opt-in 3D view ─────────────────────────
+    // It used to replace the validated diagram whenever its CDN loaded, and
+    // it ignored every control. Now: 2D by default, 3D only on request, from
+    // a local bundle, drawing exactly the model's own sectors and flows.
+    const before3D = errors.length;
+    await page.evaluate(() => { localStorage.removeItem('econsim-cf3d'); window.openSim('macro-gdp'); });
+    await page.waitForTimeout(150);
+    ok(await page.locator('svg.flow-diagram').count() === 1 && await page.locator('.cf-3d-wrapper').count() === 0, '3D: the Circular Flow opens on the validated 2D diagram, not the 3D view');
+    await page.locator('[data-cf3d-toggle]').click();
+    await page.waitForSelector('.cf-3d-wrapper canvas', { timeout: 15000 }).catch(() => {});
+    const cf3d = () => page.evaluate(() => { const w = document.querySelector('.cf-3d-wrapper'); return w ? { nodes: w.dataset.nodes, flows: w.dataset.flows, canvas: !!w.querySelector('canvas') } : null; });
+    let v3 = await cf3d();
+    ok(!!v3 && v3.canvas && v3.nodes === 'hh,firm', `3D: turning it on draws a WebGL scene with only the 2-sector model's sectors (got ${JSON.stringify(v3)})`);
+    await page.locator('#ctl-sector .segmented-btn').nth(2).click();
+    await page.locator('#ctl-bank .segmented-btn').nth(1).click();
+    await page.waitForTimeout(250);
+    v3 = await cf3d();
+    ok(!!v3 && v3.nodes === 'hh,firm,gov,bank,foreign', `3D: switching to 4-Sector + Financial Market adds exactly those sectors (got ${v3 && v3.nodes})`);
+    ok(!!v3 && /flow-exp:foreign>firm:/.test(v3.flows) && /flow-imp:firm>foreign:/.test(v3.flows) && /flow-tax:hh>gov:/.test(v3.flows) && /flow-gspend:gov>firm:/.test(v3.flows),
+        '3D: export revenue flows Foreign→Firms and import spending Firms→Foreign — the same directions as the 2D diagram');
+    const readings3D = await page.locator('#readings-body').innerText();
+    ok(/Total Injections/.test(readings3D) && !/NaN/.test(readings3D), '3D: the readings panel still reports the model while the 3D view is showing');
+    await page.locator('[data-cf3d-toggle]').click();
+    await page.waitForTimeout(200);
+    ok(await page.locator('svg.flow-diagram').count() === 1 && await page.locator('.cf-3d-wrapper').count() === 0, '3D: turning it off returns to the 2D diagram and removes the WebGL scene');
+    await page.locator('[data-cf3d-toggle]').click();
+    await page.waitForSelector('.cf-3d-wrapper canvas', { timeout: 15000 }).catch(() => {});
+    await page.locator('#sim-back').click();
+    await page.evaluate(() => window.openSim('micro-ppf'));
+    await page.waitForTimeout(150);
+    ok(await page.locator('.cf-3d-wrapper').count() === 0, '3D: leaving the Circular Flow tears the scene down (no canvas left behind in the next sim)');
+    await page.evaluate(() => { localStorage.removeItem('econsim-cf3d'); window.showScreen('home'); });
+    ok(errors.length === before3D, `3D: no console/page errors${errors.length > before3D ? ' — ' + errors.slice(before3D).join('; ') : ''}`);
+
+    // ── The Living Economy (js/life-engine.js) ────────────────────
+    // Every world is played start to finish through the real UI.
+    const beforeLife = errors.length;
+    await page.evaluate(() => { localStorage.removeItem('econsim-life-journal'); window.showScreen('home'); });
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForSelector('#screen-home.active');
+    const lifeIds = await page.evaluate(() => LIFE_WORLDS.map(w => ({ id: w.id, rounds: w.rounds })));
+    ok(lifeIds.length >= 6 && await page.locator('.life-card').count() === lifeIds.length, `life: the home hub shows a card for each of the ${lifeIds.length} worlds`);
+    const lifeState = () => page.evaluate(() => ({ app: document.body.dataset.screen, life: document.body.dataset.life, snap: econsim.state().machines.life }));
+    const gutCall = async () => { const g = page.locator('[data-life-predict]'); if (await g.count()) await g.first().click(); };
+    // Sets a range input the way a person does (a real input event), on its step.
+    const setRange = async (loc, frac) => {
+        const [mn, mx, st] = await loc.evaluate(el => [Number(el.min), Number(el.max), Number(el.step) || 1]);
+        await loc.fill(String(mn + Math.round((mx - mn) * frac / st) * st));
+    };
+    for (const { id, rounds } of lifeIds) {
+        await page.locator(`.life-card[data-life-id="${id}"]`).click();
+        await page.waitForTimeout(80);
+        let st = await lifeState();
+        ok(st.app === 'life' && st.life === 'brief' && (await page.locator('.life-brief-body').innerText()).length > 80, `life ${id}: its card opens the role brief`);
+        await page.locator('#life-start').click();
+        let played = 0, sawPredict = false, sawNaN = false, ledgerGrew = true, sceneChanged = true;
+        while (played < rounds + 2 && await page.locator('#life-go').count()) {
+            const predict = page.locator('[data-life-predict]');
+            if (await predict.count()) {
+                if (!sawPredict) ok(await page.locator('#life-go').isDisabled(), `life ${id}: a gut call must be made before the decision can be confirmed`);
+                sawPredict = true;
+                await predict.nth(played % await predict.count()).click();
+            }
+            const ranges = page.locator('[data-life-range]');
+            for (let i = 0; i < await ranges.count(); i++) await setRange(page.locator('[data-life-range]').nth(i), ((played * 37 + i * 29) % 100) / 100);
+            const groups = await page.evaluate(() => [...new Set([...document.querySelectorAll('[data-life-choice]')].map(b => b.dataset.lifeChoice))]);
+            for (const g of groups) { const opts = page.locator(`[data-life-choice="${g}"]`); await opts.nth(played % await opts.count()).click(); }
+            if (await page.locator('#life-go').isDisabled()) { // e.g. a tray that costs more than the pocket money
+                ok(await page.locator('#life-live.bad').count() === 1, `life ${id}: a decision that is not allowed says why and cannot be confirmed`);
+                for (let i = 0; i < await page.locator('[data-life-range]').count(); i++) await setRange(page.locator('[data-life-range]').nth(i), 0);
+            }
+            const sceneBefore = await page.locator('#life-stage').innerHTML();
+            await page.locator('#life-go').click();
+            await page.waitForTimeout(60);
+            played++;
+            const text = await page.locator('#life-panel').innerText();
+            if (/NaN|undefined|Infinity/.test(text + await page.locator('#life-ledger').innerText())) sawNaN = true;
+            if (await page.locator('.life-ledger-table tbody tr').count() !== played) ledgerGrew = false;
+            if (await page.locator('#life-stage').innerHTML() === sceneBefore) sceneChanged = false;
+            if (played === 1) {
+                ok((await page.locator('#life-narration').innerText()).length > 40 && await page.locator('.life-stat').count() >= 3, `life ${id}: confirming a decision shows its consequence in words and figures`);
+                ok(await page.locator('#life-chart .js-plotly-plot, #life-chart.js-plotly-plot').count() >= 1, `life ${id}: the first decision puts the first point on "your own data"`);
+            }
+            await page.locator('#life-next').click();
+            await page.waitForTimeout(40);
+        }
+        st = await lifeState();
+        ok(played === rounds && st.life === 'debrief', `life ${id}: ${rounds} rounds through the UI end at the debrief (played ${played}, state ${st.life})`);
+        ok(ledgerGrew && sceneChanged && !sawNaN, `life ${id}: every round added a ledger row, redrew the scene, and never showed NaN/undefined`);
+        const insightCount = await page.locator('.life-insight').count();
+        ok(insightCount >= 3 && await page.locator('.life-insight.lived').count() + await page.locator('.life-insight.pending').count() === insightCount, `life ${id}: the debrief names its ideas, each marked lived or not yet (${insightCount})`);
+        ok(await page.locator('#life-reveal-chart.js-plotly-plot, #life-reveal-chart .js-plotly-plot').count() >= 1 && /^\d+%$/.test((await page.locator('.life-score-ring b').innerText()).trim()), `life ${id}: the reveal chart and a 0–100% score are drawn`);
+        ok(await page.locator('.life-lab').count() >= 1, `life ${id}: the debrief links on to at least one lab`);
+        await page.locator('#life-home').click();
+        await page.waitForTimeout(60);
+        st = await lifeState();
+        ok(st.app === 'home' && st.life === 'closed', `life ${id}: leaving returns Home and closes the run`);
+        ok(/★/.test(await page.locator(`.life-card[data-life-id="${id}"]`).innerText()), `life ${id}: the finished run is recorded on its card`);
+    }
+
+    // A language toggle mid-run keeps the same life: same round, same history.
+    await page.evaluate(() => window.lifeOpen('chai-stall', 11));
+    await page.locator('#life-start').click();
+    for (let d = 0; d < 3; d++) { await page.locator('#life-in-price').fill(String(10 + 2 * d)); await page.locator('#life-go').click(); if (d < 2) await page.locator('#life-next').click(); }
+    const enNarration = await page.locator('#life-narration').innerText();
+    const beforeToggle = await page.evaluate(() => JSON.stringify(econsim.state().machines.life) + document.querySelector('.life-ledger-table tbody').innerText);
+    await page.locator('#lang-toggle').click();
+    await page.waitForTimeout(150);
+    const hiNarration = await page.locator('#life-narration').innerText();
+    const afterToggle = await page.evaluate(() => JSON.stringify(econsim.state().machines.life) + document.querySelector('.life-ledger-table tbody').innerText);
+    ok(/[ऀ-ॿ]/.test(hiNarration) && !/[A-Za-z]{3,}/.test(hiNarration), `life: a mid-run toggle to Hindi translates the narration fully (got "${hiNarration.slice(0, 60)}…")`);
+    ok(beforeToggle === afterToggle, 'life: the toggle keeps the same round, the same seed and the same ledger');
+    ok((hiNarration.match(/\d+/g) || []).join() === (enNarration.match(/\d+/g) || []).join(), 'life: the Hindi narration carries exactly the numbers the English one did');
+    ok(/[ऀ-ॿ]/.test(await page.locator('#life-stage svg').innerHTML()) && /[ऀ-ॿ]/.test(await page.locator('#life-title').innerText()), 'life: the scene and the title are in Hindi too');
+    await page.locator('#lang-toggle').click();
+    await page.waitForTimeout(150);
+    ok(await page.locator('#life-narration').innerText() === enNarration, 'life: toggling back restores the exact English narration');
+
+    // Leaving by the logo closes the run; a later toggle on Home must not resurrect it.
+    await page.locator('.nav-logo').click();
+    await page.waitForTimeout(60);
+    await page.locator('#lang-toggle').click();
+    await page.waitForTimeout(120);
+    let ls = await lifeState();
+    ok(ls.app === 'home' && ls.life === 'closed', `life: after leaving by the logo, a language toggle on Home stays on Home (app=${ls.app}, life=${ls.life})`);
+    await page.locator('#lang-toggle').click();
+    await page.waitForTimeout(120);
+
+    // "Take it to the lab" hands over to a real sim and closes the life.
+    await page.evaluate(() => window.lifeOpen('pocket-money', 3));
+    await page.locator('#life-start').click();
+    for (let d = 0; d < 6; d++) { await gutCall(); await page.locator('#life-go').click(); await page.locator('#life-next').click(); }
+    const labId = await page.locator('.life-lab').first().getAttribute('data-life-lab');
+    await page.locator('.life-lab').first().click();
+    await page.waitForTimeout(120);
+    ls = await lifeState();
+    const openSimId = await page.evaluate(() => econsim.state().machines.app.simId);
+    ok(ls.app === 'sim' && ls.life === 'closed' && openSimId === labId, `life: a lab link opens that lab and closes the life (app=${ls.app}, sim=${openSimId})`);
+    await page.evaluate(() => window.showScreen('home'));
+    ok(errors.length === beforeLife, `life: no console/page errors across every world${errors.length > beforeLife ? ' — ' + errors.slice(beforeLife).join('; ') : ''}`);
+
     // ── Mobile viewport: no horizontal overflow ──────────────────
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`http://localhost:${PORT}/index.html`, { waitUntil: 'load' });
@@ -472,6 +613,18 @@ function ok(cond, label) {
         overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         ok(overflow <= 4, `${id} screen has no horizontal overflow at 390px width (overflow=${overflow}px)`);
     }
+
+    // The Living Economy at phone width: hub, a round in play, and the debrief.
+    await page.evaluate(() => window.showScreen('home'));
+    await page.evaluate(() => window.lifeOpen('finance-minister', 5));
+    await page.locator('#life-start').click();
+    await page.waitForTimeout(80);
+    overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    ok(overflow <= 4, `life (deciding) has no horizontal overflow at 390px width (overflow=${overflow}px)`);
+    for (let y = 0; y < 5; y++) { await gutCall(); await page.locator('#life-go').click(); if (y === 0) { overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); ok(overflow <= 4, `life (outcome) has no horizontal overflow at 390px width (overflow=${overflow}px)`); } await page.locator('#life-next').click(); }
+    await page.waitForTimeout(150);
+    overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    ok(overflow <= 4, `life (debrief) has no horizontal overflow at 390px width (overflow=${overflow}px)`);
 
     ok(errors.length === 0, `zero console/page errors across the entire run (got ${errors.length}: ${errors.slice(0, 5).join(' | ')})`);
 

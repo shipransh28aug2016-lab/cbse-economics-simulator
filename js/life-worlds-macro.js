@@ -397,7 +397,7 @@ LIFE_WORLDS.push({
     stats(o) {
         return [
             { label: B2('National income', 'राष्ट्रीय आय'), value: crore(o.output), tone: o.gapType === 'none' ? 'good' : undefined },
-            { label: o.gapType === 'excess' ? B2('Inflationary gap', 'स्फीतिक अंतराल') : B2('Deflationary gap', 'अवस्फीतिक अंतराल'), value: crore(o.gap), tone: o.gapType === 'none' ? 'good' : 'bad' },
+            { label: o.gapType === 'excess' ? B2('Inflationary gap', 'स्फीतिक अंतराल') : (o.gapType === 'deficient' ? B2('Deflationary gap', 'अवस्फीतिक अंतराल') : B2('Gap', 'अंतराल')), value: crore(o.gap), tone: o.gapType === 'none' ? 'good' : 'bad' },
             { label: B2('Fiscal deficit', 'राजकोषीय घाटा'), value: crore(o.fiscal) },
             { label: B2('Debt at year end', 'वर्ष के अंत में ऋण'), value: crore(o.debtEnd) }
         ];
