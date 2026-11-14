@@ -875,7 +875,8 @@ function renderSimChart(sim) {
         // stripping that suffix gives Mima the exact list of curves that
         // moved, read from the same geometry the student sees, never
         // guessed from the sim's economics.
-        _mimaGhostedNames = ghosts.map(g => String(g.name || '').replace(/ \(before\)$/, ''));
+        // Mima speaks these names, so in Hindi mode she gets the Hindi ones.
+        _mimaGhostedNames = ghosts.map(g => translateChartText(sim, String(g.name || '').replace(/ \(before\)$/, '')));
         if (typeof Plotly !== 'undefined') {
             const shown = localizeChart(sim, ghosts.concat(result.traces || []), layout);
             Plotly.react(overlay, shown.traces, shown.layout, { displayModeBar: false, responsive: true }).catch(() => {});

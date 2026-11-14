@@ -71,7 +71,7 @@ this instead of reverse-engineering globals and CSS classes:
 The `<body>` element also carries `data-screen`, `data-quiz`, `data-predict-gate` and
 `data-voice`.
 
-## The map: all 14 machines
+## The map: all 15 machines
 
 **Explicit** means a `createMachine` owns the state. **Observed** means the state is still
 implicit but works correctly, so it is exposed read-only through `registerStateObserver`
@@ -79,7 +79,8 @@ rather than rewritten. The rule for when to convert one is in the last section.
 
 | Machine | Kind | Owner | States | Invariant it protects |
 |---|---|---|---|---|
-| App lifecycle | explicit `app` | `js/app.js` | `home` · `sim` · `profile` | `currentSim` is set only on entering `sim` and cleared on leaving it; leaving runs every `onSimLeave` hook. |
+| App lifecycle | explicit `app` | `js/app.js` | `home` · `sim` · `life` · `profile` | `currentSim` is set only on entering `sim` and cleared on leaving it; leaving runs every `onSimLeave` hook. |
+| Living World | explicit `life` | `js/life-engine.js` | `closed` · `brief` · `deciding` · `outcome` · `debrief` | A decision is committed exactly once per round (`COMMIT` only from `deciding`); `NEXT`/`FINISH` are guarded by whether the run is done. The whole screen is a pure function of (run, state, language), so a language toggle redraws the same round with the same history. Leaving the `life` screen closes the run (`app` exit → `lifeClose`), so a later toggle on Home cannot reopen it. |
 | Quiz | explicit `quiz` | `js/quiz-engine.js` | `closed` · `asking` · `answered` · `results` | Only `ANSWER` scores, and only from `asking`. A re-render (language toggle) redraws the current state and never changes it. Questions keep their raw bilingual source and a fixed option order, so they re-localize in place. |
 | PREDICT gate (Graph Labs) | explicit `predictGate` | `js/graph-lab-engine.js` | `hidden` · `asking` · `revealed` | A revealed answer is visible only while `glState` equals the state it was revealed for. `glRender()` sends `STALE` otherwise. |
 | Voice | explicit `voice` | `js/mima-voice.js` | `idle` · `speaking`(owner) | Only the *current* utterance can end `speaking`. The owner (`mima`/`story`) decides which button shows ⏹. |

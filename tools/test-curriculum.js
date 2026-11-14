@@ -75,7 +75,11 @@ const FILES = [
     'js/i18n_hi_metrics.js',
     'js/i18n_hi_diagram.js',
     'js/i18n_hi_chapters.js',
-    'js/i18n_hi_charts.js'
+    'js/i18n_hi_charts.js',
+    // The Living Economy — tested by tools/test-life.js against this same context.
+    'js/life-engine.js',
+    'js/life-worlds-micro.js',
+    'js/life-worlds-macro.js'
 ];
 
 function noop() {}
@@ -142,6 +146,7 @@ const translateReadings = context.translateReadings;
 const diffMetrics = vm.runInContext('diffMetrics', context);
 const buildGhostTraces = vm.runInContext('buildGhostTraces', context);
 const mimaExplain = vm.runInContext('mimaExplain', context);
+const storyContexts = vm.runInContext('storyContexts', context);
 const renderChallengeShell = vm.runInContext('renderChallengeShell', context);
 
 let failures = 0, checks = 0, warnings = 0;
@@ -677,6 +682,8 @@ function extractNodePos(html, label) {
 
     sandbox.document.getElementById = origGetById;
     sandbox.document.createElement = origCreateElem;
+})();
+
 // ── Graph Lab glide (js/graph-lab-engine.js glGlideSvg) ───────────
 // A scenario preset or Reset no longer teleports the diagram: it glides,
 // and every frame is model() run at values part-way between the old and
@@ -1832,6 +1839,10 @@ Object.keys(READINGS_I18N_HI).forEach(simId => {
 });
 context.currentLang = 'en'; // restore, in case any later section is added that assumes the English default
 console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims have a READINGS_I18N_HI dictionary (${readingsPatternsChecked} pattern hits verified against actual compute() output).`);
+
+// ── The Living Economy (js/life-engine.js + js/life-worlds-*.js) ──
+require('./test-life.js')({ context, ok, SIMS, CURRICULUM_NODES });
+require('./test-circular-flow-3d.js')({ context, ok, SIMS });
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {

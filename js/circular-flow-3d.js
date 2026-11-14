@@ -1,45 +1,54 @@
+// SOURCE for js/vendor/circular-flow-3d.bundle.js — rebuild with `npm run vendor:3d`.
+// An OPT-IN second view of the Circular Flow lab (macro-gdp). It holds no
+// economics: it draws the node/flow list js/simulations.js hands it.
 import React, { useEffect, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { NODE_POS, flowGeometry, layoutFlowLabels } from './circular-flow-layout.js';
 
 const h = React.createElement;
 
-// Helper to generate text texture for 3D Sprites
-function createTextSprite(text, color = '#ffffff', bgColor = 'rgba(15, 23, 42, 0.75)') {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
+// A text label as a camera-facing sprite. The canvas is sized to the text
+// (a fixed 256px one cut long labels off mid-word), at 2x for sharpness.
+const LABEL_FONT = '700 30px Inter, "Noto Sans Devanagari", system-ui, sans-serif';
+let measureCtx = null;
+// Label canvas size in px for a text — one definition, used both to draw the
+// sprite and to lay labels out, so the layout reserves exactly what is drawn.
+function labelPixelWidth(text) {
+  if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
+  measureCtx.font = LABEL_FONT;
+  return Math.ceil(measureCtx.measureText(text).width) + 44;
+}
+const LABEL_PX_H = 60;
+const labelWorldWidth = (text, worldHeight) => worldHeight * labelPixelWidth(text) / LABEL_PX_H;
 
-  // Background pill
+function createTextSprite(text, color = '#ffffff', bgColor = 'rgba(15, 23, 42, 0.75)', worldHeight = 0.75) {
+  const font = LABEL_FONT;
+  const w = labelPixelWidth(text), hgt = LABEL_PX_H;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = hgt;
+  const ctx = canvas.getContext('2d');
   ctx.fillStyle = bgColor;
   ctx.beginPath();
-  if (ctx.roundRect) {
-    ctx.roundRect(8, 8, 240, 48, 12);
-  } else {
-    ctx.rect(8, 8, 240, 48);
-  }
+  if (ctx.roundRect) ctx.roundRect(3, 3, w - 6, hgt - 6, 14); else ctx.rect(3, 3, w - 6, hgt - 6);
   ctx.fill();
-
-  // Border
   ctx.strokeStyle = color;
   ctx.lineWidth = 3;
   ctx.stroke();
-
-  // Text
-  ctx.fillStyle = color;
-  ctx.font = 'Bold 20px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 128, 32);
+  ctx.fillText(text, w / 2, hgt / 2 + 1);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
-
-  const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(spriteMaterial);
-  sprite.scale.set(3, 0.75, 1);
+  // depthTest off: a label is never hidden behind a building.
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+  sprite.renderOrder = 10;
+  sprite.scale.set(worldHeight * (w / hgt), worldHeight, 1);
   return sprite;
 }
 
@@ -278,60 +287,51 @@ function ForeignModel({ position, label }) {
   );
 }
 
-// Glowing Particle Stream along 3D Quadratic Bezier Curve
-function GlowingParticleFlow({ start, end, mid, color, isRealFlow, intensity = 1, speed = 1, particleCount = 12 }) {
+// One stream of particles along a 3D quadratic Bezier, sized and timed from
+// the flow's own value — the same value the SVG diagram draws.
+function FlowStream({ geometry, color, isReal, ratio, label, labelPos }) {
   const groupRef = useRef();
+  const labelRef = useRef();
 
-  const curve = useMemo(() => {
-    return new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(...start),
-      new THREE.Vector3(...mid),
-      new THREE.Vector3(...end)
-    );
-  }, [start, end, mid]);
+  const curve = useMemo(() => new THREE.QuadraticBezierCurve3(
+    new THREE.Vector3(...geometry.a), new THREE.Vector3(...geometry.mid), new THREE.Vector3(...geometry.b)
+  ), [geometry]);
 
-  const particles = useMemo(() => {
-    const arr = [];
-    const count = Math.max(3, Math.min(25, Math.floor(particleCount * (intensity / 100))));
-    for (let i = 0; i < count; i++) {
-      arr.push({
-        offset: i / count,
-        scale: isRealFlow ? 0.14 : 0.18,
-      });
-    }
-    return arr;
-  }, [particleCount, intensity, isRealFlow]);
+  // More money ⇒ more particles, moving faster (2…14 particles).
+  const count = Math.max(2, Math.round(2 + 12 * ratio));
+  const particles = useMemo(() => Array.from({ length: count }, (_, i) => i / count), [count]);
+
+  useEffect(() => {
+    if (!labelRef.current || !label) return undefined;
+    const sprite = createTextSprite(label, color, 'rgba(15, 23, 42, 0.92)', 0.5);
+    sprite.position.set(...labelPos);
+    const holder = labelRef.current;
+    holder.add(sprite);
+    return () => { holder.remove(sprite); };
+  }, [label, color, labelPos]);
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    const time = state.clock.getElapsedTime() * 0.4 * (speed + intensity / 100);
+    const time = state.clock.getElapsedTime() * (0.12 + 0.3 * ratio);
     const children = groupRef.current.children;
-
-    for (let i = 0; i < children.length; i++) {
-      if (i >= particles.length) break;
-      const mesh = children[i];
-      let t = (particles[i].offset + time) % 1.0;
-      const pt = curve.getPoint(t);
-      mesh.position.copy(pt);
-
-      const s = particles[i].scale * (0.8 + 0.4 * Math.sin(t * Math.PI * 2 + time * 3));
-      mesh.scale.set(s, s, s);
+    for (let i = 0; i < children.length && i < particles.length; i++) {
+      children[i].position.copy(curve.getPoint((particles[i] + time) % 1));
     }
   });
 
-  const linePoints = useMemo(() => curve.getPoints(30), [curve]);
-  const lineGeometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(linePoints), [linePoints]);
-
-  if (intensity <= 0) return null;
+  const lineGeometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(curve.getPoints(30)), [curve]);
+  const size = isReal ? 0.2 : 0.14;
 
   return h('group', null,
     h('line', { geometry: lineGeometry },
-      h('lineBasicMaterial', { color, transparent: true, opacity: 0.35, linewidth: 2 })
+      h('lineBasicMaterial', { color, transparent: true, opacity: isReal ? 0.3 : 0.55 })
     ),
+    h('group', { ref: labelRef }),
     h('group', { ref: groupRef },
       particles.map((p, idx) =>
-        h('mesh', { key: idx },
-          isRealFlow ? h('boxGeometry', { args: [1, 1, 1] }) : h('sphereGeometry', { args: [1, 12, 12] }),
+        h('mesh', { key: idx, scale: [size, size, size] },
+          // Same idiom as the 2D diagram: real flow = squares, money flow = round.
+          isReal ? h('boxGeometry', { args: [1, 1, 1] }) : h('sphereGeometry', { args: [1, 12, 12] }),
           h('meshBasicMaterial', { color })
         )
       )
@@ -339,122 +339,75 @@ function GlowingParticleFlow({ start, end, mid, color, isRealFlow, intensity = 1
   );
 }
 
-// Main 3D Circular Flow Scene
-function CircularFlow3DScene({ values }) {
-  const model = values.model || '2-sector';
-  const hasBank = !!values.hasBank;
+const NODE_MODEL = { hh: HouseholdModel, firm: FirmModel, gov: GovtModel, bank: BankModel, foreign: ForeignModel };
 
-  const C = values.C || 90;
-  const Y = values.Y || 90;
-  const S = values.S || 0;
-  const I = values.I || 0;
-  const T = values.T || 0;
-  const G = values.G || 0;
-  const X = values.X || 0;
-  const M = values.M || 0;
-
-  const householdPos = [-6.2, 0, 0];
-  const firmPos = [6.2, 0, 0];
-  const govtPos = [0, 0, -4.8];
-  const bankPos = [0, 0, 0];
-  const foreignPos = [0, 0, 4.8];
-
+// The scene draws ONLY what `spec` lists. `spec` is built by macro-gdp's
+// customRender (js/simulations.js) from the very same nodes/flows arrays its
+// SVG diagram is drawn from, so the two views cannot disagree about which
+// sectors exist, which way money moves, or how big a flow is.
+function CircularFlow3DScene({ spec, layout }) {
+  const maxValue = Math.max(1, ...spec.flows.map(f => f.value));
   return h(React.Fragment, null,
     h('ambientLight', { intensity: 0.8 }),
-    h('directionalLight', { position: [12, 20, 10], intensity: 1.2, castShadow: true }),
+    h('directionalLight', { position: [12, 20, 10], intensity: 1.2 }),
     h('directionalLight', { position: [-10, 10, -10], intensity: 0.4, color: '#a5f3fc' }),
-    h('gridHelper', { args: [24, 24, '#475569', '#1e293b'], position: [0, -0.2, 0] }),
+    h('gridHelper', { args: [26, 26, '#475569', '#1e293b'], position: [0, -0.2, 0] }),
 
-    h(HouseholdModel, { position: householdPos, label: 'Households' }),
-    h(FirmModel, { position: firmPos, label: 'Firms' }),
+    spec.nodes.map(n => h(NODE_MODEL[n.key], { key: n.key, position: NODE_POS[n.key], label: n.label })),
 
-    (model === '3-sector' || model === '4-sector') && h(GovtModel, { position: govtPos, label: 'Government' }),
-    hasBank && h(BankModel, { position: bankPos, label: 'Financial Market' }),
-    model === '4-sector' && h(ForeignModel, { position: foreignPos, label: 'Foreign Sector' }),
-
-    h(GlowingParticleFlow, {
-      start: householdPos, end: firmPos, mid: [0, 1.8, 2.2],
-      color: '#a855f7', isRealFlow: false, intensity: C, particleCount: 14
-    }),
-    h(GlowingParticleFlow, {
-      start: firmPos, end: householdPos, mid: [0, 1.8, -2.2],
-      color: '#eab308', isRealFlow: false, intensity: Y, particleCount: 14
-    }),
-    h(GlowingParticleFlow, {
-      start: firmPos, end: householdPos, mid: [0, 0.6, 1.5],
-      color: '#22c55e', isRealFlow: true, intensity: C, particleCount: 10
-    }),
-    h(GlowingParticleFlow, {
-      start: householdPos, end: firmPos, mid: [0, 0.6, -1.5],
-      color: '#3b82f6', isRealFlow: true, intensity: Y, particleCount: 10
-    }),
-
-    hasBank && S > 0 && h(GlowingParticleFlow, {
-      start: householdPos, end: bankPos, mid: [-3.1, 1.2, 0],
-      color: '#06b6d4', isRealFlow: false, intensity: S * 3, particleCount: 10
-    }),
-    hasBank && I > 0 && h(GlowingParticleFlow, {
-      start: bankPos, end: firmPos, mid: [3.1, 1.2, 0],
-      color: '#f97316', isRealFlow: false, intensity: I * 3, particleCount: 10
-    }),
-
-    (model === '3-sector' || model === '4-sector') && T > 0 && h(GlowingParticleFlow, {
-      start: householdPos, end: govtPos, mid: [-3.5, 1.5, -2.8],
-      color: '#ef4444', isRealFlow: false, intensity: T * 3, particleCount: 10
-    }),
-    (model === '3-sector' || model === '4-sector') && G > 0 && h(GlowingParticleFlow, {
-      start: govtPos, end: firmPos, mid: [3.5, 1.5, -2.8],
-      color: '#3b82f6', isRealFlow: false, intensity: G * 3, particleCount: 10
-    }),
-
-    model === '4-sector' && M > 0 && h(GlowingParticleFlow, {
-      start: householdPos, end: foreignPos, mid: [-3.5, 1.5, 2.8],
-      color: '#ec4899', isRealFlow: false, intensity: M * 3, particleCount: 10
-    }),
-    model === '4-sector' && X > 0 && h(GlowingParticleFlow, {
-      start: foreignPos, end: firmPos, mid: [3.5, 1.5, 2.8],
-      color: '#10b981', isRealFlow: false, intensity: X * 3, particleCount: 10
-    })
+    spec.flows.filter(f => f.value > 0).map(f => h(FlowStream, {
+      key: f.id, geometry: flowGeometry(f), color: f.color, isReal: f.kind === 'real',
+      ratio: Math.max(0, Math.min(1, f.value / maxValue)), label: f.label, labelPos: layout.place[f.id].position
+    }))
   );
 }
 
-// Container Component attached to window
 let rootInstance = null;
 let currentContainer = null;
 
-export function render3DCircularFlow(container, values) {
-  if (!container) return;
+export function render3DCircularFlow(container, spec) {
+  if (!container || !spec || !Array.isArray(spec.flows) || !Array.isArray(spec.nodes)) return false;
 
-  if (!rootInstance || currentContainer !== container) {
+  if (!rootInstance || currentContainer !== container || !container.querySelector('.cf-3d-wrapper')) {
+    unmount3DCircularFlow();
     container.innerHTML = '';
     currentContainer = container;
-
-    container.style.position = 'relative';
-    container.style.width = '100%';
-    container.style.height = '480px';
-    container.style.borderRadius = '16px';
-    container.style.overflow = 'hidden';
-    container.style.background = 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)';
-
-    const canvasWrapper = document.createElement('div');
-    canvasWrapper.style.width = '100%';
-    canvasWrapper.style.height = '100%';
-    container.appendChild(canvasWrapper);
-
-    rootInstance = createRoot(canvasWrapper);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'cf-3d-wrapper';
+    wrapper.setAttribute('role', 'img');
+    container.appendChild(wrapper);
+    rootInstance = createRoot(wrapper);
   }
+  const wrapper = container.querySelector('.cf-3d-wrapper');
+  if (wrapper) {
+    wrapper.setAttribute('aria-label', spec.ariaLabel || '');
+    // Machine-readable mirror of what is drawn — what tools/smoke.js asserts on.
+    wrapper.dataset.nodes = spec.nodes.map(n => n.key).join(',');
+    wrapper.dataset.flows = spec.flows.filter(f => f.value > 0).map(f => `${f.id}:${f.from}>${f.to}:${f.value}`).join(',');
+  }
+
+  // Where every label goes — decided in screen space so none overlaps another.
+  const layout = layoutFlowLabels(spec, labelWorldWidth);
+  if (wrapper) wrapper.dataset.labelOverlaps = String(layout.overlaps);
 
   rootInstance.render(
     h(Canvas, {
       orthographic: true,
-      camera: { position: [14, 14, 14], zoom: 36, near: -100, far: 1000 },
+      camera: { position: [14, 14, 14], zoom: 26, near: -100, far: 1000 },
       style: { width: '100%', height: '100%' }
     },
-      h(CircularFlow3DScene, { values })
+      h(CircularFlow3DScene, { spec, layout })
     )
   );
+  return true;
 }
 
-if (typeof window !== 'undefined') {
-  window.renderCircularFlow3D = render3DCircularFlow;
+// Stops the WebGL loop and frees the context — called when the student turns
+// the 3D view off or leaves the sim.
+export function unmount3DCircularFlow() {
+  if (rootInstance) {
+    try { rootInstance.unmount(); } catch { /* already gone */ }
+  }
+  rootInstance = null;
+  currentContainer = null;
 }

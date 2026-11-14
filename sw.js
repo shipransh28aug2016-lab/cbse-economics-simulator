@@ -2,7 +2,7 @@
 // asset is cache-busted with ?v=N in index.html, and a cache-first worker
 // would keep serving a stale lab after a fix ships. The cache is only a
 // fallback for when the network is gone (a classroom with no Wi-Fi).
-const CACHE = 'econsim-v1';
+const CACHE = 'econsim-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {

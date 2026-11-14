@@ -45,11 +45,19 @@ const appMachine = createMachine({
                 currentSim = payload.sim;
             }
         };
+        // A Living World (js/life-engine.js) is its own screen: entering it
+        // from a sim leaves that sim; leaving it closes the run.
+        const life = { target: 'life' };
         return {
-            home: { on: { OPEN_SIM: open, GO_HOME: 'home', GO_PROFILE: 'profile' }, enter: () => paintScreen('home') },
-            profile: { on: { OPEN_SIM: open, GO_HOME: 'home', GO_PROFILE: 'profile' }, enter: () => paintScreen('profile') },
+            home: { on: { OPEN_SIM: open, OPEN_LIFE: life, GO_HOME: 'home', GO_PROFILE: 'profile' }, enter: () => paintScreen('home') },
+            profile: { on: { OPEN_SIM: open, OPEN_LIFE: life, GO_HOME: 'home', GO_PROFILE: 'profile' }, enter: () => paintScreen('profile') },
+            life: {
+                on: { OPEN_SIM: open, OPEN_LIFE: life, GO_HOME: 'home', GO_PROFILE: 'profile' },
+                enter: () => paintScreen('life'),
+                exit: () => { if (typeof lifeClose === 'function') lifeClose(); }
+            },
             sim: {
-                on: { OPEN_SIM: open, GO_HOME: 'home', GO_PROFILE: 'profile' },
+                on: { OPEN_SIM: open, OPEN_LIFE: life, GO_HOME: 'home', GO_PROFILE: 'profile' },
                 enter: () => paintScreen('sim'),
                 exit: ctx => {
                     const left = ctx.simId;
@@ -120,6 +128,8 @@ function applyLanguage(lang) {
     // with no reload and no lost slider/table/quiz state beyond what a
     // normal re-render already resets.
     if (typeof rebuildHomeGrids === 'function') rebuildHomeGrids();
+    // A Living World re-draws from its own run: same round, same history.
+    if (appMachine.state === 'life' && typeof lifeRender === 'function') lifeRender();
     // Only a sim that is ON SCREEN is re-rendered — never one left behind.
     if (appMachine.state === 'sim' && currentSim && typeof renderSim === 'function') {
         openSim(currentSim.id); // re-runs the title/tag/renderSim wiring below
@@ -171,6 +181,7 @@ function rebuildHomeGrids() {
     };
 
     Object.values(grids).forEach(g => { if (g) g.innerHTML = ''; });
+    if (typeof lifeBuildHub === 'function') lifeBuildHub(); // the Living Economy cards
 
     if (typeof SIMS !== 'undefined') {
         SIMS.forEach(sim => {
@@ -238,6 +249,8 @@ function animateHeroStats() {
     // goes stale every time a lab is added (it read 34 when there were 44).
     const labCount = document.getElementById('hero-lab-count');
     if (labCount && typeof SIMS !== 'undefined') labCount.textContent = String(SIMS.length);
+    const lifeCount = document.getElementById('hero-life-count');
+    if (lifeCount && typeof LIFE_WORLDS !== 'undefined') lifeCount.textContent = String(LIFE_WORLDS.length);
     const nums = document.querySelectorAll('.hero-stats-strip b');
     if (!nums.length) return;
     const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

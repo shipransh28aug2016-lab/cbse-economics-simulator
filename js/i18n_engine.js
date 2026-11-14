@@ -24,7 +24,8 @@ if (typeof globalThis.I18N_HI === 'undefined') {
 
         'hero.badge': '🎓 सीबीएसई XI–XII',
         'hero.title': 'अर्थशास्त्र <span class="grad-text">आपके हाथों में जीवंत</span> हो उठता है',
-        'hero.statsTitle': 'सिमुलेशन, ग्राफ़ लैब, डेटा लैब और एक्सप्लोरर · कक्षा XI और XII · 4 भाग · हर लैब के लिए प्रश्नोत्तरी',
+        'hero.statsTitle': 'जीवंत दुनियाएँ जिनमें आप भूमिका निभाते हैं · सिमुलेशन, ग्राफ़ लैब, डेटा लैब और एक्सप्लोरर · कक्षा XI और XII · 4 भाग · हर लैब के लिए प्रश्नोत्तरी',
+        'hero.lives': 'भूमिकाएँ',
         'hero.labs': 'लैब्स',
         'hero.classes': 'कक्षाएँ',
         'hero.parts': 'भाग',
