@@ -40,6 +40,10 @@ function cf3dToggleHTML(is3D) {
 // Draws the 3D view if it is wanted AND loaded; returns false so the caller
 // draws the 2D diagram otherwise (and frees the WebGL scene if one was up).
 function cf3dRender(container, spec) {
+    // 3D is wanted (the student chose it earlier, kept in localStorage) but the
+    // bundle is not loaded yet — e.g. after a reload. Load it now and redraw
+    // when it arrives; the 2D diagram is shown meanwhile.
+    if (cf3dWanted() && !cf3dModule && !cf3dLoading) cf3dLoad();
     if (!cf3dModule || !cf3dWanted() || !container || typeof container.querySelector !== 'function') {
         if (cf3dModule) cf3dModule.unmount3DCircularFlow();
         return false;
@@ -56,18 +60,24 @@ function cf3dRedraw() {
         renderSimChart(currentSim);
     }
 }
-function cf3dToggle() {
-    const turnOn = !cf3dWanted();
-    try { localStorage.setItem(CF3D_KEY, turnOn ? '1' : '0'); } catch { /* private mode: view just won't persist */ }
-    if (!turnOn || cf3dModule) { cf3dRedraw(); return Promise.resolve(); }
+let cf3dLoading = false;
+function cf3dLoad() {
+    cf3dLoading = true;
     return import('./vendor/circular-flow-3d.bundle.js')
-        .then(mod => { cf3dModule = mod; cf3dRedraw(); })
+        .then(mod => { cf3dModule = mod; cf3dLoading = false; cf3dRedraw(); })
         .catch(() => {
             // No WebGL / file:// module block: stay on the 2D diagram, say so.
+            cf3dLoading = false;
             try { localStorage.setItem(CF3D_KEY, '0'); } catch { /* ignore */ }
             const btn = document.querySelector('[data-cf3d-toggle]');
             if (btn) btn.textContent = (typeof currentLang !== 'undefined' && currentLang === 'hi') ? '3D दृश्य यहाँ उपलब्ध नहीं' : '3D view unavailable here';
         });
+}
+function cf3dToggle() {
+    const turnOn = !cf3dWanted();
+    try { localStorage.setItem(CF3D_KEY, turnOn ? '1' : '0'); } catch { /* private mode: view just won't persist */ }
+    if (!turnOn || cf3dModule) { cf3dRedraw(); return Promise.resolve(); }
+    return cf3dLoad();
 }
 if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
     document.addEventListener('click', e => {
@@ -560,7 +570,7 @@ const SIMS = [
                         ${nodesSVG}
                         ${labelsSVG}
                         ${legendSVG}
-                    </svg>${cf3dToggleHTML(false)}`;
+                    </svg>${cf3dToggleHTML(cf3dWanted() && !cf3dModule && cf3dLoading)}`;
             }
 
             // Injections vs Leakages — the actual CBSE-taught rule for

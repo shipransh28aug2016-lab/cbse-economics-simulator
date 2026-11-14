@@ -1842,6 +1842,7 @@ console.log(`Dynamic readings translation coverage: ${readingsDictCoverage} sims
 
 // ── The Living Economy (js/life-engine.js + js/life-worlds-*.js) ──
 require('./test-life.js')({ context, ok, SIMS, CURRICULUM_NODES });
+require('./test-circular-flow-3d.js')({ context, ok, SIMS });
 
 console.log(`\n${checks} assertions run, ${failures} failed, ${warnings} warnings.`);
 if (failures > 0) {

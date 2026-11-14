@@ -477,6 +477,7 @@ function ok(cond, label) {
     await page.waitForTimeout(250);
     v3 = await cf3d();
     ok(!!v3 && v3.nodes === 'hh,firm,gov,bank,foreign', `3D: switching to 4-Sector + Financial Market adds exactly those sectors (got ${v3 && v3.nodes})`);
+    ok(await page.evaluate(() => document.querySelector('.cf-3d-wrapper').dataset.labelOverlaps) === '0', '3D: with the real font measured in the browser, no flow label overlaps another label or a sector name (densest case: 4-Sector + Financial Market)');
     ok(!!v3 && /flow-exp:foreign>firm:/.test(v3.flows) && /flow-imp:firm>foreign:/.test(v3.flows) && /flow-tax:hh>gov:/.test(v3.flows) && /flow-gspend:gov>firm:/.test(v3.flows),
         '3D: export revenue flows Foreign→Firms and import spending Firms→Foreign — the same directions as the 2D diagram');
     const readings3D = await page.locator('#readings-body').innerText();
@@ -486,6 +487,11 @@ function ok(cond, label) {
     ok(await page.locator('svg.flow-diagram').count() === 1 && await page.locator('.cf-3d-wrapper').count() === 0, '3D: turning it off returns to the 2D diagram and removes the WebGL scene');
     await page.locator('[data-cf3d-toggle]').click();
     await page.waitForSelector('.cf-3d-wrapper canvas', { timeout: 15000 }).catch(() => {});
+    // A saved 3D preference survives a reload: the bundle loads itself and the scene returns.
+    await page.reload({ waitUntil: 'load' });
+    await page.evaluate(() => window.openSim('macro-gdp'));
+    await page.waitForSelector('.cf-3d-wrapper canvas', { timeout: 15000 }).catch(() => {});
+    ok(await page.locator('.cf-3d-wrapper canvas').count() === 1, '3D: after a reload with 3D switched on, the scene comes back by itself (not stuck on 2D with a button that says the opposite)');
     await page.locator('#sim-back').click();
     await page.evaluate(() => window.openSim('micro-ppf'));
     await page.waitForTimeout(150);

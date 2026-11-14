@@ -175,7 +175,10 @@ first. Worked models: `docs/economics/models/living-worlds.md`.
 `macro-gdp`, behind a `🧊 3D view` button. It is handed the same `nodes`/`flows` arrays the
 SVG is drawn from, so it cannot show a sector or a direction the model lacks. three.js +
 React Three Fiber are vendored in `js/vendor/circular-flow-3d.bundle.js` and loaded only on
-request (no CDN; rebuild with `npm run vendor:3d` after editing the source). The earlier
+request (no CDN; rebuild with `npm run vendor:3d` after editing the source). Flow labels are placed in screen space by
+`js/circular-flow-layout.js` (pure geometry, also run by `tools/test-circular-flow-3d.js`): each label
+takes the first spot along its own curve that overlaps no other label, sector name or building, in
+every sector/bank combination and in Hindi — a new flow or longer label must keep that test green. The earlier
 version replaced the validated diagram whenever its CDN loaded and read fields the sim never
 passed, so it drew a 2-sector economy whatever the controls said — the same class of mistake
 as the Export/Import bug in Operating Principle 1.

@@ -5,16 +5,27 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { NODE_POS, flowGeometry, layoutFlowLabels } from './circular-flow-layout.js';
 
 const h = React.createElement;
 
 // A text label as a camera-facing sprite. The canvas is sized to the text
 // (a fixed 256px one cut long labels off mid-word), at 2x for sharpness.
+const LABEL_FONT = '700 30px Inter, "Noto Sans Devanagari", system-ui, sans-serif';
+let measureCtx = null;
+// Label canvas size in px for a text — one definition, used both to draw the
+// sprite and to lay labels out, so the layout reserves exactly what is drawn.
+function labelPixelWidth(text) {
+  if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
+  measureCtx.font = LABEL_FONT;
+  return Math.ceil(measureCtx.measureText(text).width) + 44;
+}
+const LABEL_PX_H = 60;
+const labelWorldWidth = (text, worldHeight) => worldHeight * labelPixelWidth(text) / LABEL_PX_H;
+
 function createTextSprite(text, color = '#ffffff', bgColor = 'rgba(15, 23, 42, 0.75)', worldHeight = 0.75) {
-  const font = '700 30px Inter, "Noto Sans Devanagari", system-ui, sans-serif';
-  const measure = document.createElement('canvas').getContext('2d');
-  measure.font = font;
-  const w = Math.ceil(measure.measureText(text).width) + 44, hgt = 60;
+  const font = LABEL_FONT;
+  const w = labelPixelWidth(text), hgt = LABEL_PX_H;
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = hgt;
@@ -278,13 +289,13 @@ function ForeignModel({ position, label }) {
 
 // One stream of particles along a 3D quadratic Bezier, sized and timed from
 // the flow's own value — the same value the SVG diagram draws.
-function FlowStream({ start, end, mid, color, isReal, ratio, label, labelAt }) {
+function FlowStream({ geometry, color, isReal, ratio, label, labelPos }) {
   const groupRef = useRef();
   const labelRef = useRef();
 
   const curve = useMemo(() => new THREE.QuadraticBezierCurve3(
-    new THREE.Vector3(...start), new THREE.Vector3(...mid), new THREE.Vector3(...end)
-  ), [start, end, mid]);
+    new THREE.Vector3(...geometry.a), new THREE.Vector3(...geometry.mid), new THREE.Vector3(...geometry.b)
+  ), [geometry]);
 
   // More money ⇒ more particles, moving faster (2…14 particles).
   const count = Math.max(2, Math.round(2 + 12 * ratio));
@@ -293,11 +304,11 @@ function FlowStream({ start, end, mid, color, isReal, ratio, label, labelAt }) {
   useEffect(() => {
     if (!labelRef.current || !label) return undefined;
     const sprite = createTextSprite(label, color, 'rgba(15, 23, 42, 0.92)', 0.5);
-    sprite.position.copy(curve.getPoint(labelAt)).add(new THREE.Vector3(0, 0.45, 0));
+    sprite.position.set(...labelPos);
     const holder = labelRef.current;
     holder.add(sprite);
     return () => { holder.remove(sprite); };
-  }, [label, color, curve, labelAt]);
+  }, [label, color, labelPos]);
 
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -328,17 +339,13 @@ function FlowStream({ start, end, mid, color, isReal, ratio, label, labelAt }) {
   );
 }
 
-// Fixed anchors, one per sector — toggling a sector never moves another one.
-const NODE_POS = {
-  hh: [-7, 0, 0], firm: [7, 0, 0], gov: [0, 0, -7.5], bank: [-3.4, 0, 7.2], foreign: [3.4, 0, 7.2]
-};
 const NODE_MODEL = { hh: HouseholdModel, firm: FirmModel, gov: GovtModel, bank: BankModel, foreign: ForeignModel };
 
 // The scene draws ONLY what `spec` lists. `spec` is built by macro-gdp's
 // customRender (js/simulations.js) from the very same nodes/flows arrays its
 // SVG diagram is drawn from, so the two views cannot disagree about which
 // sectors exist, which way money moves, or how big a flow is.
-function CircularFlow3DScene({ spec }) {
+function CircularFlow3DScene({ spec, layout }) {
   const maxValue = Math.max(1, ...spec.flows.map(f => f.value));
   return h(React.Fragment, null,
     h('ambientLight', { intensity: 0.8 }),
@@ -348,22 +355,10 @@ function CircularFlow3DScene({ spec }) {
 
     spec.nodes.map(n => h(NODE_MODEL[n.key], { key: n.key, position: NODE_POS[n.key], label: n.label })),
 
-    spec.flows.filter(f => f.value > 0).map(f => {
-      const a = NODE_POS[f.from], b = NODE_POS[f.to];
-      // Bow sideways, perpendicular (in the ground plane) to the edge's own
-      // direction — so a reversed edge bows to the opposite side by itself.
-      // Money flows form the inner raised ring, real flows the outer low one,
-      // exactly as the 2D diagram's inner/outer rings.
-      const core = (f.from === 'hh' && f.to === 'firm') || (f.from === 'firm' && f.to === 'hh');
-      const bow = core ? (f.kind === 'real' ? 7.4 : 3.6) : 1.0;
-      const lift = core ? (f.kind === 'real' ? 0.5 : 2.2) : 2.4;
-      const dx = b[0] - a[0], dz = b[2] - a[2], len = Math.hypot(dx, dz) || 1;
-      const mid = [(a[0] + b[0]) / 2 + (-dz / len) * bow, lift, (a[2] + b[2]) / 2 + (dx / len) * bow];
-      return h(FlowStream, {
-        key: f.id, start: a, end: b, mid, color: f.color, isReal: f.kind === 'real',
-        ratio: Math.max(0, Math.min(1, f.value / maxValue)), label: f.label, labelAt: 0.5
-      });
-    })
+    spec.flows.filter(f => f.value > 0).map(f => h(FlowStream, {
+      key: f.id, geometry: flowGeometry(f), color: f.color, isReal: f.kind === 'real',
+      ratio: Math.max(0, Math.min(1, f.value / maxValue)), label: f.label, labelPos: layout.place[f.id].position
+    }))
   );
 }
 
@@ -391,13 +386,17 @@ export function render3DCircularFlow(container, spec) {
     wrapper.dataset.flows = spec.flows.filter(f => f.value > 0).map(f => `${f.id}:${f.from}>${f.to}:${f.value}`).join(',');
   }
 
+  // Where every label goes — decided in screen space so none overlaps another.
+  const layout = layoutFlowLabels(spec, labelWorldWidth);
+  if (wrapper) wrapper.dataset.labelOverlaps = String(layout.overlaps);
+
   rootInstance.render(
     h(Canvas, {
       orthographic: true,
       camera: { position: [14, 14, 14], zoom: 26, near: -100, far: 1000 },
       style: { width: '100%', height: '100%' }
     },
-      h(CircularFlow3DScene, { spec })
+      h(CircularFlow3DScene, { spec, layout })
     )
   );
   return true;
